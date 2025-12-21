@@ -24,9 +24,13 @@ wheels/
 venv/
 env/
 ENV/
+.venv/
+__pypackages__/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Database
 *.duckdb
@@ -46,6 +50,7 @@ logs/
 *.swp
 *.swo
 *~
+.kiro/
 
 # OS
 .DS_Store
@@ -59,6 +64,8 @@ static/css/output.css
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # Certificates
 certs/
