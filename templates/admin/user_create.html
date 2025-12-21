@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Create User - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center space-x-4">
+        <a href="/admin/users" class="btn btn-ghost btn-circle">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-3xl font-bold">Create New User</h1>
+            <p class="text-base-content/70 mt-1">Add a new user to the system</p>
+        </div>
+    </div>
+
+    <!-- Create User Form -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <!-- Error Display -->
+            <div id="error-message" class="hidden">
+                <div role="alert" class="alert alert-error mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="error-text"></span>
+                </div>
+            </div>
+            
+            <form method="POST" action="/admin/users/new" class="space-y-4" id="create-user-form">
+                {{ csrf_input()|safe }}
+                <!-- Username -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Username <span class="text-error">*</span></span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="username" 
+                        placeholder="Enter username" 
+                        class="input input-bordered" 
+                        required 
+                        minlength="3"
+                        maxlength="50"
+                        pattern="[a-zA-Z0-9_]+"
+                    />
+                    <label class="label">
+                        <span class="label-text-alt">3-50 characters, letters, numbers, and underscores only</span>
+                    </label>
+                </div>
+
+                <!-- Full Name -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Full Name <span class="text-error">*</span></span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="full_name" 
+                        placeholder="Enter full name" 
+                        class="input input-bordered" 
+                        required 
+                        maxlength="100"
+                    />
+                </div>
+
+                <!-- Role -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Role <span class="text-error">*</span></span>
+                    </label>
+                    <select name="role" class="select select-bordered" required>
+                        <option value="">Select a role</option>
+                        {% if user.role == 'super_admin' %}
+                        <option value="super_admin">Super Admin</option>
+                        <option value="admin">Admin</option>
+                        {% endif %}
+                        <option value="operator">Operator</option>
+                    </select>
+                    <label class="label">
+                        <span class="label-text-alt">
+                            {% if user.role == 'admin' %}
+                            As an Admin, you can only create Operators
+                            {% else %}
+                            Super Admins can create any role
+                            {% endif %}
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Password -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Initial Password <span class="text-error">*</span></span>
+                    </label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        placeholder="Enter initial password" 
+                        class="input input-bordered" 
+                        required 
+                        minlength="12"
+                        id="password"
+                        autocomplete="new-password"
+                    />
+                    <!-- Password Strength Indicator -->
+                    <div class="mt-2">
+                        <div class="flex gap-1 mb-1">
+                            <div id="strength-bar-1" class="h-1 flex-1 bg-base-300 rounded"></div>
+                            <div id="strength-bar-2" class="h-1 flex-1 bg-base-300 rounded"></div>
+                            <div id="strength-bar-3" class="h-1 flex-1 bg-base-300 rounded"></div>
+                            <div id="strength-bar-4" class="h-1 flex-1 bg-base-300 rounded"></div>
+                        </div>
+                        <span id="strength-text" class="text-xs text-base-content/60"></span>
+                    </div>
+                </div>
+
+                <!-- Password Requirements -->
+                <div role="alert" class="alert alert-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div>
+                        <h3 class="font-bold">Password Requirements:</h3>
+                        <ul class="list-disc list-inside text-sm mt-1">
+                            <li id="req-length" class="text-base-content/60">At least 12 characters long</li>
+                            <li id="req-upper" class="text-base-content/60">Contains uppercase letter (A-Z)</li>
+                            <li id="req-lower" class="text-base-content/60">Contains lowercase letter (a-z)</li>
+                            <li id="req-digit" class="text-base-content/60">Contains digit (0-9)</li>
+                            <li id="req-special" class="text-base-content/60">Contains special character (!@#$%^&*)</li>
+                        </ul>
+                        <p class="text-sm mt-2">User will be required to change password on first login.</p>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex gap-2 justify-end pt-4">
+                    <a href="/admin/users" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Handle form submission with error display
+document.getElementById('create-user-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const errorDiv = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Hide previous errors
+    errorDiv.classList.add('hidden');
+    
+    // Disable submit button and show loading state
+    submitBtn.disabled = true;
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.classList.add('loading');
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            redirect: 'manual'
+        });
+        
+        if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+            window.location.href = '/admin/users';
+        } else if (response.ok) {
+            window.location.href = '/admin/users';
+        } else if (!response.ok) {
+            // Error - show message
+            const data = await response.json();
+            errorText.textContent = data.detail || 'Failed to create user';
+            errorDiv.classList.remove('hidden');
+            
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+            
+            // Scroll to error
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    } catch (error) {
+        errorText.textContent = 'An unexpected error occurred. Please try again.';
+        errorDiv.classList.remove('hidden');
+        
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+    }
+});
+
+// Client-side password validation feedback with strength indicator
+document.getElementById('password')?.addEventListener('input', function(e) {
+    const password = e.target.value;
+    let strength = 0;
+    
+    // Check requirements
+    const requirements = {
+        length: password.length >= 12,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        digit: /\d/.test(password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+    
+    // Update requirement indicators
+    updateRequirement('req-length', requirements.length);
+    updateRequirement('req-upper', requirements.upper);
+    updateRequirement('req-lower', requirements.lower);
+    updateRequirement('req-digit', requirements.digit);
+    updateRequirement('req-special', requirements.special);
+    
+    // Calculate strength
+    Object.values(requirements).forEach(met => { if (met) strength++; });
+    
+    // Update strength bars
+    const bars = [
+        document.getElementById('strength-bar-1'),
+        document.getElementById('strength-bar-2'),
+        document.getElementById('strength-bar-3'),
+        document.getElementById('strength-bar-4')
+    ];
+    
+    bars.forEach((bar, index) => {
+        bar.className = 'h-1 flex-1 rounded ';
+        if (index < strength - 1) {
+            if (strength <= 2) bar.className += 'bg-error';
+            else if (strength <= 3) bar.className += 'bg-warning';
+            else if (strength <= 4) bar.className += 'bg-info';
+            else bar.className += 'bg-success';
+        } else {
+            bar.className += 'bg-base-300';
+        }
+    });
+    
+    // Update strength text
+    const strengthText = document.getElementById('strength-text');
+    if (password.length === 0) {
+        strengthText.textContent = '';
+    } else if (strength <= 2) {
+        strengthText.textContent = 'Weak password';
+        strengthText.className = 'text-xs text-error';
+    } else if (strength <= 3) {
+        strengthText.textContent = 'Fair password';
+        strengthText.className = 'text-xs text-warning';
+    } else if (strength <= 4) {
+        strengthText.textContent = 'Good password';
+        strengthText.className = 'text-xs text-info';
+    } else {
+        strengthText.textContent = 'Strong password';
+        strengthText.className = 'text-xs text-success';
+    }
+});
+
+function updateRequirement(id, met) {
+    const element = document.getElementById(id);
+    if (element) {
+        if (met) {
+            element.classList.add('text-success');
+            element.classList.remove('text-base-content/60');
+        } else {
+            element.classList.remove('text-success');
+            element.classList.add('text-base-content/60');
+        }
+    }
+}
+</script>
+{% endblock %}

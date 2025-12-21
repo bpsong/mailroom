@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div>
+        <h1 class="text-3xl font-bold">System Settings</h1>
+        <p class="text-base-content/70 mt-1">Configure system-wide settings (Super Admin only)</p>
+    </div>
+
+    <!-- Success Message -->
+    {% if success %}
+    <div role="alert" class="alert alert-success">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ success }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Error Message -->
+    {% if error %}
+    <div role="alert" class="alert alert-error">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- QR Code Settings Card -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">
+                <span class="text-2xl">🔗</span>
+                QR Code Configuration
+            </h2>
+            <p class="text-base-content/70">Configure the base URL used in generated QR codes for packages</p>
+
+            <!-- Info Alert -->
+            <div role="alert" class="alert alert-info mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="text-sm">
+                    <p><strong>Why configure this?</strong></p>
+                    <p>QR codes encode the full URL to package details. In production, you should set this to your server's public URL (e.g., <code>https://mailroom.company.local</code>) so that QR codes work correctly when scanned from mobile devices.</p>
+                    <p class="mt-2"><strong>If not configured:</strong> The system will use the request URL as a fallback, which may not work correctly in all network configurations.</p>
+                </div>
+            </div>
+
+            <!-- Configuration Form -->
+            <form method="POST" action="/admin/settings/qr-base-url" class="space-y-4 mt-4" id="settings-form">
+                {{ csrf_input()|safe }}
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">QR Code Base URL</span>
+                        <span class="label-text-alt text-error">* Required</span>
+                    </label>
+                    <input 
+                        type="url" 
+                        name="qr_base_url" 
+                        value="{{ qr_base_url }}"
+                        placeholder="https://mailroom.company.local" 
+                        class="input input-bordered" 
+                        required
+                        pattern="https?://.*"
+                        id="qr-base-url-input"
+                    />
+                    <label class="label">
+                        <span class="label-text-alt">
+                            Must start with <code>http://</code> or <code>https://</code>. Do not include trailing slash.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Current Configuration Display -->
+                {% if qr_base_url %}
+                <div role="alert" class="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div class="text-sm">
+                        <p><strong>Current Configuration:</strong></p>
+                        <p class="font-mono">{{ qr_base_url }}</p>
+                        <p class="mt-1 text-base-content/60">QR codes will generate URLs like: <code>{{ qr_base_url }}/packages/[package-id]</code></p>
+                    </div>
+                </div>
+                {% else %}
+                <div role="alert" class="alert alert-warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div class="text-sm">
+                        <p><strong>No base URL configured</strong></p>
+                        <p>The system is currently using the request URL as a fallback. Configure a base URL for consistent QR code generation.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Form Actions -->
+                <div class="flex gap-2 justify-end pt-4">
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Save Configuration
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Usage Examples Card -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">
+                <span class="text-2xl">📱</span>
+                Usage Examples
+            </h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <h3 class="font-semibold">Development Environment</h3>
+                    <p class="text-sm text-base-content/70">For local testing:</p>
+                    <code class="block bg-base-200 p-2 rounded mt-1">http://localhost:8000</code>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold">Production Environment</h3>
+                    <p class="text-sm text-base-content/70">For internal network deployment:</p>
+                    <code class="block bg-base-200 p-2 rounded mt-1">https://mailroom.company.local</code>
+                    <p class="text-xs text-base-content/60 mt-1">Or use your server's IP address: <code>https://192.168.1.100</code></p>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold">Testing QR Codes</h3>
+                    <p class="text-sm text-base-content/70">After configuring:</p>
+                    <ol class="list-decimal list-inside text-sm space-y-1 mt-1">
+                        <li>Generate a QR code for any package</li>
+                        <li>Print or display the QR code</li>
+                        <li>Scan with a mobile device</li>
+                        <li>Verify the URL navigates to the correct package page</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Settings Placeholder -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">
+                <span class="text-2xl">⚙️</span>
+                Additional Settings
+            </h2>
+            <p class="text-base-content/70">More system settings will be available here in future updates.</p>
+            
+            <div class="divider"></div>
+            
+            <div class="text-sm text-base-content/60">
+                <p><strong>Coming soon:</strong></p>
+                <ul class="list-disc list-inside space-y-1 mt-2">
+                    <li>Email notification settings</li>
+                    <li>Backup configuration</li>
+                    <li>Session timeout settings</li>
+                    <li>System maintenance mode</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Real-time URL validation
+document.getElementById('qr-base-url-input')?.addEventListener('input', function(e) {
+    const input = e.target;
+    const value = input.value.trim();
+    
+    // Check if URL starts with http:// or https://
+    if (value && !value.startsWith('http://') && !value.startsWith('https://')) {
+        input.setCustomValidity('URL must start with http:// or https://');
+    } else {
+        input.setCustomValidity('');
+    }
+});
+
+// Handle form submission
+document.getElementById('settings-form')?.addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+});
+</script>
+{% endblock %}

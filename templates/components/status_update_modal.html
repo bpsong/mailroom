@@ -1,0 +1,107 @@
+<!-- Mobile-optimized status update modal -->
+<dialog id="status_update_modal" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box w-full max-w-full sm:max-w-lg">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        
+        <h3 class="font-bold text-lg mb-4">Update Package Status</h3>
+        
+        <form 
+            method="POST" 
+            action="/packages/{{ package_id }}/status"
+            hx-post="/packages/{{ package_id }}/status"
+            hx-target="#status-result"
+            hx-indicator="#status-loading"
+            class="space-y-4"
+        >
+            {{ csrf_input()|safe }}
+            <!-- Current Status Display -->
+            <div role="alert" class="alert alert-info">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <div class="text-sm">Current Status</div>
+                    <div class="font-bold">{{ current_status|replace('_', ' ')|title }}</div>
+                </div>
+            </div>
+            
+            <!-- New Status Selection -->
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text font-semibold">New Status</span>
+                    <span class="label-text-alt text-error">Required</span>
+                </label>
+                <select name="status" class="select select-bordered w-full select-lg" required>
+                    <option disabled selected>Select new status</option>
+                    {% for status_option in available_statuses %}
+                    <option value="{{ status_option.value }}">
+                        {{ status_option.icon }} {{ status_option.label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Notes -->
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text font-semibold">Notes</span>
+                    <span class="label-text-alt">Optional</span>
+                </label>
+                <textarea 
+                    name="notes" 
+                    placeholder="Add notes about this status change..." 
+                    class="textarea textarea-bordered h-32 text-base"
+                    maxlength="500"
+                ></textarea>
+                <label class="label">
+                    <span class="label-text-alt">Max 500 characters</span>
+                </label>
+            </div>
+            
+            <!-- Loading indicator -->
+            <div id="status-loading" class="htmx-indicator">
+                <div class="flex items-center justify-center gap-2 py-4">
+                    <span class="loading loading-spinner loading-md"></span>
+                    <span>Updating status...</span>
+                </div>
+            </div>
+            
+            <!-- Result container -->
+            <div id="status-result"></div>
+            
+            <!-- Action buttons -->
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost min-h-touch" onclick="status_update_modal.close()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary min-h-touch">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Update Status
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+    // Handle successful status update
+    document.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'status-result') {
+            const response = event.detail.xhr.response;
+            if (event.detail.xhr.status === 200) {
+                showToast('Status updated successfully!', 'success');
+                setTimeout(() => {
+                    status_update_modal.close();
+                    window.location.reload();
+                }, 1500);
+            }
+        }
+    });
+</script>

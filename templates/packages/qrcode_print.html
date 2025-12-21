@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print QR Code - {{ package.tracking_no }}</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background-color: #f5f6fa;
+            color: #0f172a;
+        }
+
+        .print-shell {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .print-card {
+            width: min(320px, 100%);
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.75rem 1.25rem;
+            text-align: center;
+            box-shadow:
+                0 20px 25px -5px rgba(15, 23, 42, 0.08),
+                0 10px 10px -5px rgba(15, 23, 42, 0.04);
+        }
+
+        .print-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #64748b;
+            margin-bottom: 0.75rem;
+        }
+
+        .qr-code-print {
+            width: 2cm;
+            height: 2cm;
+            display: block;
+            margin: 0 auto;
+            image-rendering: pixelated;
+            border: 1px solid #cbd5f5;
+            border-radius: 4px;
+            background-color: #ffffff;
+        }
+
+        .tracking-info {
+            margin-top: 1rem;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1rem;
+            letter-spacing: 0.08em;
+            color: #0f172a;
+        }
+
+        .helper-text {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .print-button {
+            margin-top: 1.5rem;
+            width: 100%;
+            padding: 0.85rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 999px;
+            background-color: #2563eb;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .print-button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .print-button:active {
+            transform: scale(0.98);
+        }
+
+        .print-button:focus-visible {
+            outline: 2px solid #93c5fd;
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+
+            .print-card {
+                border-radius: 12px;
+            }
+        }
+
+        @media print {
+            body {
+                background-color: #ffffff;
+            }
+
+            body * {
+                visibility: hidden;
+            }
+
+            .print-card,
+            .print-card * {
+                visibility: visible;
+            }
+
+            .print-card {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: auto;
+                border: none;
+                border-radius: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .qr-code-print {
+                width: 2cm;
+                height: 2cm;
+                border: none;
+            }
+
+            .helper-text,
+            .print-button,
+            .print-label {
+                display: none;
+            }
+        }
+
+        @page {
+            size: auto;
+            margin: 0.5cm;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-shell">
+        <div class="print-card">
+            <p class="print-label">Mailroom Sticker</p>
+            <img src="data:image/png;base64,{{ qr_code_data }}"
+                 alt="Package QR Code"
+                 class="qr-code-print">
+            <p class="tracking-info">{{ package.tracking_no }}</p>
+            <p class="helper-text">Print this sticker, then affix it to the package for scanning.</p>
+            <button type="button" class="print-button" onclick="window.print()">
+                Print QR Code
+            </button>
+        </div>
+    </div>
+</body>
+</html>

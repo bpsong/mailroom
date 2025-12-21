@@ -1,0 +1,67 @@
+<div class="card-body">
+    <div class="overflow-x-auto">
+        <table class="table table-zebra">
+            <thead>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for recipient in recipients %}
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ recipient.employee_id }}</div>
+                    </td>
+                    <td>{{ recipient.name }}</td>
+                    <td>{{ recipient.email }}</td>
+                    <td>{{ recipient.department or '-' }}</td>
+                    <td>{{ recipient.phone or '-' }}</td>
+                    <td>
+                        {% if recipient.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-ghost">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="dropdown dropdown-end">
+                            <label tabindex="0" class="btn btn-ghost btn-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                </svg>
+                            </label>
+                            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10">
+                                <li><a href="/admin/recipients/{{ recipient.id }}/edit">✏️ Edit</a></li>
+                                {% if recipient.is_active %}
+                                <li><a onclick="confirmDeactivate('{{ recipient.id }}', '{{ recipient.name }}')" class="text-error">🚫 Deactivate</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if pagination.total > pagination.limit %}
+    <div class="flex justify-center mt-4">
+        <div class="join">
+            {% if pagination.offset > 0 %}
+            <button class="join-item btn" hx-get="/admin/recipients?offset={{ pagination.offset - pagination.limit }}&limit={{ pagination.limit }}{% if query %}&query={{ query }}{% endif %}{% if department %}&department={{ department }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}" hx-target="#recipients-table" hx-swap="innerHTML">«</button>
+            {% endif %}
+            <button class="join-item btn btn-active">Page {{ (pagination.offset // pagination.limit) + 1 }}</button>
+            {% if pagination.has_more %}
+            <button class="join-item btn" hx-get="/admin/recipients?offset={{ pagination.offset + pagination.limit }}&limit={{ pagination.limit }}{% if query %}&query={{ query }}{% endif %}{% if department %}&department={{ department }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}" hx-target="#recipients-table" hx-swap="innerHTML">»</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>

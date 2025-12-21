@@ -1,0 +1,158 @@
+/* TailwindCSS with daisyUI Configuration */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Application Styles */
+
+/* Package status badge mappings to daisyUI colors */
+.badge-registered {
+  @apply badge badge-neutral;
+}
+
+.badge-awaiting {
+  @apply badge badge-warning;
+}
+
+.badge-delivery {
+  @apply badge badge-info;
+}
+
+.badge-delivered {
+  @apply badge badge-success;
+}
+
+.badge-returned {
+  @apply badge badge-error;
+}
+
+/* HTMX loading indicator */
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator {
+  display: block;
+}
+
+.htmx-request.htmx-indicator {
+  display: block;
+}
+
+/* Skeleton loading for tables */
+.skeleton-row {
+  @apply animate-pulse;
+}
+
+.skeleton-row td {
+  @apply bg-base-300;
+}
+
+/* Toast notification positioning */
+.toast-notification {
+  @apply toast toast-top toast-center;
+}
+
+/* Mobile camera capture styling */
+.camera-input {
+  @apply file-input file-input-bordered w-full;
+}
+
+/* Package timeline using steps component */
+.package-timeline {
+  @apply steps steps-vertical lg:steps-horizontal;
+}
+
+/* Responsive table wrapper */
+.table-responsive {
+  @apply overflow-x-auto;
+}
+
+/* Mobile card view for packages */
+@media (max-width: 768px) {
+  .package-table {
+    display: none;
+  }
+  
+  .package-cards {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  .package-table {
+    display: table;
+  }
+  
+  .package-cards {
+    display: none;
+  }
+}
+
+/* Mobile-optimized touch targets */
+@media (max-width: 768px) {
+  .btn {
+    @apply min-h-touch;
+  }
+  
+  .input, .select, .textarea {
+    @apply text-base; /* Prevent zoom on iOS */
+  }
+  
+  /* Full-screen modals on mobile */
+  .modal-bottom .modal-box {
+    @apply max-w-full w-full rounded-t-2xl rounded-b-none;
+  }
+}
+
+/* Improve tap targets for mobile */
+.min-h-touch {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile-friendly spacing */
+@media (max-width: 640px) {
+  .container {
+    @apply px-4;
+  }
+  
+  .card-body {
+    @apply p-4;
+  }
+}
+
+/* Accessibility: Skip to content link */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.focus\:not-sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

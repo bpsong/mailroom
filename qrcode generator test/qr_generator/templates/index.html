@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator - Package Tracking</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>QR Code Generator</h1>
+        <p class="subtitle">Generate QR codes for package tracking</p>
+        
+        <!-- Form Section -->
+        <div class="form-section">
+            <form method="POST" action="/generate">
+                <div class="form-group">
+                    <label for="uuid">Package UUID</label>
+                    <input 
+                        type="text" 
+                        id="uuid" 
+                        name="uuid" 
+                        placeholder="Enter package UUID"
+                        value="{{ uuid | default('', true) }}"
+                        required
+                    >
+                </div>
+                <button type="submit" class="btn-primary">Generate QR Code</button>
+            </form>
+        </div>
+        
+        <!-- Error Display Section -->
+        {% if error %}
+        <div class="error-section">
+            <p class="error-message">{{ error }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- QR Code Display Section -->
+        {% if qr_code_data %}
+        <div class="qr-display-section">
+            <h2>Your QR Code</h2>
+            
+            <div class="qr-code-container">
+                <img 
+                    src="data:image/png;base64,{{ qr_code_data }}" 
+                    alt="QR Code for package {{ uuid }}"
+                    class="qr-code-image"
+                >
+            </div>
+            
+            <div class="tracking-url-preview">
+                <p><strong>Tracking URL:</strong></p>
+                <p class="url-text">{{ tracking_url }}</p>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="/download/{{ uuid }}" class="btn-secondary" download>Download QR Code</a>
+                <button onclick="window.print()" class="btn-secondary">Print QR Code</button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

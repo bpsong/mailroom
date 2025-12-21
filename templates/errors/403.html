@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}403 - Access Forbidden{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center px-4">
+    <div class="card w-full max-w-2xl bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <!-- Error Icon -->
+            <div class="text-error mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </div>
+
+            <!-- Error Code -->
+            <h1 class="text-6xl font-bold text-error mb-2">403</h1>
+            
+            <!-- Error Title -->
+            <h2 class="card-title text-3xl mb-4">Access Forbidden</h2>
+            
+            <!-- Error Message -->
+            <p class="text-base-content/70 mb-6 max-w-md">
+                You don't have permission to access this resource. This area is restricted to users with specific roles or permissions.
+            </p>
+
+            <!-- Additional Info -->
+            <div role="alert" class="alert alert-warning max-w-md mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div class="text-sm text-left">
+                    <strong>Why am I seeing this?</strong>
+                    <ul class="list-disc list-inside mt-1">
+                        <li>You may need admin privileges</li>
+                        <li>Your account role may not have access</li>
+                        <li>The resource may be restricted</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-actions flex-col sm:flex-row gap-2">
+                <a href="/dashboard" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Go to Dashboard
+                </a>
+                <button onclick="history.back()" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Go Back
+                </button>
+            </div>
+
+            <!-- Help Text -->
+            <div class="text-sm text-base-content/60 mt-6">
+                Need access? Contact your system administrator.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

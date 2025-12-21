@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Server Error{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center px-4">
+    <div class="card w-full max-w-2xl bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <!-- Error Icon -->
+            <div class="text-error mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+
+            <!-- Error Code -->
+            <h1 class="text-6xl font-bold text-error mb-2">500</h1>
+            
+            <!-- Error Title -->
+            <h2 class="card-title text-3xl mb-4">Internal Server Error</h2>
+            
+            <!-- Error Message -->
+            <p class="text-base-content/70 mb-6 max-w-md">
+                Something went wrong on the server. The error has been logged and you can check the server logs for details.
+            </p>
+
+            <!-- Additional Info -->
+            <div role="alert" class="alert alert-error max-w-md mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="text-sm text-left">
+                    <strong>What happened?</strong>
+                    <p class="mt-1">
+                        The server encountered an unexpected condition that prevented it from fulfilling your request.
+                        This error has been logged for investigation.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            <div role="alert" class="alert max-w-md mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="text-sm text-left">
+                    <strong>What can you do?</strong>
+                    <ul class="list-disc list-inside mt-1">
+                        <li>Wait a few moments and try again</li>
+                        <li>Return to the dashboard</li>
+                        <li>Contact support if the problem persists</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-actions flex-col sm:flex-row gap-2">
+                <a href="/dashboard" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Go to Dashboard
+                </a>
+                <button onclick="location.reload()" class="btn btn-outline">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Try Again
+                </button>
+                <button onclick="history.back()" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Go Back
+                </button>
+            </div>
+
+            <!-- Support Contact -->
+            <div class="divider max-w-md">Need Help?</div>
+            <div class="text-sm text-base-content/70">
+                <p class="mb-2">If this problem continues, please contact your system administrator with:</p>
+                <ul class="list-disc list-inside text-left inline-block">
+                    <li>What you were trying to do</li>
+                    <li>The time this error occurred</li>
+                    <li>Any error messages you saw</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

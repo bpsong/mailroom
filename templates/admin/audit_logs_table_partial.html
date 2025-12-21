@@ -1,0 +1,128 @@
+<div class="card-body">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="card-title">Audit Events</h2>
+        <div class="text-sm text-base-content/70">
+            Total: {{ pagination.total }} events
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="table table-zebra">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Event Type</th>
+                    <th>User</th>
+                    <th>Username</th>
+                    <th>IP Address</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>
+                        <div class="text-sm">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                    </td>
+                    <td>
+                        {% if event.event_type == 'login' %}
+                        <span class="badge badge-success">Login</span>
+                        {% elif event.event_type == 'login_failed' %}
+                        <span class="badge badge-error">Login Failed</span>
+                        {% elif event.event_type == 'logout' %}
+                        <span class="badge badge-info">Logout</span>
+                        {% elif event.event_type == 'password_changed' %}
+                        <span class="badge badge-warning">Password Changed</span>
+                        {% elif event.event_type == 'password_reset' %}
+                        <span class="badge badge-warning">Password Reset</span>
+                        {% elif event.event_type == 'user_management' %}
+                        <span class="badge badge-primary">User Management</span>
+                        {% elif event.event_type == 'recipient_import' %}
+                        <span class="badge badge-secondary">Recipient Import</span>
+                        {% else %}
+                        <span class="badge badge-ghost">{{ event.event_type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if event.user_full_name %}
+                        <div class="font-medium">{{ event.user_full_name }}</div>
+                        {% if event.user_role %}
+                        <div class="text-xs text-base-content/70">{{ event.user_role }}</div>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-base-content/50">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if event.username %}
+                        <code class="text-sm">{{ event.username }}</code>
+                        {% else %}
+                        <span class="text-base-content/50">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if event.ip_address %}
+                        <code class="text-sm">{{ event.ip_address }}</code>
+                        {% else %}
+                        <span class="text-base-content/50">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if event.details %}
+                        <button class="btn btn-ghost btn-xs" onclick="showDetails('{{ event.id }}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            View
+                        </button>
+                        <div id="details-{{ event.id }}" class="hidden">
+                            <pre class="text-xs bg-base-200 p-2 rounded mt-2 overflow-x-auto">{{ event.details | tojson(indent=2) }}</pre>
+                        </div>
+                        {% else %}
+                        <span class="text-base-content/50">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if pagination.total > pagination.limit %}
+    <div class="flex justify-center mt-4">
+        <div class="join">
+            {% if pagination.offset > 0 %}
+            <button class="join-item btn" 
+                    hx-get="/admin/audit-logs?offset={{ pagination.offset - pagination.limit }}&limit={{ pagination.limit }}{% if filters.username %}&username={{ filters.username }}{% endif %}{% if filters.event_type %}&event_type={{ filters.event_type }}{% endif %}{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}" 
+                    hx-target="#audit-logs-table"
+                    hx-swap="innerHTML">
+                «
+            </button>
+            {% endif %}
+            
+            <button class="join-item btn btn-active">
+                Page {{ pagination.current_page }} of {{ pagination.total_pages }}
+            </button>
+            
+            {% if pagination.has_more %}
+            <button class="join-item btn" 
+                    hx-get="/admin/audit-logs?offset={{ pagination.offset + pagination.limit }}&limit={{ pagination.limit }}{% if filters.username %}&username={{ filters.username }}{% endif %}{% if filters.event_type %}&event_type={{ filters.event_type }}{% endif %}{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}" 
+                    hx-target="#audit-logs-table"
+                    hx-swap="innerHTML">
+                »
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function showDetails(eventId) {
+    const detailsDiv = document.getElementById('details-' + eventId);
+    if (detailsDiv) {
+        detailsDiv.classList.toggle('hidden');
+    }
+}
+</script>

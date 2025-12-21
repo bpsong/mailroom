@@ -1,0 +1,31 @@
+employee_id,name,email,department,phone,location
+EMP001,John Smith,john.smith@company.com,Engineering,555-0101,Building A - Floor 3
+EMP002,Sarah Johnson,sarah.johnson@company.com,Marketing,555-0102,Building B - Floor 2
+EMP003,Michael Chen,michael.chen@company.com,Finance,555-0103,Building A - Floor 5
+EMP004,Emily Davis,emily.davis@company.com,Human Resources,555-0104,Building C - Floor 1
+EMP005,David Wilson,david.wilson@company.com,Engineering,555-0105,Building A - Floor 3
+EMP006,Lisa Anderson,lisa.anderson@company.com,Sales,555-0106,Building B - Floor 4
+EMP007,Robert Martinez,robert.martinez@company.com,Operations,555-0107,Building D - Floor 2
+EMP008,Jennifer Taylor,jennifer.taylor@company.com,Legal,555-0108,Building C - Floor 3
+EMP009,William Brown,william.brown@company.com,Engineering,555-0109,Building A - Floor 3
+EMP010,Jessica Garcia,jessica.garcia@company.com,Marketing,555-0110,Building B - Floor 2
+EMP011,James Rodriguez,james.rodriguez@company.com,IT Support,555-0111,Building D - Floor 1
+EMP012,Amanda Lee,amanda.lee@company.com,Customer Service,555-0112,Building B - Floor 1
+EMP013,Christopher White,christopher.white@company.com,Engineering,555-0113,Building A - Floor 4
+EMP014,Michelle Harris,michelle.harris@company.com,Finance,555-0114,Building A - Floor 5
+EMP015,Daniel Clark,daniel.clark@company.com,Sales,555-0115,Building B - Floor 4
+EMP016,Ashley Lewis,ashley.lewis@company.com,Human Resources,555-0116,Building C - Floor 1
+EMP017,Matthew Walker,matthew.walker@company.com,Operations,555-0117,Building D - Floor 2
+EMP018,Stephanie Hall,stephanie.hall@company.com,Marketing,555-0118,Building B - Floor 2
+EMP019,Andrew Allen,andrew.allen@company.com,Engineering,555-0119,Building A - Floor 3
+EMP020,Nicole Young,nicole.young@company.com,Legal,555-0120,Building C - Floor 3
+EMP021,Joshua King,joshua.king@company.com,IT Support,555-0121,Building D - Floor 1
+EMP022,Elizabeth Wright,elizabeth.wright@company.com,Finance,555-0122,Building A - Floor 5
+EMP023,Ryan Lopez,ryan.lopez@company.com,Sales,555-0123,Building B - Floor 4
+EMP024,Megan Hill,megan.hill@company.com,Customer Service,555-0124,Building B - Floor 1
+EMP025,Kevin Scott,kevin.scott@company.com,Engineering,555-0125,Building A - Floor 4
+EMP026,Laura Green,laura.green@company.com,Marketing,555-0126,Building B - Floor 2
+EMP027,Brandon Adams,brandon.adams@company.com,Operations,555-0127,Building D - Floor 2
+EMP028,Rachel Baker,rachel.baker@company.com,Human Resources,555-0128,Building C - Floor 1
+EMP029,Justin Nelson,justin.nelson@company.com,Engineering,555-0129,Building A - Floor 3
+EMP030,Samantha Carter,samantha.carter@company.com,Finance,555-0130,Building A - Floor 5

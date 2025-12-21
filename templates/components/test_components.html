@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}daisyUI Component Test{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4 space-y-8">
+    <h1 class="text-3xl font-bold mb-6">daisyUI Component Test</h1>
+    
+    <!-- Buttons -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Buttons</h2>
+            <div class="flex flex-wrap gap-2">
+                <button class="btn">Default</button>
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-accent">Accent</button>
+                <button class="btn btn-ghost">Ghost</button>
+                <button class="btn btn-outline">Outline</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Badges -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Badges (Package Status)</h2>
+            <div class="flex flex-wrap gap-2">
+                <span class="badge badge-neutral">Registered</span>
+                <span class="badge badge-warning">Awaiting Pickup</span>
+                <span class="badge badge-info">Out for Delivery</span>
+                <span class="badge badge-success">Delivered</span>
+                <span class="badge badge-error">Returned</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inputs -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Form Inputs</h2>
+            <div class="space-y-4">
+                <label class="form-control w-full max-w-xs">
+                    <div class="label">
+                        <span class="label-text">Text Input</span>
+                    </div>
+                    <input type="text" placeholder="Type here" class="input input-bordered w-full max-w-xs" />
+                </label>
+                
+                <label class="form-control w-full max-w-xs">
+                    <div class="label">
+                        <span class="label-text">Select</span>
+                    </div>
+                    <select class="select select-bordered">
+                        <option disabled selected>Pick one</option>
+                        <option>Option 1</option>
+                        <option>Option 2</option>
+                    </select>
+                </label>
+                
+                <label class="form-control">
+                    <div class="label">
+                        <span class="label-text">Textarea</span>
+                    </div>
+                    <textarea class="textarea textarea-bordered h-24" placeholder="Notes"></textarea>
+                </label>
+                
+                <input type="file" class="file-input file-input-bordered w-full max-w-xs" />
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alerts -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Alerts</h2>
+            <div class="space-y-2">
+                <div role="alert" class="alert alert-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Info alert</span>
+                </div>
+                <div role="alert" class="alert alert-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Success alert</span>
+                </div>
+                <div role="alert" class="alert alert-warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    <span>Warning alert</span>
+                </div>
+                <div role="alert" class="alert alert-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Error alert</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Modal</h2>
+            <button class="btn btn-primary" onclick="test_modal.showModal()">Open Modal</button>
+            
+            <dialog id="test_modal" class="modal">
+                <div class="modal-box">
+                    <h3 class="font-bold text-lg">Test Modal</h3>
+                    <p class="py-4">This is a test modal dialog</p>
+                    <div class="modal-action">
+                        <form method="dialog">
+                            <button class="btn">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
+        </div>
+    </div>
+    
+    <!-- Loading -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Loading States</h2>
+            <div class="flex gap-4">
+                <span class="loading loading-spinner loading-xs"></span>
+                <span class="loading loading-spinner loading-sm"></span>
+                <span class="loading loading-spinner loading-md"></span>
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Card Component</h2>
+            <p>This is a card component with shadow</p>
+            <div class="card-actions justify-end">
+                <button class="btn btn-primary">Action</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

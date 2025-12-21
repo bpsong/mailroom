@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Mailroom Tracker{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold">Dashboard</h1>
+        <div class="text-sm text-base-content/70">
+            Welcome, {{ user.full_name }}
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Packages Today -->
+        <div class="stats shadow bg-base-100">
+            <div class="stat">
+                <div class="stat-figure text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+                <div class="stat-title">Packages Today</div>
+                <div class="stat-value text-primary">{{ stats.packages_today }}</div>
+                <div class="stat-desc">Registered today</div>
+                <div class="stat-actions mt-2">
+                    <a href="/packages?date_from={{ today }}" 
+                       class="btn btn-sm btn-ghost">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Awaiting Pickup -->
+        <div class="stats shadow bg-base-100">
+            <div class="stat">
+                <div class="stat-figure text-warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="stat-title">Awaiting Pickup</div>
+                <div class="stat-value text-warning">{{ stats.packages_awaiting_pickup }}</div>
+                <div class="stat-desc">Ready for collection</div>
+                <div class="stat-actions mt-2">
+                    <a href="/packages?status=awaiting_pickup" 
+                       class="btn btn-sm btn-ghost">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivered Today -->
+        <div class="stats shadow bg-base-100">
+            <div class="stat">
+                <div class="stat-figure text-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="stat-title">Delivered Today</div>
+                <div class="stat-value text-success">{{ stats.packages_delivered_today }}</div>
+                <div class="stat-desc">Completed deliveries</div>
+                <div class="stat-actions mt-2">
+                    <a href="/packages?status=delivered&date_from={{ today }}" 
+                       class="btn btn-sm btn-ghost">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Packages -->
+        <div class="stats shadow bg-base-100">
+            <div class="stat">
+                <div class="stat-figure text-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                    </svg>
+                </div>
+                <div class="stat-title">Total Packages</div>
+                <div class="stat-value text-info">{{ stats.total_packages }}</div>
+                <div class="stat-desc">All time</div>
+                <div class="stat-actions mt-2">
+                    <a href="/packages" 
+                       class="btn btn-sm btn-ghost">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Search -->
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Quick Search</h2>
+            <div class="form-control">
+                <input 
+                    type="search" 
+                    name="q"
+                    class="input input-bordered w-full"
+                    placeholder="Search by tracking number or recipient name..."
+                    maxlength="100"
+                    hx-get="/packages"
+                    hx-trigger="keyup changed delay:300ms"
+                    hx-target="#main-content"
+                    hx-select="#main-content"
+                    hx-push-url="true"
+                    hx-include="[name='q']">
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Status Distribution -->
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">Package Status</h2>
+                <div class="space-y-3">
+                    {% for item in status_distribution %}
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            {% if item.status == 'registered' %}
+                            <span class="badge badge-neutral">Registered</span>
+                            {% elif item.status == 'awaiting_pickup' %}
+                            <span class="badge badge-warning">Awaiting Pickup</span>
+                            {% elif item.status == 'out_for_delivery' %}
+                            <span class="badge badge-info">Out for Delivery</span>
+                            {% elif item.status == 'delivered' %}
+                            <span class="badge badge-success">Delivered</span>
+                            {% elif item.status == 'returned' %}
+                            <span class="badge badge-error">Returned</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl font-bold">{{ item.count }}</span>
+                            <a href="/packages?status={{ item.status }}" 
+                               class="btn btn-sm btn-ghost btn-circle">
+                                →
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if not status_distribution %}
+                    <p class="text-base-content/70 text-center py-4">No packages yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Recipients -->
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">Top Recipients This Month</h2>
+                <div class="overflow-x-auto">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Recipient</th>
+                                <th>Department</th>
+                                <th class="text-right">Packages</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for recipient in top_recipients %}
+                            <tr class="hover">
+                                <td>
+                                    <a href="/packages?recipient_id={{ recipient.recipient_id }}" 
+                                       class="link link-hover">
+                                        {{ recipient.recipient_name }}
+                                    </a>
+                                </td>
+                                <td>{{ recipient.department or '-' }}</td>
+                                <td class="text-right font-bold">{{ recipient.package_count }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not top_recipients %}
+                            <tr>
+                                <td colspan="3" class="text-center text-base-content/70">No data for this month</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Quick Actions</h2>
+            <div class="flex flex-wrap gap-2">
+                <a href="/packages/new" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Register Package
+                </a>
+                <a href="/packages" class="btn btn-outline">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    View All Packages
+                </a>
+                {% if user.role in ['admin', 'super_admin'] %}
+                <a href="/admin/recipients" class="btn btn-outline">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Manage Recipients
+                </a>
+                <a href="/admin/reports" class="btn btn-outline">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Reports
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

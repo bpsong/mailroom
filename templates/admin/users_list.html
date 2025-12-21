@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">User Management</h1>
+            <p class="text-base-content/70 mt-1">Manage system users and their permissions</p>
+        </div>
+        <a href="/admin/users/new" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Create User
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <form 
+                hx-get="/admin/users" 
+                hx-target="#users-table" 
+                hx-select="#users-table"
+                hx-trigger="submit, change delay:300ms" 
+                class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Search</span>
+                    </label>
+                    <input type="text" name="query" placeholder="Username or name..." class="input input-bordered" value="{{ query or '' }}" maxlength="100" />
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Role</span>
+                    </label>
+                    <select name="role" class="select select-bordered">
+                        <option value="">All Roles</option>
+                        <option value="super_admin" {% if role == 'super_admin' %}selected{% endif %}>Super Admin</option>
+                        <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="operator" {% if role == 'operator' %}selected{% endif %}>Operator</option>
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Status</span>
+                    </label>
+                    <select name="is_active" class="select select-bordered">
+                        <option value="">All Status</option>
+                        <option value="true" {% if is_active == 'true' %}selected{% endif %}>Active</option>
+                        <option value="false" {% if is_active == 'false' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">&nbsp;</span>
+                    </label>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div id="users-table" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Full Name</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_item in users %}
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ user_item.username }}</div>
+                                {% if user_item.must_change_password %}
+                                <span class="badge badge-warning badge-sm">Must change password</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user_item.full_name }}</td>
+                            <td>
+                                {% if user_item.role == 'super_admin' %}
+                                <span class="badge badge-error">Super Admin</span>
+                                {% elif user_item.role == 'admin' %}
+                                <span class="badge badge-warning">Admin</span>
+                                {% else %}
+                                <span class="badge badge-info">Operator</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user_item.is_active %}
+                                <span class="badge badge-success">Active</span>
+                                {% else %}
+                                <span class="badge badge-ghost">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user_item.created_at.strftime('%Y-%m-%d') if user_item.created_at else 'N/A' }}</td>
+                            <td>
+                                {% set can_manage = user.role == 'super_admin' or (user.role == 'admin' and user_item.role == 'operator') %}
+                                {% if can_manage %}
+                                <div class="dropdown dropdown-end">
+                                    <label tabindex="0" class="btn btn-ghost btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                        </svg>
+                                    </label>
+                                    <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10">
+                                        <li><a href="/admin/users/{{ user_item.id }}/edit">✏️ Edit</a></li>
+                                        <li><a onclick="openPasswordResetModal('{{ user_item.id }}', '{{ user_item.username }}')">🔑 Reset Password</a></li>
+                                        {% if user_item.is_active and user_item.id != user.id %}
+                                        <li><a onclick="confirmDeactivate('{{ user_item.id }}', '{{ user_item.username }}')" class="text-error">🚫 Deactivate</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                                {% else %}
+                                <span class="text-base-content/50 text-sm">No access</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.total > pagination.limit %}
+            <div class="flex justify-center mt-4">
+                <div class="join">
+                    {% if pagination.offset > 0 %}
+                    <button 
+                        class="join-item btn" 
+                        hx-get="/admin/users?offset={{ pagination.offset - pagination.limit }}&limit={{ pagination.limit }}" 
+                        hx-target="#users-table"
+                        hx-select="#users-table">«</button>
+                    {% endif %}
+                    <button class="join-item btn btn-active">Page {{ (pagination.offset // pagination.limit) + 1 }}</button>
+                    {% if pagination.has_more %}
+                    <button 
+                        class="join-item btn" 
+                        hx-get="/admin/users?offset={{ pagination.offset + pagination.limit }}&limit={{ pagination.limit }}" 
+                        hx-target="#users-table"
+                        hx-select="#users-table">»</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Password Reset Modal -->
+<dialog id="password-reset-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Reset User Password</h3>
+        <form id="password-reset-form" method="POST" class="space-y-4 mt-4">
+            {{ csrf_input()|safe }}
+            <input type="hidden" id="reset-user-id" name="user_id" />
+            
+            <div role="alert" class="alert alert-info">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Resetting password for: <strong id="reset-username"></strong></span>
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">New Password</span>
+                </label>
+                <input type="password" name="new_password" id="modal-reset-password" placeholder="Enter new password (min 12 chars)" class="input input-bordered" required minlength="12" autocomplete="new-password" />
+                <!-- Password Strength Indicator -->
+                <div class="mt-2">
+                    <div class="flex gap-1 mb-1">
+                        <div id="modal-strength-bar-1" class="h-1 flex-1 bg-base-300 rounded"></div>
+                        <div id="modal-strength-bar-2" class="h-1 flex-1 bg-base-300 rounded"></div>
+                        <div id="modal-strength-bar-3" class="h-1 flex-1 bg-base-300 rounded"></div>
+                        <div id="modal-strength-bar-4" class="h-1 flex-1 bg-base-300 rounded"></div>
+                    </div>
+                    <span id="modal-strength-text" class="text-xs text-base-content/60"></span>
+                </div>
+                <label class="label">
+                    <span class="label-text-alt">
+                        <ul class="list-disc list-inside text-xs space-y-1">
+                            <li id="modal-req-length" class="text-base-content/60">At least 12 characters</li>
+                            <li id="modal-req-upper" class="text-base-content/60">One uppercase letter</li>
+                            <li id="modal-req-lower" class="text-base-content/60">One lowercase letter</li>
+                            <li id="modal-req-digit" class="text-base-content/60">One number</li>
+                            <li id="modal-req-special" class="text-base-content/60">One special character</li>
+                        </ul>
+                    </span>
+                </label>
+            </div>
+            
+            <div class="form-control">
+                <label class="label cursor-pointer">
+                    <span class="label-text">Force password change on next login</span>
+                    <input type="checkbox" name="force_change" class="checkbox" checked />
+                </label>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="document.getElementById('password-reset-modal').close()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Reset Password</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<!-- Deactivate Confirmation Modal -->
+<dialog id="deactivate-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Confirm Deactivation</h3>
+        <div class="py-4">
+            <div role="alert" class="alert alert-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span>Are you sure you want to deactivate user: <strong id="deactivate-username"></strong>?</span>
+            </div>
+            <p class="mt-2 text-sm">This will terminate all active sessions and prevent the user from logging in.</p>
+            <p class="mt-1 text-sm font-semibold text-warning">⚠️ Warning: This action cannot be undone. Deactivated users cannot be reactivated.</p>
+        </div>
+        <div class="modal-action">
+            <button type="button" class="btn" onclick="document.getElementById('deactivate-modal').close()">Cancel</button>
+            <form id="deactivate-form" method="POST" style="display: inline;">
+                {{ csrf_input()|safe }}
+                <button type="submit" class="btn btn-error">Deactivate</button>
+            </form>
+        </div>
+    </div>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openPasswordResetModal(userId, username) {
+    document.getElementById('reset-user-id').value = userId;
+    document.getElementById('reset-username').textContent = username;
+    document.getElementById('password-reset-form').action = `/admin/users/${userId}/password`;
+    
+    // Reset password field when opening modal
+    document.getElementById('modal-reset-password').value = '';
+    document.getElementById('modal-strength-text').textContent = '';
+    
+    document.getElementById('password-reset-modal').showModal();
+}
+
+function confirmDeactivate(userId, username) {
+    document.getElementById('deactivate-username').textContent = username;
+    document.getElementById('deactivate-form').action = `/admin/users/${userId}/deactivate`;
+    document.getElementById('deactivate-modal').showModal();
+}
+
+// Password validation for modal reset
+document.getElementById('modal-reset-password')?.addEventListener('input', function(e) {
+    const password = e.target.value;
+    let strength = 0;
+    
+    const requirements = {
+        length: password.length >= 12,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        digit: /\d/.test(password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+    
+    // Update requirement indicators
+    updateModalRequirement('modal-req-length', requirements.length);
+    updateModalRequirement('modal-req-upper', requirements.upper);
+    updateModalRequirement('modal-req-lower', requirements.lower);
+    updateModalRequirement('modal-req-digit', requirements.digit);
+    updateModalRequirement('modal-req-special', requirements.special);
+    
+    // Calculate strength
+    Object.values(requirements).forEach(met => { if (met) strength++; });
+    
+    // Update strength bars
+    const bars = [
+        document.getElementById('modal-strength-bar-1'),
+        document.getElementById('modal-strength-bar-2'),
+        document.getElementById('modal-strength-bar-3'),
+        document.getElementById('modal-strength-bar-4')
+    ];
+    
+    bars.forEach((bar, index) => {
+        bar.className = 'h-1 flex-1 rounded ';
+        if (index < strength - 1) {
+            if (strength <= 2) bar.className += 'bg-error';
+            else if (strength <= 3) bar.className += 'bg-warning';
+            else if (strength <= 4) bar.className += 'bg-info';
+            else bar.className += 'bg-success';
+        } else {
+            bar.className += 'bg-base-300';
+        }
+    });
+    
+    // Update strength text
+    const strengthText = document.getElementById('modal-strength-text');
+    if (password.length === 0) {
+        strengthText.textContent = '';
+    } else if (strength <= 2) {
+        strengthText.textContent = 'Weak password';
+        strengthText.className = 'text-xs text-error';
+    } else if (strength <= 3) {
+        strengthText.textContent = 'Fair password';
+        strengthText.className = 'text-xs text-warning';
+    } else if (strength <= 4) {
+        strengthText.textContent = 'Good password';
+        strengthText.className = 'text-xs text-info';
+    } else {
+        strengthText.textContent = 'Strong password';
+        strengthText.className = 'text-xs text-success';
+    }
+});
+
+function updateModalRequirement(id, met) {
+    const element = document.getElementById(id);
+    if (element) {
+        if (met) {
+            element.classList.add('text-success');
+            element.classList.remove('text-base-content/60');
+        } else {
+            element.classList.remove('text-success');
+            element.classList.add('text-base-content/60');
+        }
+    }
+}
+</script>
+{% endblock %}

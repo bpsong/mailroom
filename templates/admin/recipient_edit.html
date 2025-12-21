@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Recipient - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Edit Recipient</h1>
+            <p class="text-base-content/70 mt-1">Update recipient information</p>
+        </div>
+        <a href="/admin/recipients" class="btn btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Recipients
+        </a>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="card bg-base-100 shadow-xl max-w-2xl">
+        <div class="card-body">
+            <!-- Error Display -->
+            <div id="error-message" class="hidden">
+                <div role="alert" class="alert alert-error mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="error-text"></span>
+                </div>
+            </div>
+            
+            <form method="POST" action="/admin/recipients/{{ edit_recipient.id }}/edit" class="space-y-4" id="edit-recipient-form">
+                {{ csrf_input()|safe }}
+                
+                <!-- Employee ID (Read-only) -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Employee ID</span>
+                    </label>
+                    <input type="text" value="{{ edit_recipient.employee_id }}" class="input input-bordered" disabled />
+                    <label class="label">
+                        <span class="label-text-alt">Employee ID cannot be changed</span>
+                    </label>
+                </div>
+
+                <!-- Name -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Full Name</span>
+                    </label>
+                    <input type="text" name="name" value="{{ edit_recipient.name }}" placeholder="Enter full name" class="input input-bordered" maxlength="100" />
+                </div>
+
+                <!-- Email -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Email</span>
+                    </label>
+                    <input type="email" name="email" id="edit-email-input" value="{{ edit_recipient.email }}" placeholder="Enter email address" class="input input-bordered" />
+                    <label class="label">
+                        <span class="label-text-alt" id="edit-email-validation"></span>
+                    </label>
+                </div>
+
+                <!-- Department -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Department <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" name="department" value="{{ edit_recipient.department or '' }}" placeholder="Enter department" class="input input-bordered" maxlength="100" required />
+                </div>
+
+                <!-- Phone -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Phone</span>
+                    </label>
+                    <input type="tel" name="phone" value="{{ edit_recipient.phone or '' }}" placeholder="Enter phone number" class="input input-bordered" maxlength="20" />
+                </div>
+
+                <!-- Location -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Location</span>
+                    </label>
+                    <input type="text" name="location" value="{{ edit_recipient.location or '' }}" placeholder="Enter office location" class="input input-bordered" maxlength="100" />
+                </div>
+
+                <!-- Status -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Status</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        {% if edit_recipient.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-ghost">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="card-actions justify-end mt-6">
+                    <a href="/admin/recipients" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-primary" id="submit-btn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="card bg-base-100 shadow-xl max-w-2xl">
+        <div class="card-body">
+            <h2 class="card-title">Recipient Information</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-base-content/70">Created</p>
+                    <p class="font-medium">{{ edit_recipient.created_at.strftime('%Y-%m-%d') }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-base-content/70">Last Updated</p>
+                    <p class="font-medium">{{ edit_recipient.updated_at.strftime('%Y-%m-%d') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Handle form submission with error display
+document.getElementById('edit-recipient-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const errorDiv = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    errorDiv.classList.add('hidden');
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            redirect: 'manual'
+        });
+        
+        if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+            window.location.href = '/admin/recipients';
+        } else if (response.ok) {
+            window.location.href = '/admin/recipients';
+        } else {
+            const data = await response.json();
+            errorText.textContent = data.detail || 'Failed to update recipient';
+            errorDiv.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    } catch (error) {
+        errorText.textContent = 'An unexpected error occurred. Please try again.';
+        errorDiv.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+    }
+});
+
+// Real-time email validation
+document.getElementById('edit-email-input')?.addEventListener('input', function(e) {
+    const email = e.target.value;
+    const validationMsg = document.getElementById('edit-email-validation');
+    
+    if (email.length === 0) {
+        validationMsg.textContent = '';
+        validationMsg.className = 'label-text-alt';
+        e.target.classList.remove('input-error', 'input-success');
+        return;
+    }
+    
+    // Simple email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isValid = emailRegex.test(email);
+    
+    if (isValid) {
+        validationMsg.textContent = '✓ Valid email format';
+        validationMsg.className = 'label-text-alt text-success';
+        e.target.classList.remove('input-error');
+        e.target.classList.add('input-success');
+    } else {
+        validationMsg.textContent = '✗ Invalid email format';
+        validationMsg.className = 'label-text-alt text-error';
+        e.target.classList.remove('input-success');
+        e.target.classList.add('input-error');
+    }
+});
+</script>
+{% endblock %}

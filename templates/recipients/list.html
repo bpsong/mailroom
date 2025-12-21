@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Recipients - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-7xl">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold">👥 Recipients</h1>
+            <p class="text-base-content/70 mt-1">Search and view employee directory</p>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <form method="GET" action="/recipients" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Search Query -->
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text">Search Recipients</span>
+                    </label>
+                    <input 
+                        type="search" 
+                        name="q" 
+                        value="{{ query or '' }}"
+                        placeholder="Search by name, email, or employee ID..." 
+                        class="input input-bordered w-full"
+                        maxlength="100"
+                        autofocus
+                    />
+                </div>
+
+                <!-- Department Filter -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Department</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="dept" 
+                        value="{{ department or '' }}"
+                        placeholder="Filter by department" 
+                        class="input input-bordered w-full"
+                        maxlength="100"
+                    />
+                </div>
+
+                <!-- Search Button -->
+                <div class="form-control md:col-span-3">
+                    <button type="submit" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recipients List -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            {% if recipients %}
+            <!-- Desktop Table View -->
+            <div class="hidden lg:block overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Phone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recipient in recipients %}
+                        <tr>
+                            <td>
+                                <div class="font-mono font-medium">{{ recipient.employee_id }}</div>
+                            </td>
+                            <td>
+                                <div class="font-medium">{{ recipient.name }}</div>
+                            </td>
+                            <td>
+                                <a href="mailto:{{ recipient.email }}" class="link link-primary">
+                                    {{ recipient.email }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge badge-ghost">{{ recipient.department or '-' }}</span>
+                            </td>
+                            <td>
+                                {% if recipient.phone %}
+                                <a href="tel:{{ recipient.phone }}" class="link">
+                                    {{ recipient.phone }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="lg:hidden space-y-4">
+                {% for recipient in recipients %}
+                <div class="card bg-base-200 shadow">
+                    <div class="card-body p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-lg">{{ recipient.name }}</h3>
+                            <span class="badge badge-ghost">{{ recipient.employee_id }}</span>
+                        </div>
+                        <div class="space-y-1 text-sm">
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <a href="mailto:{{ recipient.email }}" class="link link-primary">
+                                    {{ recipient.email }}
+                                </a>
+                            </div>
+                            {% if recipient.department %}
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                <span>{{ recipient.department }}</span>
+                            </div>
+                            {% endif %}
+                            {% if recipient.phone %}
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <a href="tel:{{ recipient.phone }}" class="link">
+                                    {{ recipient.phone }}
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.total_pages > 1 %}
+            <div class="flex justify-center mt-6">
+                <div class="join">
+                    {% if pagination.has_prev %}
+                    <a href="?page={{ pagination.page - 1 }}&limit={{ pagination.limit }}{% if query %}&q={{ query }}{% endif %}{% if department %}&dept={{ department }}{% endif %}" 
+                       class="join-item btn">«</a>
+                    {% endif %}
+                    
+                    {% for p in range(1, pagination.total_pages + 1) %}
+                        {% if p == pagination.page %}
+                        <button class="join-item btn btn-active">{{ p }}</button>
+                        {% elif p == 1 or p == pagination.total_pages or (p >= pagination.page - 2 and p <= pagination.page + 2) %}
+                        <a href="?page={{ p }}&limit={{ pagination.limit }}{% if query %}&q={{ query }}{% endif %}{% if department %}&dept={{ department }}{% endif %}" 
+                           class="join-item btn">{{ p }}</a>
+                        {% elif p == pagination.page - 3 or p == pagination.page + 3 %}
+                        <button class="join-item btn btn-disabled">...</button>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <a href="?page={{ pagination.page + 1 }}&limit={{ pagination.limit }}{% if query %}&q={{ query }}{% endif %}{% if department %}&dept={{ department }}{% endif %}" 
+                       class="join-item btn">»</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Results Count -->
+            <div class="text-center text-sm text-base-content/70 mt-4">
+                Showing {{ recipients|length }} of {{ pagination.total_count }} recipients
+            </div>
+            {% else %}
+            <!-- No Results -->
+            <div role="alert" class="alert">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="font-bold">No recipients found</h3>
+                    <div class="text-sm">Try adjusting your search criteria or check with an administrator to add recipients.</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Help Text -->
+    <div role="alert" class="alert alert-info mt-6">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+            <h3 class="font-bold">Need to add or update recipients?</h3>
+            <div class="text-sm">Contact an administrator to manage the recipient directory.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

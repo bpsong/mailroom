@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mailroom Package Tracking System">
+    <meta name="csrf-token" content="{{ csrf_token_value() }}">
+    <title>{% block title %}Mailroom Tracking{% endblock %}</title>
+    
+    <!-- TailwindCSS + daisyUI -->
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/output.css') }}">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Theme initialization script -->
+    <script>
+        // Set theme based on user preference or system preference
+        const theme = localStorage.getItem('theme') || 
+                     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+    </script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Skip to main content link for keyboard users -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 btn btn-primary">
+        Skip to main content
+    </a>
+    
+    <div class="drawer lg:drawer-open">
+        <!-- Mobile toggle -->
+        <input id="main-drawer" type="checkbox" class="drawer-toggle" />
+        
+        <!-- Main content -->
+        <div class="drawer-content flex flex-col">
+            <!-- Navbar -->
+            <nav class="navbar bg-base-200 shadow-sm sticky top-0 z-30" role="navigation" aria-label="Main navigation">
+                <div class="flex-none lg:hidden">
+                    <label for="main-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </label>
+                </div>
+                <div class="flex-1">
+                    <a href="/dashboard" class="btn btn-ghost normal-case text-xl gap-2">
+                        <span class="text-2xl">📦</span>
+                        <span class="hidden sm:inline">Mailroom Tracker</span>
+                    </a>
+                </div>
+                <div class="flex-none gap-2">
+                    {% if user %}
+                    <!-- Theme toggle button -->
+                    <button class="btn btn-ghost btn-circle" onclick="toggleTheme()" aria-label="Toggle theme">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 theme-icon-light">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 theme-icon-dark hidden">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                        </svg>
+                    </button>
+                    
+                    <!-- User dropdown -->
+                    <div class="dropdown dropdown-end">
+                        <label tabindex="0" class="btn btn-ghost btn-circle avatar placeholder">
+                            <div class="bg-neutral text-neutral-content rounded-full w-10">
+                                <span class="text-xl">{{ user.username[0]|upper }}</span>
+                            </div>
+                        </label>
+                        <ul tabindex="0" class="menu dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-box w-52">
+                            <li class="menu-title">
+                                <span class="font-semibold">{{ user.full_name }}</span>
+                            </li>
+                            <li class="disabled">
+                                <span class="text-xs opacity-60">{{ user.role|replace('_', ' ')|title }}</span>
+                            </li>
+                            <div class="divider my-1"></div>
+                            <li><a href="/me/profile">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                </svg>
+                                My Profile
+                            </a></li>
+                            <li><a href="/me/sessions">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                </svg>
+                                Active Sessions
+                            </a></li>
+                            <li><a href="/me/password">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                                </svg>
+                                Change Password
+                            </a></li>
+                            <li>
+                                <form method="POST" action="/auth/logout" class="p-0">
+                                    {{ csrf_input()|safe }}
+                                    <button type="submit" class="w-full text-left flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                        </svg>
+                                        Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </nav>
+            
+            <!-- Page content -->
+            <main class="flex-1 p-4" id="main-content" role="main" aria-label="Main content">
+                <!-- Global HTMX loading indicator -->
+                <div id="htmx-loading" class="htmx-indicator fixed top-20 right-4 z-50">
+                    <div role="alert" class="alert alert-info shadow-lg">
+                        <span class="loading loading-spinner loading-sm"></span>
+                        <span>Loading...</span>
+                    </div>
+                </div>
+                
+                {% block content %}{% endblock %}
+            </main>
+            
+            <!-- Footer -->
+            <footer class="footer footer-center p-4 bg-base-200 text-base-content" role="contentinfo">
+                <div>
+                    <p>&copy; 2024 Company Name. All rights reserved. | v1.0.0</p>
+                </div>
+            </footer>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="drawer-side z-40">
+            <label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="bg-base-200 min-h-full w-64 lg:w-56 xl:w-64" role="complementary" aria-label="Sidebar navigation">
+                <div class="sticky top-0">
+                    <!-- Logo section for desktop -->
+                    <div class="hidden lg:flex items-center gap-2 px-4 py-5">
+                        <span class="text-3xl">📦</span>
+                        <span class="text-xl font-bold">Mailroom</span>
+                    </div>
+                    
+                    <ul class="menu px-3 py-4 space-y-1">
+                        <li class="menu-title">
+                            <span>Navigation</span>
+                        </li>
+                        <li><a href="/dashboard" class="{% if request.url.path == '/dashboard' %}active{% endif %}">
+                            <span class="text-lg">📊</span>
+                            <span>Dashboard</span>
+                        </a></li>
+                        <li><a href="/packages" class="{% if request.url.path.startswith('/packages') and request.url.path != '/packages/new' %}active{% endif %}">
+                            <span class="text-lg">📦</span>
+                            <span>Packages</span>
+                        </a></li>
+                        <li><a href="/packages/new" class="{% if request.url.path == '/packages/new' %}active{% endif %}">
+                            <span class="text-lg">➕</span>
+                            <span>Register Package</span>
+                        </a></li>
+                        <li><a href="/recipients" class="{% if request.url.path == '/recipients' %}active{% endif %}">
+                            <span class="text-lg">👥</span>
+                            <span>Recipients</span>
+                        </a></li>
+                        
+                        {% if user and user.role in ['admin', 'super_admin'] %}
+                        <li class="menu-title mt-4">
+                            <span>Administration</span>
+                        </li>
+                        <li><a href="/admin/recipients" class="{% if request.url.path.startswith('/admin/recipients') %}active{% endif %}">
+                            <span class="text-lg">👥</span>
+                            <span>Recipients</span>
+                        </a></li>
+                        <li><a href="/admin/users" class="{% if request.url.path.startswith('/admin/users') %}active{% endif %}">
+                            <span class="text-lg">🔐</span>
+                            <span>Users</span>
+                        </a></li>
+                        <li><a href="/admin/reports" class="{% if request.url.path.startswith('/admin/reports') %}active{% endif %}">
+                            <span class="text-lg">📈</span>
+                            <span>Reports</span>
+                        </a></li>
+                        {% endif %}
+                        
+                        {% if user and user.role == 'super_admin' %}
+                        <li class="menu-title mt-4">
+                            <span>Super Admin</span>
+                        </li>
+                        <li><a href="/admin/settings" class="{% if request.url.path == '/admin/settings' %}active{% endif %}">
+                            <span class="text-lg">⚙️</span>
+                            <span>Settings</span>
+                        </a></li>
+                        <li><a href="/admin/audit-logs" class="{% if request.url.path == '/admin/audit-logs' %}active{% endif %}">
+                            <span class="text-lg">📋</span>
+                            <span>Audit Logs</span>
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Theme toggle script -->
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update theme icons
+            updateThemeIcons(newTheme);
+        }
+        
+        function updateThemeIcons(theme) {
+            const lightIcons = document.querySelectorAll('.theme-icon-light');
+            const darkIcons = document.querySelectorAll('.theme-icon-dark');
+            
+            if (theme === 'dark') {
+                lightIcons.forEach(icon => icon.classList.add('hidden'));
+                darkIcons.forEach(icon => icon.classList.remove('hidden'));
+            } else {
+                lightIcons.forEach(icon => icon.classList.remove('hidden'));
+                darkIcons.forEach(icon => icon.classList.add('hidden'));
+            }
+        }
+        
+        // Initialize theme icons on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            updateThemeIcons(currentTheme);
+        });
+    </script>
+    
+    <!-- HTMX Configuration and Event Handlers -->
+    <script>
+        function injectCsrfInputs(rootElement) {
+            const metaToken = document.querySelector('meta[name="csrf-token"]');
+            if (!metaToken) {
+                return;
+            }
+            const token = metaToken.content;
+            const scope = rootElement || document;
+            const forms = scope.querySelectorAll('form');
+            forms.forEach((form) => {
+                const method = (form.getAttribute('method') || 'GET').toUpperCase();
+                if (method === 'GET' || method === 'DIALOG' || form.dataset.csrfExempt === 'true') {
+                    return;
+                }
+                let csrfField = form.querySelector('input[name="csrf_token"]');
+                if (!csrfField) {
+                    csrfField = document.createElement('input');
+                    csrfField.type = 'hidden';
+                    csrfField.name = 'csrf_token';
+                    form.prepend(csrfField);
+                }
+                csrfField.value = token;
+            });
+        }
+
+        function ensureAlertRoles(scope) {
+            const root = scope && typeof scope.querySelectorAll === 'function' ? scope : document;
+            root.querySelectorAll('.alert:not([role])').forEach((alertEl) => {
+                alertEl.setAttribute('role', 'alert');
+            });
+        }
+
+        const CHARACTER_COUNTER_SELECTOR = 'input[type="text"]:not([data-counter="false"]), input[type="search"]:not([data-counter="false"]), input[type="email"]:not([data-counter="false"]), input[type="password"]:not([data-counter="false"]), input[type="tel"]:not([data-counter="false"]), input[type="url"]:not([data-counter="false"]), textarea:not([data-counter="false"])';
+
+        function initializeCharacterCounters(scope) {
+            const root = scope && typeof scope.querySelectorAll === 'function' ? scope : document;
+            root.querySelectorAll(CHARACTER_COUNTER_SELECTOR).forEach((field) => {
+                attachCharacterCounter(field);
+            });
+        }
+
+        function attachCharacterCounter(field) {
+            if (field.dataset.counterInitialized === 'true') {
+                return;
+            }
+
+            const counter = document.createElement('div');
+            counter.className = 'text-xs text-base-content/60 flex justify-end mt-1 char-counter';
+            counter.setAttribute('aria-live', 'polite');
+            counter.textContent = formatCharacterCounter(field);
+            field.insertAdjacentElement('afterend', counter);
+
+            const updateCounter = () => {
+                counter.textContent = formatCharacterCounter(field);
+            };
+
+            field.addEventListener('input', updateCounter);
+            field.addEventListener('change', updateCounter);
+            field.dataset.counterInitialized = 'true';
+        }
+
+        function formatCharacterCounter(field) {
+            const attrLimit = field.getAttribute('maxlength') || field.dataset.maxlength;
+            const parsedLimit = attrLimit ? parseInt(attrLimit, 10) : field.maxLength > 0 ? field.maxLength : null;
+            const hasLimit = Number.isFinite(parsedLimit) && parsedLimit > 0;
+            const currentLength = field.value.length;
+
+            if (hasLimit) {
+                return `${currentLength} / ${parsedLimit}`;
+            }
+
+            return `${currentLength} characters`;
+        }
+
+        const alertObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType !== Node.ELEMENT_NODE) {
+                        return;
+                    }
+                    if (node.classList && node.classList.contains('alert') && !node.hasAttribute('role')) {
+                        node.setAttribute('role', 'alert');
+                    }
+                    ensureAlertRoles(node);
+                });
+            });
+        });
+        if (document.body) {
+            alertObserver.observe(document.body, { childList: true, subtree: true });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            injectCsrfInputs(document);
+            ensureAlertRoles(document);
+            initializeCharacterCounters(document);
+        });
+        
+        // Configure HTMX
+        document.body.addEventListener('htmx:configRequest', function(event) {
+            // Add CSRF token to all requests if available
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                event.detail.headers['X-CSRF-Token'] = csrfToken.content;
+            }
+        });
+        
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            injectCsrfInputs(event.target);
+            ensureAlertRoles(event.target);
+            initializeCharacterCounters(event.target);
+        });
+        
+        // Show loading indicator on HTMX requests
+        document.body.addEventListener('htmx:beforeRequest', function(event) {
+            const indicator = document.getElementById('htmx-loading');
+            if (indicator) {
+                indicator.style.display = 'block';
+            }
+        });
+        
+        // Hide loading indicator after HTMX requests
+        document.body.addEventListener('htmx:afterRequest', function(event) {
+            const indicator = document.getElementById('htmx-loading');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        });
+        
+        // Handle HTMX errors
+        document.body.addEventListener('htmx:responseError', function(event) {
+            const indicator = document.getElementById('htmx-loading');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+            
+            // Show error toast
+            showToast('An error occurred. Please try again.', 'error');
+        });
+        
+        // Toast notification helper
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-top toast-center z-50';
+            toast.innerHTML = `
+                <div role="alert" class="alert alert-${type} shadow-lg">
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            ensureAlertRoles(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+        
+        // Close mobile drawer on navigation
+        document.addEventListener('htmx:afterSwap', function(event) {
+            const drawer = document.getElementById('main-drawer');
+            if (drawer && drawer.checked) {
+                drawer.checked = false;
+            }
+        });
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+
+

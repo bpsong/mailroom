@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Register Package - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-2xl">
+    <div class="mb-6">
+        <a href="/packages" class="btn btn-ghost btn-sm">
+            ← Back to Packages
+        </a>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">➕ Register New Package</h2>
+
+            <!-- Error Display -->
+            <div id="error-message" class="hidden mb-4">
+                <div role="alert" class="alert alert-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="error-text"></span>
+                </div>
+            </div>
+
+            <form 
+                method="POST" 
+                action="/packages/new" 
+                enctype="multipart/form-data"
+                id="register-package-form"
+        >
+            {{ csrf_input()|safe }}
+                <!-- Tracking Number -->
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Tracking Number <span class="text-error">*</span></span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="tracking_no" 
+                        placeholder="Enter tracking number" 
+                        class="input input-bordered w-full" 
+                        required 
+                        maxlength="100"
+                        inputmode="text"
+                        autocomplete="off"
+                    />
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/70">Max 100 characters</span>
+                    </label>
+                </div>
+
+                <!-- Carrier -->
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text">Carrier <span class="text-error">*</span></span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="carrier" 
+                        placeholder="e.g., UPS, FedEx, USPS, DHL" 
+                        class="input input-bordered w-full" 
+                        required 
+                        maxlength="100"
+                    />
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/70">Max 100 characters</span>
+                    </label>
+                </div>
+
+                <!-- Recipient (Autocomplete) -->
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text">Recipient <span class="text-error">*</span></span>
+                    </label>
+                    <div id="selected-recipient" class="mb-2"></div>
+                    <input 
+                        type="text" 
+                        id="recipient-search"
+                        name="q"
+                        placeholder="Search by name, email, or employee ID" 
+                        class="input input-bordered w-full"
+                        autocomplete="off"
+                        maxlength="100"
+                        hx-get="/recipients/search"
+                        hx-trigger="keyup changed delay:300ms"
+                        hx-target="#recipient-results"
+                    />
+                    <input 
+                        type="hidden" 
+                        name="recipient_id" 
+                        id="recipient-id"
+                        required 
+                    />
+                    <div id="recipient-results" class="mt-2"></div>
+                </div>
+
+                <!-- Notes -->
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text">Notes (Optional)</span>
+                    </label>
+                    <textarea 
+                        name="notes" 
+                        placeholder="Additional notes about the package" 
+                        class="textarea textarea-bordered h-24"
+                        maxlength="500"
+                    ></textarea>
+                    <label class="label">
+                        <span class="label-text-alt">Max 500 characters</span>
+                    </label>
+                </div>
+
+                <!-- Photo Upload -->
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text">Package Photo (Optional)</span>
+                    </label>
+                    <input 
+                        type="file" 
+                        name="photo" 
+                        id="photo-upload"
+                        accept="image/*" 
+                        capture="environment"
+                        class="file-input file-input-bordered w-full" 
+                    />
+                    <label class="label">
+                        <span class="label-text-alt" id="photo-size-info">Max 5MB. Formats: JPEG, PNG, WebP</span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-control mt-6">
+                    <button type="submit" class="btn btn-primary btn-block min-h-touch" id="submit-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        Register Package
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Handle form submission
+    document.getElementById('register-package-form')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const formData = new FormData(form);
+        const errorDiv = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        // Validate recipient is selected
+        if (!formData.get('recipient_id')) {
+            errorText.textContent = 'Please select a recipient';
+            errorDiv.classList.remove('hidden');
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        
+        errorDiv.classList.add('hidden');
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+        
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                redirect: 'manual'
+            });
+            
+            if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+                window.location.href = '/packages';
+            } else if (response.ok) {
+                window.location.href = '/packages';
+            } else if (!response.ok) {
+                const data = await response.json();
+                errorText.textContent = data.detail || 'Failed to register package';
+                errorDiv.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } catch (error) {
+            errorText.textContent = 'An unexpected error occurred. Please try again.';
+            errorDiv.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+        }
+    });
+
+    // Handle recipient selection clicks (HTMX loads the results)
+    document.body.addEventListener('click', function(e) {
+        const recipientItem = e.target.closest('[data-recipient-id]');
+        if (recipientItem) {
+            const recipientId = recipientItem.getAttribute('data-recipient-id');
+            const recipientName = recipientItem.getAttribute('data-recipient-name');
+            const recipientEmail = recipientItem.getAttribute('data-recipient-email');
+            
+            // Set hidden field value
+            document.getElementById('recipient-id').value = recipientId;
+            
+            // Clear search input and results
+            document.getElementById('recipient-search').value = '';
+            document.getElementById('recipient-results').innerHTML = '';
+            
+            // Show selected recipient
+            document.getElementById('selected-recipient').innerHTML = `
+                <div role="alert" class="alert alert-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <strong>${recipientName}</strong><br>
+                        <span class="text-sm">${recipientEmail}</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-ghost" onclick="clearRecipient()">✕</button>
+                </div>
+            `;
+        }
+    });
+
+    function clearRecipient() {
+        document.getElementById('recipient-id').value = '';
+        document.getElementById('selected-recipient').innerHTML = '';
+    }
+
+    // File size validation
+    document.getElementById('photo-upload')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const sizeInfo = document.getElementById('photo-size-info');
+        
+        if (file) {
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            
+            if (file.size > maxSize) {
+                sizeInfo.textContent = `File too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Max 5MB.`;
+                sizeInfo.className = 'label-text-alt text-error';
+                this.value = ''; // Clear the file input
+                
+                // Show alert
+                const errorDiv = document.getElementById('error-message');
+                const errorText = document.getElementById('error-text');
+                errorText.textContent = 'Photo file size must be less than 5MB. Please select a smaller file.';
+                errorDiv.classList.remove('hidden');
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                sizeInfo.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+                sizeInfo.className = 'label-text-alt text-success';
+            }
+        } else {
+            sizeInfo.textContent = 'Max 5MB. Formats: JPEG, PNG, WebP';
+            sizeInfo.className = 'label-text-alt';
+        }
+    });
+</script>
+{% endblock %}

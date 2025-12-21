@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Packages - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-7xl pb-24">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">📦 Packages</h1>
+        <a href="/packages/new" class="btn btn-primary">
+            ➕ Register Package
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <form method="GET" action="/packages" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Search Query -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Search</span>
+                    </label>
+                    <input type="search" name="query" value="{{ filters.query or '' }}"
+                        placeholder="Tracking # or recipient name" class="input input-bordered w-full" maxlength="100"
+                        hx-get="/packages" hx-trigger="keyup changed delay:500ms" hx-target="#package-list"
+                        hx-select="#package-list"
+                        hx-include="[name='status'], [name='department'], [name='date_from'], [name='date_to']" />
+                </div>
+
+                <!-- Status Filter -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Status</span>
+                    </label>
+                    <select name="status" class="select select-bordered w-full" hx-get="/packages" hx-trigger="change"
+                        hx-target="#package-list" hx-select="#package-list"
+                        hx-include="[name='query'], [name='department'], [name='date_from'], [name='date_to']">
+                        <option value="">All Statuses</option>
+                        <option value="registered" {% if filters.status=='registered' %}selected{% endif %}>Registered
+                        </option>
+                        <option value="awaiting_pickup" {% if filters.status=='awaiting_pickup' %}selected{% endif %}>
+                            Awaiting Pickup</option>
+                        <option value="out_for_delivery" {% if filters.status=='out_for_delivery' %}selected{% endif %}>
+                            Out for Delivery</option>
+                        <option value="delivered" {% if filters.status=='delivered' %}selected{% endif %}>Delivered
+                        </option>
+                        <option value="returned" {% if filters.status=='returned' %}selected{% endif %}>Returned
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Department Filter -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Department</span>
+                    </label>
+                    <input type="text" name="department" value="{{ filters.department or '' }}" placeholder="Department"
+                        class="input input-bordered w-full" maxlength="100" />
+                </div>
+
+                <!-- Date Range -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Date From</span>
+                    </label>
+                    <input type="date" name="date_from" value="{{ filters.date_from or '' }}"
+                        class="input input-bordered w-full" />
+                </div>
+
+                <div class="form-control lg:col-span-4">
+                    <button type="submit" class="btn btn-primary">
+                        🔍 Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Package List -->
+    <div id="package-list" class="pb-40">
+        {% if packages %}
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr>
+                        <th>Tracking #</th>
+                        <th>Carrier</th>
+                        <th>Recipient</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for package in packages %}
+                    <tr>
+                        <td class="font-mono">{{ package.tracking_no }}</td>
+                        <td>{{ package.carrier }}</td>
+                        <td>{{ package.recipient_name }}</td>
+                        <td>{{ package.recipient_department or '-' }}</td>
+                        <td>
+                            {% if package.status == 'registered' %}
+                            <span class="badge badge-neutral">Registered</span>
+                            {% elif package.status == 'awaiting_pickup' %}
+                            <span class="badge badge-warning">Awaiting Pickup</span>
+                            {% elif package.status == 'out_for_delivery' %}
+                            <span class="badge badge-info">Out for Delivery</span>
+                            {% elif package.status == 'delivered' %}
+                            <span class="badge badge-success">Delivered</span>
+                            {% elif package.status == 'returned' %}
+                            <span class="badge badge-error">Returned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ package.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <div class="flex items-center gap-2 justify-end">
+                                <a href="/packages/{{ package.id }}" class="btn btn-sm btn-ghost">
+                                    View
+                                </a>
+                                {% set flip_dropdown = loop.last or (loop.revindex == 2 and loop.length >= 3) %}
+                                <div
+                                    class="dropdown dropdown-start qr-dropdown {% if flip_dropdown %}dropdown-top{% endif %}">
+                                    <label tabindex="0" role="button"
+                                        class="btn btn-sm btn-ghost border border-base-300"
+                                        aria-label="QR code actions for {{ package.tracking_no }}">
+                                        QR Actions
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            class="h-4 w-4 stroke-current">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </label>
+                                    <ul tabindex="0"
+                                        class="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-48 max-h-none overflow-visible space-y-1">
+                                        <li>
+                                            <a href="/packages/{{ package.id }}/qrcode/download"
+                                                class="flex items-center gap-2" download>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                    class="h-4 w-4 stroke-current">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5m-5-5v10" />
+                                                </svg>
+                                                Download QR Code
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="/packages/{{ package.id }}/qrcode/print" target="_blank"
+                                                rel="noopener noreferrer" class="flex items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                    class="h-4 w-4 stroke-current">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M6 9V4h12v5m2 2h-2v6H6v-6H4m16 0H4m4 6v3h8v-3" />
+                                                </svg>
+                                                Print QR Code
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="lg:hidden space-y-4">
+            {% for package in packages %}
+            <div class="card bg-base-100 shadow-xl package-card">
+                <div class="card-body">
+                    <div class="flex justify-between items-start">
+                        <h2 class="card-title text-lg">{{ package.tracking_no }}</h2>
+                        {% if package.status == 'registered' %}
+                        <span class="badge badge-neutral">Registered</span>
+                        {% elif package.status == 'awaiting_pickup' %}
+                        <span class="badge badge-warning">Awaiting Pickup</span>
+                        {% elif package.status == 'out_for_delivery' %}
+                        <span class="badge badge-info">Out for Delivery</span>
+                        {% elif package.status == 'delivered' %}
+                        <span class="badge badge-success">Delivered</span>
+                        {% elif package.status == 'returned' %}
+                        <span class="badge badge-error">Returned</span>
+                        {% endif %}
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <p><strong>Carrier:</strong> {{ package.carrier }}</p>
+                        <p><strong>Recipient:</strong> {{ package.recipient_name }}</p>
+                        {% if package.recipient_department %}
+                        <p><strong>Department:</strong> {{ package.recipient_department }}</p>
+                        {% endif %}
+                        <p><strong>Created:</strong> {{ package.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+                    <div class="card-actions flex flex-col sm:flex-row gap-2 justify-end mt-4">
+                        <a href="/packages/{{ package.id }}" class="btn btn-primary btn-sm w-full sm:w-auto">
+                            View Details
+                        </a>
+                        {% set flip_dropdown = loop.last or (loop.revindex == 2 and loop.length >= 3) %}
+                        <div
+                            class="dropdown dropdown-end qr-dropdown w-full sm:w-auto {% if flip_dropdown %}dropdown-top{% endif %}">
+                            <label tabindex="0" role="button" class="btn btn-outline btn-sm w-full sm:w-auto"
+                                aria-label="QR code actions for {{ package.tracking_no }}">
+                                QR Actions
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    class="h-4 w-4 stroke-current">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="m6 9 6 6 6-6" />
+                                </svg>
+                            </label>
+                            <ul tabindex="0"
+                                class="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 max-h-none overflow-visible space-y-1">
+                                <li>
+                                    <a href="/packages/{{ package.id }}/qrcode/download" class="py-2">
+                                        Download QR Code
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/packages/{{ package.id }}/qrcode/print" target="_blank"
+                                        rel="noopener noreferrer" class="py-2">
+                                        Print QR Code
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+
+        <!-- Pagination -->
+        {% if pagination.total_pages > 1 %}
+        <div class="flex justify-center mt-6">
+            <div class="join">
+                {% if pagination.page > 1 %}
+                <a href="?page={{ pagination.page - 1 }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+                    class="join-item btn">«</a>
+                {% endif %}
+
+                {% for p in range(1, pagination.total_pages + 1) %}
+                {% if p == pagination.page %}
+                <button class="join-item btn btn-active">{{ p }}</button>
+                {% elif p == 1 or p == pagination.total_pages or (p >= pagination.page - 2 and p <= pagination.page + 2)
+                    %} <a
+                    href="?page={{ p }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+                    class="join-item btn">{{ p }}</a>
+                    {% elif p == pagination.page - 3 or p == pagination.page + 3 %}
+                    <button class="join-item btn btn-disabled">...</button>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.page < pagination.total_pages %} <a
+                        href="?page={{ pagination.page + 1 }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+                        class="join-item btn">»</a>
+                        {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="text-center text-sm text-base-content/70 mt-12">
+            Showing {{ packages|length }} of {{ pagination.total_count }} packages
+        </div>
+        {% else %}
+        <div role="alert" class="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                class="stroke-info shrink-0 w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>No packages found. Try adjusting your search filters.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Mailroom Tracking System{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-base-200 px-4">
+    <div class="card w-full max-w-md bg-base-100 shadow-xl">
+        <div class="card-body">
+            <!-- Logo/Header -->
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-primary">Mailroom Tracking</h1>
+                <p class="text-base-content/70 mt-2">Sign in to your account</p>
+            </div>
+
+            <!-- Error Message -->
+            {% if error %}
+            <div role="alert" class="alert alert-error mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="POST" action="/auth/login" class="space-y-4">
+                {{ csrf_input() }}
+                
+                <!-- Hidden next parameter -->
+                {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
+                
+                <!-- Username Field -->
+                <div class="form-control">
+                    <label class="label" for="username">
+                        <span class="label-text font-medium">Username</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username"
+                    name="username" 
+                    placeholder="Enter your username" 
+                    class="input input-bordered w-full" 
+                    required 
+                    autofocus
+                    autocomplete="username"
+                    maxlength="50"
+                />
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-control">
+                    <label class="label" for="password">
+                        <span class="label-text font-medium">Password</span>
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password"
+                        name="password" 
+                        placeholder="Enter your password" 
+                        class="input input-bordered w-full" 
+                        required
+                        autocomplete="current-password"
+                    />
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-control mt-6">
+                    <button type="submit" class="btn btn-primary w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        Sign In
+                    </button>
+                </div>
+            </form>
+
+            <!-- Additional Info -->
+            <div class="divider"></div>
+            <div class="text-center text-sm text-base-content/60">
+                <p>For assistance, contact your system administrator</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container for Messages -->
+<div id="toast-container" class="toast toast-top toast-end"></div>
+
+<script>
+    // Handle form submission with better error handling
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        
+        // Disable button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Signing in...';
+        
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                // Redirect to the URL specified in the response
+                window.location.href = data.redirect_url || '/dashboard';
+            } else {
+                // Show error message
+                showToast(data.detail || 'Login failed. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        } catch (error) {
+            showToast('An error occurred. Please try again.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+    
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} shadow-lg`;
+        toast.innerHTML = `
+            <div>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        const container = document.getElementById('toast-container');
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+</script>
+{% endblock %}

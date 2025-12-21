@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Import Recipients - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Import Recipients</h1>
+            <p class="text-base-content/70 mt-1">Bulk import recipients from CSV file</p>
+        </div>
+        <a href="/admin/recipients" class="btn btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Recipients
+        </a>
+    </div>
+
+    <!-- Instructions -->
+    <div role="alert" class="alert alert-info">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div>
+            <h3 class="font-bold">CSV Format Requirements</h3>
+            <div class="text-sm mt-1">
+                <p>Required columns: <strong>employee_id, name, email, department</strong></p>
+                <p>Optional columns: <strong>phone, location</strong></p>
+                <p>Maximum 1000 rows per file</p>
+                <p>Existing recipients (by employee_id) will be updated</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Upload CSV File</h2>
+            
+            <div id="upload-area" class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                <input type="file" id="csv-file" accept=".csv" class="file-input file-input-bordered file-input-primary w-full max-w-xs" />
+                <p class="mt-4 text-sm text-base-content/70">Select a CSV file or drag and drop</p>
+            </div>
+
+            <div id="validation-results" class="hidden mt-4">
+                <!-- Validation results will be shown here -->
+            </div>
+
+            <div id="import-actions" class="hidden card-actions justify-end mt-4">
+                <button type="button" class="btn btn-ghost" onclick="resetImport()">Cancel</button>
+                <button type="button" id="confirm-import-btn" class="btn btn-primary" onclick="confirmImport()">Confirm Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sample CSV Template -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Sample CSV Template</h2>
+            <div class="mockup-code">
+                <pre><code>employee_id,name,email,department,phone,location
+EMP001,John Doe,john.doe@company.com,Engineering,555-0101,Building A
+EMP002,Jane Smith,jane.smith@company.com,Marketing,555-0102,Building B
+EMP003,Bob Johnson,bob.johnson@company.com,Sales,,Building C</code></pre>
+            </div>
+            <p class="text-sm text-base-content/70 mt-2">Copy this template and fill in your recipient data</p>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<dialog id="success-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Import Successful!</h3>
+        <div class="py-4">
+            <div role="alert" class="alert alert-success">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div id="success-message"></div>
+            </div>
+        </div>
+        <div class="modal-action">
+            <a href="/admin/recipients" class="btn btn-primary">View Recipients</a>
+        </div>
+    </div>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let validatedFile = null;
+
+function getCsrfTokenValue() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.content : '';
+}
+
+// Drag and drop functionality
+const uploadArea = document.getElementById('upload-area');
+const fileInput = document.getElementById('csv-file');
+
+// Click to select file
+uploadArea.addEventListener('click', function(e) {
+    if (e.target !== fileInput) {
+        fileInput.click();
+    }
+});
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Highlight drop area when dragging over it
+['dragenter', 'dragover'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    uploadArea.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+}
+
+function unhighlight(e) {
+    uploadArea.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+}
+
+// Handle dropped files
+uploadArea.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        fileInput.files = files;
+        // Trigger change event
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+    }
+}
+
+document.getElementById('csv-file').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Show loading
+    const resultsDiv = document.getElementById('validation-results');
+    resultsDiv.innerHTML = '<div class="loading loading-spinner loading-lg"></div>';
+    resultsDiv.classList.remove('hidden');
+    
+    // Validate file
+    const formData = new FormData();
+    formData.append('file', file);
+    const csrfToken = getCsrfTokenValue();
+    if (csrfToken) {
+        formData.append('csrf_token', csrfToken);
+    }
+    
+    try {
+        const response = await fetch('/admin/recipients/import/validate', {
+            method: 'POST',
+            headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success validation
+            resultsDiv.innerHTML = `
+                <div role="alert" class="alert alert-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div>
+                        <h3 class="font-bold">Validation Passed</h3>
+                        <p class="text-sm">Found ${data.valid_count} valid recipients (${data.result.total_rows} total rows)</p>
+                    </div>
+                </div>
+            `;
+            validatedFile = file;
+            document.getElementById('import-actions').classList.remove('hidden');
+        } else {
+            // Show validation errors
+            let errorsHtml = '<div role="alert" class="alert alert-error"><div><h3 class="font-bold">Validation Errors</h3><ul class="text-sm mt-2 list-disc list-inside">';
+            data.result.errors.forEach(error => {
+                errorsHtml += `<li>Row ${error.row}, ${error.field}: ${error.message}</li>`;
+            });
+            errorsHtml += '</ul></div></div>';
+            resultsDiv.innerHTML = errorsHtml;
+            document.getElementById('import-actions').classList.add('hidden');
+        }
+    } catch (error) {
+        resultsDiv.innerHTML = `
+            <div role="alert" class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span>Error validating file: ${error.message}</span>
+            </div>
+        `;
+        document.getElementById('import-actions').classList.add('hidden');
+    }
+});
+
+async function confirmImport() {
+    if (!validatedFile) return;
+    
+    // Show loading
+    const btn = document.getElementById('confirm-import-btn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    
+    // Import file
+    const formData = new FormData();
+    formData.append('file', validatedFile);
+    const csrfToken = getCsrfTokenValue();
+    if (csrfToken) {
+        formData.append('csrf_token', csrfToken);
+    }
+    
+    try {
+        const response = await fetch('/admin/recipients/import/confirm', {
+            method: 'POST',
+            headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success modal
+            document.getElementById('success-message').innerHTML = `
+                <div>
+                    <p>Created: ${data.result.created_count} recipients</p>
+                    <p>Updated: ${data.result.updated_count} recipients</p>
+                    <p>Total: ${data.result.total_rows} rows processed</p>
+                </div>
+            `;
+            document.getElementById('success-modal').showModal();
+        } else {
+            alert('Import failed. Please try again.');
+        }
+    } catch (error) {
+        alert('Error importing file: ' + error.message);
+    } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+    }
+}
+
+function resetImport() {
+    document.getElementById('csv-file').value = '';
+    document.getElementById('validation-results').classList.add('hidden');
+    document.getElementById('import-actions').classList.add('hidden');
+    validatedFile = null;
+}
+</script>
+{% endblock %}

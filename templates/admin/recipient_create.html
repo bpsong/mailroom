@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Add Recipient - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Add Recipient</h1>
+            <p class="text-base-content/70 mt-1">Create a new recipient record</p>
+        </div>
+        <a href="/admin/recipients" class="btn btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Recipients
+        </a>
+    </div>
+
+    <!-- Create Form -->
+    <div class="card bg-base-100 shadow-xl max-w-2xl">
+        <div class="card-body">
+            <!-- Error Display -->
+            <div id="error-message" class="hidden">
+                <div role="alert" class="alert alert-error mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="error-text"></span>
+                </div>
+            </div>
+            
+            <form method="POST" action="/admin/recipients/new" class="space-y-4" id="create-recipient-form">
+                {{ csrf_input()|safe }}
+                <!-- Employee ID -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Employee ID <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" name="employee_id" placeholder="Enter employee ID" class="input input-bordered" required maxlength="50" />
+                    <label class="label">
+                        <span class="label-text-alt">Unique identifier for the employee</span>
+                    </label>
+                </div>
+
+                <!-- Name -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Full Name <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" name="name" placeholder="Enter full name" class="input input-bordered" required maxlength="100" />
+                </div>
+
+                <!-- Email -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Email <span class="text-error">*</span></span>
+                    </label>
+                    <input type="email" name="email" id="email-input" placeholder="Enter email address" class="input input-bordered" required />
+                    <label class="label">
+                        <span class="label-text-alt" id="email-validation"></span>
+                    </label>
+                </div>
+
+                <!-- Department -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Department <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" name="department" placeholder="Enter department" class="input input-bordered" maxlength="100" required />
+                </div>
+
+                <!-- Phone -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Phone</span>
+                    </label>
+                    <input type="tel" name="phone" placeholder="Enter phone number" class="input input-bordered" maxlength="20" />
+                </div>
+
+                <!-- Location -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Location</span>
+                    </label>
+                    <input type="text" name="location" placeholder="Enter office location" class="input input-bordered" maxlength="100" />
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="card-actions justify-end mt-6">
+                    <a href="/admin/recipients" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-primary" id="submit-btn">Create Recipient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Handle form submission with error display
+document.getElementById('create-recipient-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const errorDiv = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    // Hide previous errors
+    errorDiv.classList.add('hidden');
+    
+    // Disable submit button and show loading state
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            redirect: 'manual'  // Don't follow redirects automatically
+        });
+        
+        // Check if it's a redirect (3xx status)
+        if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+            // Success - redirect to recipients list
+            window.location.href = '/admin/recipients';
+        } else if (response.ok) {
+            // Also treat 200 OK as success (shouldn't happen but just in case)
+            window.location.href = '/admin/recipients';
+        } else {
+            // Error - show message
+            const data = await response.json();
+            errorText.textContent = data.detail || 'Failed to create recipient';
+            errorDiv.classList.remove('hidden');
+            
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+            
+            // Scroll to error
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    } catch (error) {
+        errorText.textContent = 'An unexpected error occurred. Please try again.';
+        errorDiv.classList.remove('hidden');
+        
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+    }
+});
+
+// Real-time email validation
+document.getElementById('email-input')?.addEventListener('input', function(e) {
+    const email = e.target.value;
+    const validationMsg = document.getElementById('email-validation');
+    
+    if (email.length === 0) {
+        validationMsg.textContent = '';
+        validationMsg.className = 'label-text-alt';
+        return;
+    }
+    
+    // Simple email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isValid = emailRegex.test(email);
+    
+    if (isValid) {
+        validationMsg.textContent = '✓ Valid email format';
+        validationMsg.className = 'label-text-alt text-success';
+        e.target.classList.remove('input-error');
+        e.target.classList.add('input-success');
+    } else {
+        validationMsg.textContent = '✗ Invalid email format';
+        validationMsg.className = 'label-text-alt text-error';
+        e.target.classList.remove('input-success');
+        e.target.classList.add('input-error');
+    }
+});
+</script>
+{% endblock %}

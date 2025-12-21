@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Recipient Management - Mailroom Tracking{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Recipient Management</h1>
+            <p class="text-base-content/70 mt-1">Manage employees who receive packages</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/admin/recipients/import" class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Import CSV
+            </a>
+            <a href="/admin/recipients/new" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Recipient
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <form hx-get="/admin/recipients" hx-target="#recipients-table" hx-trigger="submit, change delay:300ms" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Search</span>
+                    </label>
+                    <input type="text" name="query" placeholder="Name, email, or employee ID..." class="input input-bordered" value="{{ query or '' }}" maxlength="100" />
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Department</span>
+                    </label>
+                    <input type="text" name="department" placeholder="Filter by department..." class="input input-bordered" value="{{ department or '' }}" maxlength="100" />
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Status</span>
+                    </label>
+                    <select name="is_active" class="select select-bordered">
+                        <option value="">All Status</option>
+                        <option value="true" {% if is_active == 'true' %}selected{% endif %}>Active</option>
+                        <option value="false" {% if is_active == 'false' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">&nbsp;</span>
+                    </label>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recipients Table -->
+    <div id="recipients-table" class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recipient in recipients %}
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ recipient.employee_id }}</div>
+                            </td>
+                            <td>{{ recipient.name }}</td>
+                            <td>{{ recipient.email }}</td>
+                            <td>{{ recipient.department or '-' }}</td>
+                            <td>{{ recipient.phone or '-' }}</td>
+                            <td>
+                                {% if recipient.is_active %}
+                                <span class="badge badge-success">Active</span>
+                                {% else %}
+                                <span class="badge badge-ghost">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="dropdown dropdown-end">
+                                    <label tabindex="0" class="btn btn-ghost btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                        </svg>
+                                    </label>
+                                    <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10">
+                                        <li><a href="/admin/recipients/{{ recipient.id }}/edit">✏️ Edit</a></li>
+                                        {% if recipient.is_active %}
+                                        <li><a onclick="confirmDeactivate('{{ recipient.id }}', '{{ recipient.name }}')" class="text-error">🚫 Deactivate</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.total > pagination.limit %}
+            <div class="flex justify-center mt-4">
+                <div class="join">
+                    {% if pagination.offset > 0 %}
+                    <button class="join-item btn" hx-get="/admin/recipients?offset={{ pagination.offset - pagination.limit }}&limit={{ pagination.limit }}" hx-target="#recipients-table">«</button>
+                    {% endif %}
+                    <button class="join-item btn btn-active">Page {{ (pagination.offset // pagination.limit) + 1 }}</button>
+                    {% if pagination.has_more %}
+                    <button class="join-item btn" hx-get="/admin/recipients?offset={{ pagination.offset + pagination.limit }}&limit={{ pagination.limit }}" hx-target="#recipients-table">»</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Confirmation Modal -->
+<dialog id="deactivate-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Confirm Deactivation</h3>
+        <div class="py-4">
+            <div role="alert" class="alert alert-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span>Are you sure you want to deactivate recipient: <strong id="deactivate-name"></strong>?</span>
+            </div>
+            <p class="mt-2 text-sm">This recipient will no longer appear in package registration forms.</p>
+            <p class="mt-1 text-sm font-semibold text-warning">⚠️ Warning: This action cannot be undone. Deactivated recipients cannot be reactivated.</p>
+        </div>
+        <div class="modal-action">
+            <button type="button" class="btn" onclick="document.getElementById('deactivate-modal').close()">Cancel</button>
+            <form id="deactivate-form" method="POST" style="display: inline;">
+                {{ csrf_input()|safe }}
+                <button type="submit" class="btn btn-error">Deactivate</button>
+            </form>
+        </div>
+    </div>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function confirmDeactivate(recipientId, name) {
+    document.getElementById('deactivate-name').textContent = name;
+    document.getElementById('deactivate-form').action = `/admin/recipients/${recipientId}/deactivate`;
+    document.getElementById('deactivate-modal').showModal();
+}
+</script>
+{% endblock %}
