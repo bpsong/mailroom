@@ -36,7 +36,7 @@ Your administrator account has access to additional menu items:
    - Full name
    - Role (Operator, Admin, Super Admin)
    - Status (Active/Inactive)
-   - Last login date
+   - Created date
 
 ### Creating a New User
 
@@ -47,7 +47,6 @@ Your administrator account has access to additional menu items:
    - **Full Name**: User's display name (required)
    - **Role**: Select Operator or Admin (required)
    - **Initial Password**: Temporary password (required, min 12 characters)
-   - **Force Password Change**: Check to require password change on first login (recommended)
 4. Click **Create User**
 
 **Password Requirements**:
@@ -58,7 +57,7 @@ Your administrator account has access to additional menu items:
 - At least one special character (!@#$%^&*)
 
 **Best Practices**:
-- Always check "Force Password Change" for new users
+- New users are automatically required to change password on first login
 - Use a secure temporary password
 - Communicate the temporary password securely (not via email)
 - Verify the username is correct before creating
@@ -84,7 +83,7 @@ Your administrator account has access to additional menu items:
 2. Find the user
 3. Click the **Reset Password** button
 4. Enter a new temporary password
-5. Check **Force Password Change** (recommended)
+5. Keep force-change behavior enabled (default in the system)
 6. Click **Reset Password**
 
 The user will need to change their password on next login if you checked the box.
@@ -102,17 +101,9 @@ When an employee leaves or no longer needs access:
 - The user cannot log in
 - All active sessions are terminated immediately
 - The user's historical data remains in the system
-- You can reactivate the user later if needed
+- Deactivation is currently treated as permanent in the admin UI workflow
 
 **Note**: You cannot deactivate Super Admin accounts or your own account.
-
-### Reactivating a User
-
-1. Click **Users** in the sidebar
-2. Filter to show inactive users
-3. Find the user
-4. Click the **Reactivate** button
-5. Optionally reset their password
 
 ### Searching for Users
 
@@ -181,7 +172,7 @@ When an employee leaves the organization:
 - They won't appear in autocomplete searches for new packages
 - Existing packages remain linked to them
 - Historical data is preserved
-- You can reactivate them later if needed
+- Deactivation is currently treated as permanent in the admin UI workflow
 
 ### Searching for Recipients
 
@@ -367,7 +358,7 @@ As an administrator, monitor these indicators:
 **Active Users**:
 - Check the user list regularly
 - Deactivate accounts for employees who have left
-- Review last login dates to identify inactive accounts
+- Review account status and creation records to identify stale accounts
 
 **Package Volume**:
 - Monitor daily package counts
@@ -399,7 +390,7 @@ As an administrator, monitor these indicators:
 ### Password Management
 
 - Enforce strong passwords for all users
-- Always use "Force Password Change" for new accounts
+- New accounts are forced to change password on first login by default
 - Reset passwords immediately if an account is compromised
 - Never share your administrator password
 
@@ -422,7 +413,7 @@ As an administrator, monitor these indicators:
 ### Onboarding a New Operator
 
 1. Create their user account with role "Operator"
-2. Set a temporary password and check "Force Password Change"
+2. Set a temporary password (force password change is applied automatically)
 3. Provide them with the Operator User Guide
 4. Have them log in and change their password
 5. Verify they can access the system

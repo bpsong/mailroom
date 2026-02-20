@@ -1,248 +1,120 @@
-# Complete API Endpoints Reference
+﻿# Complete API Endpoints Reference
 
 ## Overview
 
-This document provides a complete reference for all API endpoints in the Mailroom Tracking System, organized by functional area.
+This application is primarily an HTML + HTMX web app (not a pure JSON REST API).
 
-**Base URL**: `https://mailroom.company.local`  
-**API Version**: 1.0.0  
-**Authentication**: Session-based (HttpOnly cookies)  
-**Rate Limiting**: Varies by endpoint (see individual endpoints)
+- Base URL: `https://mailroom.company.local`
+- Auth: Session cookie (`session_token`)
+- CSRF: Required for state-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`)
+- Public routes: `/auth/login`, `/auth/logout`, `/me/force-password-change`, `/health`, `/docs`, `/redoc`, `/openapi.json`
 
 ## Endpoint Summary
 
+### Core System
+- `GET /` - Redirect to login page
+- `GET /health` - Health check JSON
+
 ### Authentication
-- `POST /auth/login` - Authenticate user
-- `POST /auth/logout` - End session
-- `GET /me` - Get current user
-- `POST /me/password` - Change own password
+- `GET /auth/login` - Login page
+- `POST /auth/login` - Authenticate user (form post, sets `session_token` cookie)
+- `POST /auth/logout` - Logout (form post, clears session cookie)
+- `GET /auth/me` - Current authenticated user info (JSON)
 
-### Packages
+### User Self-Service (`/me`)
+- `GET /me/profile` - Profile page
+- `GET /me/sessions` - Active sessions page
+- `POST /me/sessions/{session_id}/terminate` - Terminate own session
+- `GET /me/force-password-change` - Forced password change page
+- `POST /me/force-password-change` - Submit forced password change
+- `GET /me/password` - Change password page
+- `POST /me/password` - Submit own password change
+
+### Dashboard
+- `GET /dashboard` - Dashboard page
+
+### Packages (`/packages`)
 - `GET /packages` - List/search packages
+- `GET /packages/new` - Registration form
 - `POST /packages/new` - Register new package
-- `GET /packages/:id` - Get package details
-- `POST /packages/:id/status` - Update package status
-- `POST /packages/:id/photo` - Add photo to package
+- `GET /packages/{package_id}` - Package detail page
+- `POST /packages/{package_id}/status` - Update package status
+- `POST /packages/{package_id}/photo` - Attach photo
+- `GET /packages/{package_id}/qrcode/download` - Download QR PNG
+- `GET /packages/{package_id}/qrcode/print` - Print-friendly QR page
 
-### Recipients
-- `GET /recipients/search` - Autocomplete search
-- `GET /admin/recipients` - List recipients (Admin)
-- `POST /admin/recipients/new` - Create recipient (Admin)
-- `PUT /admin/recipients/:id/edit` - Update recipient (Admin)
-- `POST /admin/recipients/:id/deactivate` - Deactivate recipient (Admin)
-- `POST /admin/recipients/import` - CSV import (Admin)
+### Recipients (`/recipients`)
+- `GET /recipients` - Recipient list page
+- `GET /recipients/search` - Recipient autocomplete (HTML partial or JSON)
 
-### User Management
-- `GET /admin/users` - List users (Admin)
-- `POST /admin/users/new` - Create user (Admin)
-- `PUT /admin/users/:id/edit` - Update user (Admin)
-- `POST /admin/users/:id/deactivate` - Deactivate user (Admin)
-- `POST /admin/users/:id/password` - Reset password (Admin)
+### Admin (`/admin`)
+- `GET /admin/dashboard` - Admin dashboard JSON
 
-### Dashboard & Reports
-- `GET /dashboard` - Dashboard statistics
-- `GET /admin/reports/export` - Export packages CSV (Admin)
+#### Admin Users
+- `GET /admin/users` - User list page
+- `GET /admin/users/new` - Create user page
+- `GET /admin/users/{user_id}/edit` - Edit user page
+- `POST /admin/users/new` - Create user
+- `PUT /admin/users/{user_id}/edit` - Update user
+- `POST /admin/users/{user_id}/deactivate` - Deactivate user
+- `POST /admin/users/{user_id}/password` - Reset user password
 
-### Audit Logs
-- `GET /admin/audit-logs` - View audit logs (Super Admin)
+#### Admin Recipients
+- `GET /admin/recipients` - Recipient list page
+- `GET /admin/recipients/new` - Create recipient page
+- `POST /admin/recipients/new` - Create recipient
+- `GET /admin/recipients/{recipient_id}/edit` - Edit recipient page
+- `POST /admin/recipients/{recipient_id}/edit` - Update recipient
+- `PUT /admin/recipients/{recipient_id}/edit` - Update recipient
+- `POST /admin/recipients/{recipient_id}/deactivate` - Deactivate recipient
+- `GET /admin/recipients/import` - CSV import page
+- `POST /admin/recipients/import/validate` - Validate CSV upload
+- `POST /admin/recipients/import/confirm` - Execute CSV import
 
-### System
-- `GET /health` - Health check (public)
+#### Admin Reports
+- `GET /admin/reports` - Reports page
+- `GET /admin/reports/preview` - Report preview (HTML)
+- `GET /admin/reports/export` - Export packages CSV
 
-## Detailed Endpoint Documentation
+#### Super Admin
+- `GET /admin/settings` - System settings page
+- `POST /admin/settings/qr-base-url` - Update QR base URL
+- `GET /admin/audit-logs` - Audit logs page
 
-See `API_DOCUMENTATION.md` for detailed request/response examples for each endpoint.
+## Access Matrix
 
-## Role-Based Access Control
+| Area | Super Admin | Admin | Operator |
+|---|---|---|---|
+| `/auth/*` | Yes | Yes | Yes |
+| `/me/*` | Yes | Yes | Yes |
+| `/dashboard` | Yes | Yes | Yes |
+| `/packages/*` | Yes | Yes | Yes |
+| `/recipients/*` | Yes | Yes | Yes |
+| `/admin/users/*` | Yes | Limited | No |
+| `/admin/recipients/*` | Yes | Yes | No |
+| `/admin/reports/*` | Yes | Yes | No |
+| `/admin/settings*` | Yes | No | No |
+| `/admin/audit-logs` | Yes | No | No |
 
-| Endpoint Pattern | Super Admin | Admin | Operator |
-|-----------------|-------------|-------|----------|
-| `/auth/*` | ✓ | ✓ | ✓ |
-| `/me/*` | ✓ | ✓ | ✓ |
-| `/dashboard` | ✓ | ✓ | ✓ |
-| `/packages` (view/create/update) | ✓ | ✓ | ✓ |
-| `/recipients/search` | ✓ | ✓ | ✓ |
-| `/admin/recipients/*` | ✓ | ✓ | ✗ |
-| `/admin/users/*` | ✓ | ✓* | ✗ |
-| `/admin/reports/*` | ✓ | ✓ | ✗ |
-| `/admin/audit-logs` | ✓ | ✗ | ✗ |
+`Limited`: Admin can manage operators only.
 
-*Admin can only manage Operator accounts, not other Admins or Super Admin
+## Request/Response Notes
 
-## Status Codes
+- Login (`POST /auth/login`) expects `application/x-www-form-urlencoded` with:
+  - `username`, `password`, `csrf_token`, optional `next`
+- Login response is JSON and sets the `session_token` cookie.
+- Most routes render HTML templates; some admin/actions return redirects or JSON.
+- CSRF token can be sent as form field (`csrf_token`) and/or `X-CSRF-Token` header.
 
-| Code | Meaning | Usage |
-|------|---------|-------|
-| 200 | OK | Successful request |
-| 201 | Created | Resource created successfully |
-| 400 | Bad Request | Invalid request data |
-| 401 | Unauthorized | Not authenticated |
-| 403 | Forbidden | Insufficient permissions |
-| 404 | Not Found | Resource not found |
-| 422 | Unprocessable Entity | Validation error |
-| 423 | Locked | Account locked |
-| 429 | Too Many Requests | Rate limit exceeded |
-| 500 | Internal Server Error | Server error |
+## Deprecated/Not Implemented
 
-## Common Response Formats
+- No WebSocket endpoint is implemented.
+- No `/users` root API (without `/admin`) is implemented.
+- No `DELETE /packages/{id}` endpoint is implemented.
 
-### Success Response
-```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "Operation completed successfully"
-}
-```
+## Related Docs
 
-### Error Response
-```json
-{
-  "detail": "Error message",
-  "code": "ERROR_CODE",
-  "field_errors": {
-    "field_name": ["Error message"]
-  }
-}
-```
-
-### Paginated Response
-```json
-{
-  "items": [ ... ],
-  "total": 100,
-  "skip": 0,
-  "limit": 25,
-  "has_more": true
-}
-```
-
-## Rate Limiting
-
-Rate limits are enforced per endpoint:
-
-- **Login endpoint**: 10 requests/minute per IP
-- **API endpoints**: 100 requests/minute per user
-- **CSV import**: 10 requests/hour per user
-
-Rate limit headers:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1642258800
-```
-
-## CSRF Protection
-
-All state-changing requests (POST, PUT, DELETE) require CSRF token:
-
-1. Token is included in forms automatically
-2. For API calls, retrieve from cookie: `csrf_token`
-3. Include in header: `X-CSRF-Token: <token>`
-
-## Interactive Documentation
-
-FastAPI provides interactive API documentation:
-
-- **Swagger UI**: `https://mailroom.company.local/docs`
-- **ReDoc**: `https://mailroom.company.local/redoc`
-
-These interfaces allow you to:
-- Browse all endpoints
-- View request/response schemas
-- Test endpoints directly
-- Download OpenAPI specification
-
-## Testing Endpoints
-
-### Using cURL
-
-```bash
-# Login
-curl -X POST https://mailroom.company.local/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password"}' \
-  -c cookies.txt
-
-# Get packages (using saved cookies)
-curl -X GET https://mailroom.company.local/packages \
-  -b cookies.txt
-
-# Register package with photo
-curl -X POST https://mailroom.company.local/packages/new \
-  -b cookies.txt \
-  -F "tracking_no=1Z999AA10123456784" \
-  -F "carrier=UPS" \
-  -F "recipient_id=550e8400-e29b-41d4-a716-446655440010" \
-  -F "photo=@package-photo.jpg"
-```
-
-### Using PowerShell
-
-```powershell
-# Login
-$body = @{
-    username = "admin"
-    password = "password"
-} | ConvertTo-Json
-
-$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-$response = Invoke-RestMethod -Uri "https://mailroom.company.local/auth/login" `
-    -Method Post `
-    -Body $body `
-    -ContentType "application/json" `
-    -WebSession $session
-
-# Get packages
-$packages = Invoke-RestMethod -Uri "https://mailroom.company.local/packages" `
-    -Method Get `
-    -WebSession $session
-```
-
-### Using Python
-
-```python
-import requests
-
-# Login
-session = requests.Session()
-response = session.post(
-    "https://mailroom.company.local/auth/login",
-    json={"username": "admin", "password": "password"}
-)
-
-# Get packages
-packages = session.get("https://mailroom.company.local/packages").json()
-
-# Register package
-with open("photo.jpg", "rb") as f:
-    response = session.post(
-        "https://mailroom.company.local/packages/new",
-        data={
-            "tracking_no": "1Z999AA10123456784",
-            "carrier": "UPS",
-            "recipient_id": "550e8400-e29b-41d4-a716-446655440010"
-        },
-        files={"photo": f}
-    )
-```
-
-## Webhooks (Future Feature)
-
-Webhooks are not currently implemented but may be added in future versions to notify external systems of package events.
-
-## API Versioning
-
-Current version: v1 (implicit in all endpoints)
-
-Future versions will be introduced as needed:
-- Breaking changes: New version (v2)
-- Non-breaking changes: Same version with deprecation notices
-
-## Support
-
-For API support:
-- Documentation: This file and `API_DOCUMENTATION.md`
-- Interactive docs: `/docs`
-- Database schema: `DATABASE_SCHEMA.md`
-- Configuration: `CONFIGURATION.md`
+- `docs/API_DOCUMENTATION.md`
+- `docs/CONFIGURATION.md`
+- `docs/SECURITY_IMPLEMENTATION.md`
+- `docs/DATABASE_SCHEMA.md`

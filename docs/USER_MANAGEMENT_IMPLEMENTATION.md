@@ -67,7 +67,7 @@ User self-service routes:
 
 ### 4. UI Templates (daisyUI Components)
 
-All templates use daisyUI 5 components for consistent, accessible UI:
+All templates use daisyUI components for consistent, accessible UI:
 
 #### `templates/admin/users_list.html`
 - User table with zebra striping (`table table-zebra`)
@@ -226,7 +226,7 @@ The user management feature is now complete. The next tasks in the implementatio
 
 ## Notes
 
-- All templates use daisyUI 5 components as specified in the design document
+- All templates use daisyUI components as specified in the design document
 - RBAC enforcement is consistent across all endpoints
 - Password security follows industry best practices
 - Audit logging captures all user management actions

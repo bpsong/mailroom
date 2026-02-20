@@ -536,13 +536,14 @@ LOG_FILE=./logs/mailroom.log
 **Notes**:
 - Parent directory must exist or be creatable
 - Service account must have write permissions
-- Logs are automatically rotated based on LOG_ROTATION setting
+- Main application logging currently uses Python `logging.basicConfig` and does not apply rotation automatically
+- Audit logger uses `LOG_FILE` and performs weekly timed rotation via `TimedRotatingFileHandler`
 
 ---
 
 #### LOG_ROTATION
 
-**Description**: Log file rotation frequency  
+**Description**: Desired log file rotation frequency  
 **Type**: String (enum)  
 **Default**: `weekly`  
 **Valid Values**: `daily`, `weekly`, `monthly`  
@@ -553,21 +554,19 @@ LOG_FILE=./logs/mailroom.log
 LOG_ROTATION=weekly
 ```
 
-**Rotation Behavior**:
-- `daily` - New log file each day (mailroom-YYYYMMDD.log)
-- `weekly` - New log file each week (mailroom-YYYYWW.log)
-- `monthly` - New log file each month (mailroom-YYYYMM.log)
+**Current Implementation Status**:
+- This setting is currently configuration-only for the main app logger
+- Audit logging rotates weekly in code regardless of this value
 
 **Notes**:
-- Old log files are automatically archived
-- Rotation occurs at midnight (local time)
-- Consider disk space when choosing rotation frequency
+- Keep value documented for forward compatibility or custom logging integrations
+- If you need non-weekly rotation now, update logger handler code
 
 ---
 
 #### LOG_RETENTION_DAYS
 
-**Description**: Number of days to retain log files  
+**Description**: Desired number of days to retain log files  
 **Type**: Integer  
 **Default**: `365`  
 **Range**: 30-3650 (1 month - 10 years)  
@@ -579,10 +578,9 @@ LOG_RETENTION_DAYS=365
 ```
 
 **Notes**:
-- Audit logs (auth_events) are retained separately in database
-- Application logs are deleted after retention period
-- Compliance requirements may dictate minimum retention
-- Consider disk space when setting retention period
+- Audit events in DuckDB can be cleaned by service logic/maintenance tasks
+- Automatic deletion of application log files is not enforced by the main logger today
+- Consider disk space and compliance requirements when setting this value
 
 ---
 
