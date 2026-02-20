@@ -244,8 +244,4 @@ Some middleware responses use:
 }
 ```
 
-## Not Implemented
 
-- No WebSocket endpoint (`/ws`) is implemented.
-- No root `/users` API namespace is implemented.
-- No package deletion endpoint is implemented.
