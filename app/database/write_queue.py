@@ -49,6 +49,11 @@ class WriteQueue:
         self.is_running = False
         self.transaction_count = 0
         self.last_checkpoint = datetime.now()
+        # Maximum seconds callers wait for return_result=True operations.
+        # Prevents request handlers from hanging forever if worker fails.
+        self.result_timeout_seconds = float(
+            getattr(settings, "write_queue_result_timeout", 30.0)
+        )
     
     async def start(self) -> None:
         """Start the write queue worker."""
@@ -97,6 +102,15 @@ class WriteQueue:
         Returns:
             Query result if return_result is True, None otherwise
         """
+        # Self-heal if worker stopped/crashed so writes don't queue indefinitely.
+        if (not self.is_running) or (self.worker_task and self.worker_task.done()):
+            logger.warning(
+                "Write queue worker not running (is_running=%s done=%s); restarting",
+                self.is_running,
+                self.worker_task.done() if self.worker_task else None,
+            )
+            await self.start()
+
         if return_result:
             future = asyncio.get_event_loop().create_future()
             operation = WriteOperation(
@@ -105,11 +119,37 @@ class WriteQueue:
                 result_future=future
             )
             await self.queue.put(operation)
-            return await future
+            try:
+                return await asyncio.wait_for(future, timeout=self.result_timeout_seconds)
+            except asyncio.TimeoutError as exc:
+                logger.error(
+                    "WriteQueue timed out waiting for result after %ss; query=%s",
+                    self.result_timeout_seconds,
+                    " ".join(query.split())[:140],
+                )
+                raise TimeoutError(
+                    f"Timed out waiting for write queue result after {self.result_timeout_seconds}s"
+                ) from exc
         else:
             operation = WriteOperation(query=query, params=params)
             await self.queue.put(operation)
             return None
+
+    def _resolve_future_success(self, future: asyncio.Future, value: Any) -> None:
+        """Safely resolve operation future with a result."""
+        try:
+            if not future.done() and not future.cancelled():
+                future.set_result(value)
+        except Exception as exc:
+            logger.warning("Failed setting write queue result future: %s", exc)
+
+    def _resolve_future_error(self, future: asyncio.Future, exc: Exception) -> None:
+        """Safely resolve operation future with an exception."""
+        try:
+            if not future.done() and not future.cancelled():
+                future.set_exception(exc)
+        except Exception as set_exc:
+            logger.warning("Failed setting write queue exception future: %s", set_exc)
     
     async def execute_many(
         self,
@@ -172,9 +212,9 @@ class WriteQueue:
                             try:
                                 # Fetch result before setting future
                                 fetched_result = result.fetchall() if result else None
-                                operation.result_future.set_result(fetched_result)
+                                self._resolve_future_success(operation.result_future, fetched_result)
                             except Exception as e:
-                                operation.result_future.set_exception(e)
+                                self._resolve_future_error(operation.result_future, e)
                         
                         # Call success callback if provided
                         if operation.callback:
@@ -198,7 +238,7 @@ class WriteQueue:
                         
                         # Set exception on future if provided
                         if operation.result_future:
-                            operation.result_future.set_exception(e)
+                            self._resolve_future_error(operation.result_future, e)
                         
                         # Call error callback if provided
                         if operation.error_callback:
