@@ -2,9 +2,13 @@
 
 from datetime import datetime, date
 from typing import Dict, List, Optional
+import logging
 from pydantic import BaseModel
 
 from app.database.connection import get_db
+
+
+logger = logging.getLogger(__name__)
 
 
 class DashboardStats(BaseModel):
@@ -44,14 +48,21 @@ class DashboardService:
         """
         db = get_db()
         with db.get_read_connection() as conn:
+            try:
+                db_version = conn.execute("SELECT version()").fetchone()
+                logger.debug("Dashboard summary using DuckDB version: %s", db_version[0] if db_version else "unknown")
+            except Exception as exc:
+                logger.debug("Could not determine DuckDB version in dashboard summary: %s", exc)
+
             # Get packages registered today
-            packages_today = conn.execute(
-                """
+            packages_today_sql = """
                 SELECT COUNT(*)
                 FROM packages
-                WHERE DATE(created_at) = CURRENT_DATE
+                WHERE CAST(created_at AS DATE) = CURRENT_DATE
                 """
-            ).fetchone()[0]
+            logger.debug("Dashboard SQL [packages_today]: %s", " ".join(packages_today_sql.split()))
+            packages_today_row = conn.execute(packages_today_sql).fetchone()
+            packages_today = packages_today_row[0] if packages_today_row else 0
             
             # Get packages awaiting pickup
             packages_awaiting_pickup = conn.execute(
@@ -60,17 +71,19 @@ class DashboardService:
                 FROM packages
                 WHERE status = 'awaiting_pickup'
                 """
-            ).fetchone()[0]
+            ).fetchone()
+            packages_awaiting_pickup = packages_awaiting_pickup[0] if packages_awaiting_pickup else 0
             
             # Get packages delivered today
-            packages_delivered_today = conn.execute(
-                """
+            packages_delivered_today_sql = """
                 SELECT COUNT(*)
                 FROM packages
                 WHERE status = 'delivered'
-                AND DATE(updated_at) = CURRENT_DATE
+                AND CAST(updated_at AS DATE) = CURRENT_DATE
                 """
-            ).fetchone()[0]
+            logger.debug("Dashboard SQL [packages_delivered_today]: %s", " ".join(packages_delivered_today_sql.split()))
+            packages_delivered_today_row = conn.execute(packages_delivered_today_sql).fetchone()
+            packages_delivered_today = packages_delivered_today_row[0] if packages_delivered_today_row else 0
             
             # Get total packages
             total_packages = conn.execute(
@@ -78,7 +91,8 @@ class DashboardService:
                 SELECT COUNT(*)
                 FROM packages
                 """
-            ).fetchone()[0]
+            ).fetchone()
+            total_packages = total_packages[0] if total_packages else 0
         
         return DashboardStats(
             packages_today=packages_today,

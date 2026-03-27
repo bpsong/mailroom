@@ -199,6 +199,12 @@ class AuthService:
         
         # Enforce max concurrent sessions (configurable, default 3)
         max_sessions = getattr(settings, 'max_concurrent_sessions', 3)
+        logger.debug(
+            "Preparing to create session for user_id=%s active_sessions=%s max_sessions=%s",
+            user_id,
+            len(result),
+            max_sessions,
+        )
         
         if len(result) >= max_sessions:
             # Delete oldest sessions to make room
@@ -206,6 +212,12 @@ class AuthService:
             oldest_session_ids = [row[0] for row in result[:sessions_to_delete]]
             
             write_queue = await get_write_queue()
+            logger.debug(
+                "Session cap exceeded for user_id=%s; deleting %s oldest sessions; queue_depth_before_delete=%s",
+                user_id,
+                len(oldest_session_ids),
+                write_queue.queue.qsize(),
+            )
             for session_id in oldest_session_ids:
                 await write_queue.execute(
                     "DELETE FROM sessions WHERE id = ?",
@@ -215,6 +227,12 @@ class AuthService:
         # Generate new session
         token = self.generate_session_token()
         expires_at = datetime.now() + timedelta(seconds=settings.session_timeout)
+        logger.debug(
+            "Generated session token for user_id=%s token_prefix=%s expires_at=%s",
+            user_id,
+            token[:8],
+            expires_at,
+        )
         
         session_data = SessionCreate(
             user_id=user_id,
@@ -232,6 +250,12 @@ class AuthService:
         """
         
         write_queue = await get_write_queue()
+        logger.debug(
+            "Enqueuing session insert for user_id=%s token_prefix=%s queue_depth_before_insert=%s",
+            user_id,
+            token[:8],
+            write_queue.queue.qsize(),
+        )
         result = await write_queue.execute(
             query,
             [
@@ -243,8 +267,15 @@ class AuthService:
             ],
             return_result=True,
         )
-        
+
         row = result[0]
+        logger.debug(
+            "Session insert completed for user_id=%s session_id=%s token_prefix=%s queue_depth_after_insert=%s",
+            user_id,
+            row[0],
+            token[:8],
+            write_queue.queue.qsize(),
+        )
         # Verify session is immediately visible to read connections
         try:
             with db.get_read_connection() as conn:
@@ -421,6 +452,8 @@ class AuthService:
         Returns:
             Number of sessions deleted
         """
+        from app.database.connection import get_db
+
         query = "DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP"
         
         try:

@@ -1,6 +1,7 @@
 """Authentication middleware for validating sessions."""
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from fastapi import Request, Response
@@ -8,6 +9,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.services.auth_service import auth_service
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +90,35 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             )
             return RedirectResponse(url="/me/force-password-change", status_code=302)
         
-        # Renew session on activity
-        await auth_service.renew_session(session_token)
+        # Renew session on activity only when close to expiry
+        # to reduce write frequency and avoid unnecessary UPDATE pressure.
+        renew_threshold = timedelta(seconds=settings.session_timeout / 2)
+        try:
+            expires_at = session.expires_at
+            # Handle both timezone-aware and naive datetimes to avoid runtime
+            # errors when subtracting mixed datetime types.
+            if getattr(expires_at, "tzinfo", None) is not None:
+                now = datetime.now(timezone.utc).astimezone(expires_at.tzinfo)
+            else:
+                now = datetime.now()
+
+            remaining = expires_at - now
+            if remaining <= renew_threshold:
+                logger.debug(
+                    "Renewing session token_prefix=%s remaining=%s threshold=%s",
+                    session_token[:8],
+                    remaining,
+                    renew_threshold,
+                )
+                await auth_service.renew_session(session_token)
+        except Exception as exc:
+            # Avoid failing authenticated requests because of non-critical
+            # session renewal calculation/refresh issues.
+            logger.warning(
+                "Session renewal check failed for token_prefix=%s: %s",
+                session_token[:8],
+                exc,
+            )
         
         # Continue to next handler
         response = await call_next(request)

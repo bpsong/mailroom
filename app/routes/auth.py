@@ -96,6 +96,7 @@ async def login(
         ip_address,
         user_agent,
     )
+    logger.debug("Login request next parameter for user '%s': %s", username, next)
     
     # Validate CSRF token
     if not validate_csrf_token(request, csrf_token):
@@ -227,7 +228,17 @@ async def login(
     )
     
     # Determine redirect URL
-    redirect_url = next if next else "/dashboard"
+    # Ignore next parameter if it points to login endpoints to avoid redirect loops/404s
+    if next in {"/login", "/auth/login"}:
+        redirect_url = "/dashboard"
+    else:
+        redirect_url = next if next else "/dashboard"
+    logger.debug(
+        "Resolved post-login redirect for user '%s': next=%s -> redirect_url=%s",
+        username,
+        next,
+        redirect_url,
+    )
     
     # If user must change password, redirect to force password change page
     if user.must_change_password:

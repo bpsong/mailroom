@@ -2,6 +2,7 @@
 
 import asyncio
 import duckdb
+import hashlib
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 from datetime import datetime
@@ -11,13 +12,15 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+QueryParams = tuple[Any, ...] | list[Any] | dict[str, Any] | None
+
 
 @dataclass
 class WriteOperation:
     """Represents a database write operation."""
     
     query: str
-    params: tuple | dict | None
+    params: QueryParams
     callback: Optional[Callable[[Any], None]] = None
     error_callback: Optional[Callable[[Exception], None]] = None
     result_future: Optional[asyncio.Future] = None
@@ -80,7 +83,7 @@ class WriteQueue:
     async def execute(
         self,
         query: str,
-        params: tuple | dict | None = None,
+        params: QueryParams = None,
         return_result: bool = False
     ) -> Any:
         """
@@ -111,7 +114,7 @@ class WriteQueue:
     async def execute_many(
         self,
         query: str,
-        params_list: list[tuple | dict]
+        params_list: list[tuple[Any, ...] | list[Any] | dict[str, Any]]
     ) -> None:
         """
         Execute multiple write operations with the same query.
@@ -135,6 +138,20 @@ class WriteQueue:
                     operation = await asyncio.wait_for(
                         self.queue.get(),
                         timeout=1.0
+                    )
+                    op_started_at = datetime.now().isoformat(timespec="milliseconds")
+                    normalized_query = " ".join(operation.query.split())
+                    params_repr = repr(operation.params)
+                    op_fingerprint = hashlib.sha256(
+                        f"{normalized_query}|{params_repr}".encode("utf-8")
+                    ).hexdigest()[:12]
+                    logger.debug(
+                        "WriteQueue start op=%s ts=%s queue_depth_after_get=%s query=%s params_hash=%s",
+                        op_fingerprint,
+                        op_started_at,
+                        self.queue.qsize(),
+                        normalized_query[:140],
+                        hashlib.sha256(params_repr.encode("utf-8")).hexdigest()[:12],
                     )
                     
                     try:
@@ -162,9 +179,21 @@ class WriteQueue:
                         # Call success callback if provided
                         if operation.callback:
                             operation.callback(result)
+
+                        logger.debug(
+                            "WriteQueue success op=%s queue_depth_after_execute=%s",
+                            op_fingerprint,
+                            self.queue.qsize(),
+                        )
                         
                     except Exception as e:
-                        logger.error(f"Error executing write operation: {e}")
+                        logger.error(
+                            "Error executing write operation op=%s query=%s params=%s error=%s",
+                            op_fingerprint,
+                            normalized_query[:140],
+                            params_repr,
+                            e,
+                        )
                         conn.rollback()
                         
                         # Set exception on future if provided
