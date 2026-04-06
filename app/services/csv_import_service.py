@@ -3,13 +3,14 @@
 import csv
 import io
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Sequence
 from uuid import UUID
 
 from app.models import RecipientCreate, User
 from app.services.recipient_service import recipient_service
 from app.services.audit_service import audit_service
 from app.database.write_queue import get_write_queue
+from app.utils.validation import is_valid_email
 
 
 class ImportValidationError:
@@ -66,13 +67,7 @@ class CSVImportService:
     OPTIONAL_HEADERS = ["phone", "location"]
     MAX_ROWS = 1000
     
-    def _validate_email(self, email: str) -> bool:
-        """Validate email format."""
-        import re
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        return bool(re.match(pattern, email))
-    
-    def _validate_headers(self, headers: List[str]) -> tuple[bool, Optional[str]]:
+    def _validate_headers(self, headers: Sequence[str]) -> tuple[bool, Optional[str]]:
         """
         Validate CSV headers.
         
@@ -135,7 +130,7 @@ class CSVImportService:
         if not email:
             result.add_error(row_number, "email", "Email is required")
             has_errors = True
-        elif not self._validate_email(email):
+        elif not is_valid_email(email):
             result.add_error(row_number, "email", f"Invalid email format: {email}")
             has_errors = True
         
@@ -200,10 +195,10 @@ class CSVImportService:
             if not reader.fieldnames:
                 result.add_error(0, "headers", "CSV file is empty or has no headers")
                 return result, valid_recipients
-            
+
             is_valid, error_msg = self._validate_headers(reader.fieldnames)
             if not is_valid:
-                result.add_error(0, "headers", error_msg)
+                result.add_error(0, "headers", error_msg or "Invalid CSV headers")
                 return result, valid_recipients
             
             # Validate each row

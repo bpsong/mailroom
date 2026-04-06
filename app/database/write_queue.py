@@ -24,6 +24,20 @@ class WriteOperation:
     callback: Optional[Callable[[Any], None]] = None
     error_callback: Optional[Callable[[Exception], None]] = None
     result_future: Optional[asyncio.Future] = None
+    expired: bool = False
+    execution_started: bool = False
+
+    def mark_expired(self) -> None:
+        """Mark the operation as expired for best-effort cancellation."""
+        self.expired = True
+
+    def mark_execution_started(self) -> None:
+        """Mark the operation as having started database execution."""
+        self.execution_started = True
+
+    def should_skip_execution(self) -> bool:
+        """Return True when an expired operation can still be skipped safely."""
+        return self.expired and not self.execution_started
 
 
 class WriteQueue:
@@ -119,10 +133,11 @@ class WriteQueue:
                 within `self.result_timeout_seconds`.
 
         Notes:
-            A timeout does not guarantee the queued operation was cancelled.
-            The worker may still execute and commit the write later because
-            operations are serialized and processed independently from caller
-            request lifetimes.
+            Timeout uses best-effort cancellation semantics. If the worker has
+            not started database execution when the caller wait window expires,
+            the queued operation is skipped. If execution already started,
+            the write may still commit later even though the caller receives a
+            timeout.
         """
         self._ensure_queue_for_current_loop()
 
@@ -146,8 +161,11 @@ class WriteQueue:
             try:
                 return await asyncio.wait_for(future, timeout=self.result_timeout_seconds)
             except asyncio.TimeoutError as exc:
+                operation.mark_expired()
+                if not future.done():
+                    future.cancel()
                 logger.error(
-                    "WriteQueue timed out waiting for result after %ss; query=%s",
+                    "WriteQueue timed out waiting for result after %ss; query=%s; best_effort_cancel=True",
                     self.result_timeout_seconds,
                     " ".join(query.split())[:140],
                 )
@@ -247,6 +265,16 @@ class WriteQueue:
                     )
                     
                     try:
+                        if operation.should_skip_execution():
+                            logger.warning(
+                                "Skipping expired write operation op=%s query=%s",
+                                op_fingerprint,
+                                normalized_query[:140],
+                            )
+                            continue
+
+                        operation.mark_execution_started()
+
                         # Execute the operation
                         if operation.params:
                             result = conn.execute(operation.query, operation.params)

@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.services.recipient_service import recipient_service
+from app.utils.validation import is_valid_email
 
 
 class TestEmailValidation:
@@ -19,7 +19,7 @@ class TestEmailValidation:
         ]
         
         for email in valid_emails:
-            assert recipient_service._validate_email(email) is True
+            assert is_valid_email(email) is True
     
     def test_validate_email_invalid(self):
         """Test validation rejects invalid email addresses."""
@@ -34,18 +34,18 @@ class TestEmailValidation:
         ]
         
         for email in invalid_emails:
-            assert recipient_service._validate_email(email) is False
+            assert is_valid_email(email) is False
     
     def test_validate_email_edge_cases(self):
         """Test email validation edge cases."""
         # Email with numbers
-        assert recipient_service._validate_email("user123@domain456.com") is True
+        assert is_valid_email("user123@domain456.com") is True
         
         # Email with hyphens
-        assert recipient_service._validate_email("user-name@my-domain.com") is True
+        assert is_valid_email("user-name@my-domain.com") is True
         
         # Email with underscores
-        assert recipient_service._validate_email("user_name@domain.com") is True
+        assert is_valid_email("user_name@domain.com") is True
 
 
 if __name__ == "__main__":

@@ -100,6 +100,14 @@ CREATE TABLE IF NOT EXISTS attachments (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- System settings table
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_by TEXT,
+    updated_at TIMESTAMP NOT NULL
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
@@ -168,7 +176,7 @@ def verify_schema(db_path: str) -> bool:
     """
     required_tables = {
         'users', 'sessions', 'auth_events', 'recipients',
-        'packages', 'package_events', 'attachments'
+        'packages', 'package_events', 'attachments', 'system_settings'
     }
     
     conn = duckdb.connect(db_path, read_only=True)

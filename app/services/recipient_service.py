@@ -1,7 +1,6 @@
 """Recipient management service for CRUD operations."""
 
 import json
-import re
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
@@ -16,24 +15,11 @@ from app.models import (
 )
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
+from app.utils.validation import is_valid_email
 
 
 class RecipientService:
     """Service for recipient management operations."""
-    
-    def _validate_email(self, email: str) -> bool:
-        """
-        Validate email format.
-        
-        Args:
-            email: Email address to validate
-            
-        Returns:
-            True if valid, False otherwise
-        """
-        # Basic email validation pattern
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        return bool(re.match(pattern, email))
     
     async def create_recipient(
         self,
@@ -60,7 +46,7 @@ class RecipientService:
             raise ValueError(f"Email '{recipient_data.email}' already exists")
         
         # Validate email format (pydantic EmailStr already validates, but double-check)
-        if not self._validate_email(recipient_data.email):
+        if not is_valid_email(recipient_data.email):
             raise ValueError(f"Invalid email format: {recipient_data.email}")
         
         # Validate department is provided and not empty
@@ -229,7 +215,7 @@ class RecipientService:
             params.append(recipient_data.name)
         
         if recipient_data.email is not None:
-            if not self._validate_email(recipient_data.email):
+            if not is_valid_email(recipient_data.email):
                 raise ValueError(f"Invalid email format: {recipient_data.email}")
             # Check if email already exists (excluding current recipient)
             if await self._email_exists(recipient_data.email, exclude_id=recipient_id):

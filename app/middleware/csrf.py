@@ -1,7 +1,7 @@
 """CSRF protection middleware."""
 
 import secrets
-from typing import Callable
+from typing import Callable, Optional
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -230,7 +230,7 @@ def generate_csrf_token() -> str:
     return secrets.token_urlsafe(32)
 
 
-def validate_csrf_token(request: Request, form_token: str = None) -> bool:
+def validate_csrf_token(request: Request, form_token: Optional[str] = None) -> bool:
     """
     Validate CSRF token from form data.
     

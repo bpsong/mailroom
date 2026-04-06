@@ -4,6 +4,7 @@ import json
 import re
 import secrets
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
@@ -16,6 +17,16 @@ from app.database.write_queue import get_write_queue
 from app.models import User, Session, SessionCreate, AuthEvent, AuthEventCreate
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AuthenticationError(Exception):
+    """Structured authentication failure used by the service layer."""
+
+    status_code: int
+    detail: str
+    reason: str
+    locked_until: Optional[datetime] = None
 
 
 class AuthService:
@@ -161,7 +172,117 @@ class AuthService:
             Secure random token string
         """
         return secrets.token_urlsafe(32)
-    
+
+    async def authenticate_user(
+        self,
+        username: str,
+        password: str,
+        ip_address: Optional[str] = None,
+    ) -> User:
+        """
+        Authenticate a user by username and password.
+
+        Args:
+            username: Username provided by the client
+            password: Plain text password provided by the client
+            ip_address: Client IP address for audit logging
+
+        Returns:
+            Authenticated user object
+
+        Raises:
+            AuthenticationError: If authentication fails for any reason
+        """
+        from app.database.connection import get_db
+
+        is_locked, locked_until = await self.check_account_lockout(username)
+        if is_locked:
+            await self.log_auth_event(
+                event_type="login_failed",
+                username=username,
+                ip_address=ip_address,
+                details=json.dumps({"reason": "account_locked", "locked_until": str(locked_until)}),
+            )
+            raise AuthenticationError(
+                status_code=403,
+                detail=f"Account is locked until {locked_until}. Please try again later.",
+                reason="account_locked",
+                locked_until=locked_until,
+            )
+
+        db = get_db()
+        with db.get_read_connection() as conn:
+            result = conn.execute(
+                """
+                SELECT id, username, password_hash, full_name, role, is_active,
+                       must_change_password, password_history, failed_login_count,
+                       locked_until, created_at, updated_at
+                FROM users
+                WHERE username = ?
+                """,
+                [username],
+            ).fetchone()
+
+        if not result:
+            await self.log_auth_event(
+                event_type="login_failed",
+                username=username,
+                ip_address=ip_address,
+                details=json.dumps({"reason": "invalid_username"}),
+            )
+            raise AuthenticationError(
+                status_code=401,
+                detail="Invalid username or password",
+                reason="invalid_username",
+            )
+
+        user = User(
+            id=result[0],
+            username=result[1],
+            password_hash=result[2],
+            full_name=result[3],
+            role=result[4],
+            is_active=result[5],
+            must_change_password=result[6],
+            password_history=result[7],
+            failed_login_count=result[8],
+            locked_until=result[9],
+            created_at=result[10],
+            updated_at=result[11],
+        )
+
+        if not user.is_active:
+            logger.debug("Inactive user '%s' attempted login", username)
+            await self.log_auth_event(
+                event_type="login_failed",
+                username=username,
+                ip_address=ip_address,
+                details=json.dumps({"reason": "account_inactive"}),
+            )
+            raise AuthenticationError(
+                status_code=403,
+                detail="Account is inactive. Please contact an administrator.",
+                reason="account_inactive",
+            )
+
+        if not self.verify_password(password, user.password_hash):
+            logger.debug("Invalid password for user '%s'", username)
+            await self.increment_failed_login(username)
+            await self.log_auth_event(
+                event_type="login_failed",
+                username=username,
+                ip_address=ip_address,
+                details=json.dumps({"reason": "invalid_password"}),
+            )
+            raise AuthenticationError(
+                status_code=401,
+                detail="Invalid username or password",
+                reason="invalid_password",
+            )
+
+        await self.reset_failed_login(username)
+        return user
+
     async def create_session(
         self,
         user_id: UUID,

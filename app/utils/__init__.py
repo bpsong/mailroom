@@ -6,6 +6,7 @@ from app.utils.template_helpers import (
     csrf_token_value,
     csrf_input,
 )
+from app.utils.validation import is_valid_email
 from app.utils.sanitization import (
     sanitize_filename,
     sanitize_search_query,
@@ -20,6 +21,7 @@ __all__ = [
     "add_csrf_to_context",
     "csrf_token_value",
     "csrf_input",
+    "is_valid_email",
     "sanitize_filename",
     "sanitize_search_query",
     "sanitize_html_input",

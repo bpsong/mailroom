@@ -4,8 +4,9 @@ import pytest
 import json
 from datetime import datetime, timedelta
 from uuid import uuid4
+from types import SimpleNamespace
 
-from app.services.auth_service import auth_service
+from app.services.auth_service import auth_service, AuthenticationError
 from app.config import settings
 
 
@@ -48,6 +49,7 @@ class TestPasswordStrengthValidation:
         is_valid, error_msg = auth_service.validate_password_strength(password)
         
         assert is_valid is False
+        assert error_msg is not None
         assert "at least" in error_msg.lower()
         assert str(settings.password_min_length) in error_msg
     
@@ -57,6 +59,7 @@ class TestPasswordStrengthValidation:
         is_valid, error_msg = auth_service.validate_password_strength(password)
         
         assert is_valid is False
+        assert error_msg is not None
         assert "uppercase" in error_msg.lower()
     
     def test_password_no_lowercase(self):
@@ -65,6 +68,7 @@ class TestPasswordStrengthValidation:
         is_valid, error_msg = auth_service.validate_password_strength(password)
         
         assert is_valid is False
+        assert error_msg is not None
         assert "lowercase" in error_msg.lower()
     
     def test_password_no_digit(self):
@@ -73,6 +77,7 @@ class TestPasswordStrengthValidation:
         is_valid, error_msg = auth_service.validate_password_strength(password)
         
         assert is_valid is False
+        assert error_msg is not None
         assert "digit" in error_msg.lower()
     
     def test_password_no_special_char(self):
@@ -81,6 +86,7 @@ class TestPasswordStrengthValidation:
         is_valid, error_msg = auth_service.validate_password_strength(password)
         
         assert is_valid is False
+        assert error_msg is not None
         assert "special character" in error_msg.lower()
     
     def test_password_valid(self):
@@ -210,6 +216,149 @@ class TestSessionToken:
         # Tokens should be URL-safe
         assert all(c.isalnum() or c in '-_' for c in token1)
         assert all(c.isalnum() or c in '-_' for c in token2)
+
+
+class TestAuthenticateUser:
+    """Test login authentication logic extracted into the service layer."""
+
+    @staticmethod
+    def _patch_db(monkeypatch, row):
+        class FakeCursor:
+            def fetchone(self):
+                return row
+
+        class FakeConnection:
+            def execute(self, query, params):
+                return FakeCursor()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        fake_db = SimpleNamespace(get_read_connection=lambda: FakeConnection())
+        monkeypatch.setattr("app.database.connection.get_db", lambda: fake_db)
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_success(self, monkeypatch):
+        password = "ValidPassword123!"
+        password_hash = auth_service.hash_password(password)
+        user_id = uuid4()
+        now = datetime.now()
+        row = (
+            user_id,
+            "testuser",
+            password_hash,
+            "Test User",
+            "operator",
+            True,
+            False,
+            None,
+            2,
+            None,
+            now,
+            now,
+        )
+
+        self._patch_db(monkeypatch, row)
+
+        reset_calls = []
+
+        async def fake_check_account_lockout(username):
+            return False, None
+
+        async def fake_reset_failed_login(username):
+            reset_calls.append(username)
+
+        monkeypatch.setattr(auth_service, "check_account_lockout", fake_check_account_lockout)
+        monkeypatch.setattr(auth_service, "reset_failed_login", fake_reset_failed_login)
+
+        user = await auth_service.authenticate_user(
+            username="testuser",
+            password=password,
+            ip_address="127.0.0.1",
+        )
+
+        assert user.id == user_id
+        assert user.username == "testuser"
+        assert reset_calls == ["testuser"]
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_invalid_password(self, monkeypatch):
+        password_hash = auth_service.hash_password("ValidPassword123!")
+        now = datetime.now()
+        row = (
+            uuid4(),
+            "testuser",
+            password_hash,
+            "Test User",
+            "operator",
+            True,
+            False,
+            None,
+            0,
+            None,
+            now,
+            now,
+        )
+
+        self._patch_db(monkeypatch, row)
+
+        increment_calls = []
+        log_calls = []
+
+        async def fake_check_account_lockout(username):
+            return False, None
+
+        async def fake_increment_failed_login(username):
+            increment_calls.append(username)
+
+        async def fake_log_auth_event(**kwargs):
+            log_calls.append(kwargs)
+
+        monkeypatch.setattr(auth_service, "check_account_lockout", fake_check_account_lockout)
+        monkeypatch.setattr(auth_service, "increment_failed_login", fake_increment_failed_login)
+        monkeypatch.setattr(auth_service, "log_auth_event", fake_log_auth_event)
+
+        with pytest.raises(AuthenticationError) as exc_info:
+            await auth_service.authenticate_user(
+                username="testuser",
+                password="WrongPassword456!",
+                ip_address="127.0.0.1",
+            )
+
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.reason == "invalid_password"
+        assert increment_calls == ["testuser"]
+        assert log_calls[0]["details"] == json.dumps({"reason": "invalid_password"})
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_invalid_username(self, monkeypatch):
+        self._patch_db(monkeypatch, None)
+
+        log_calls = []
+
+        async def fake_check_account_lockout(username):
+            return False, None
+
+        async def fake_log_auth_event(**kwargs):
+            log_calls.append(kwargs)
+
+        monkeypatch.setattr(auth_service, "check_account_lockout", fake_check_account_lockout)
+        monkeypatch.setattr(auth_service, "log_auth_event", fake_log_auth_event)
+
+        with pytest.raises(AuthenticationError) as exc_info:
+            await auth_service.authenticate_user(
+                username="missing-user",
+                password="Whatever123!",
+                ip_address="127.0.0.1",
+            )
+
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.reason == "invalid_username"
+        assert log_calls[0]["username"] == "missing-user"
+        assert log_calls[0]["details"] == json.dumps({"reason": "invalid_username"})
 
 
 if __name__ == "__main__":

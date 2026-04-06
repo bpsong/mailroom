@@ -8,8 +8,7 @@ from fastapi import APIRouter, Request, Response, Form, HTTPException, status
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 
 from app.templates import templates
-from app.services.auth_service import auth_service
-from app.database.connection import get_db
+from app.services.auth_service import auth_service, AuthenticationError
 from app.middleware.csrf import validate_csrf_token
 from app.config import settings
 
@@ -115,104 +114,14 @@ async def login(
             detail="CSRF token validation failed",
         )
     
-    # Check if account is locked
-    is_locked, locked_until = await auth_service.check_account_lockout(username)
-    if is_locked:
-        # Log failed login attempt
-        await auth_service.log_auth_event(
-            event_type="login_failed",
+    try:
+        user = await auth_service.authenticate_user(
             username=username,
+            password=password,
             ip_address=ip_address,
-            details=json.dumps({"reason": "account_locked", "locked_until": str(locked_until)}),
         )
-        
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Account is locked until {locked_until}. Please try again later.",
-        )
-    
-    # Get user from database
-    db = get_db()
-    with db.get_read_connection() as conn:
-        result = conn.execute(
-            """
-            SELECT id, username, password_hash, full_name, role, is_active,
-                   must_change_password, password_history, failed_login_count,
-                   locked_until, created_at, updated_at
-            FROM users
-            WHERE username = ?
-            """,
-            [username],
-        ).fetchone()
-    
-    if not result:
-        # Log failed login attempt
-        await auth_service.log_auth_event(
-            event_type="login_failed",
-            username=username,
-            ip_address=ip_address,
-            details=json.dumps({"reason": "invalid_username"}),
-        )
-        
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
-    
-    # Parse user data
-    from app.models import User
-    user = User(
-        id=result[0],
-        username=result[1],
-        password_hash=result[2],
-        full_name=result[3],
-        role=result[4],
-        is_active=result[5],
-        must_change_password=result[6],
-        password_history=result[7],
-        failed_login_count=result[8],
-        locked_until=result[9],
-        created_at=result[10],
-        updated_at=result[11],
-    )
-    
-    # Check if user is active
-    if not user.is_active:
-        logger.debug("Inactive user '%s' attempted login", username)
-        # Log failed login attempt
-        await auth_service.log_auth_event(
-            event_type="login_failed",
-            username=username,
-            ip_address=ip_address,
-            details=json.dumps({"reason": "account_inactive"}),
-        )
-        
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive. Please contact an administrator.",
-        )
-    
-    # Verify password
-    if not auth_service.verify_password(password, user.password_hash):
-        logger.debug("Invalid password for user '%s'", username)
-        # Increment failed login counter
-        await auth_service.increment_failed_login(username)
-        
-        # Log failed login attempt
-        await auth_service.log_auth_event(
-            event_type="login_failed",
-            username=username,
-            ip_address=ip_address,
-            details=json.dumps({"reason": "invalid_password"}),
-        )
-        
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
-    
-    # Reset failed login counter
-    await auth_service.reset_failed_login(username)
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     
     # Create session
     session = await auth_service.create_session(

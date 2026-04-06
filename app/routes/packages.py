@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Form, File, UploadFile, HTTPException, Query
+from fastapi import APIRouter, Request, Form, File, UploadFile, HTTPException, Query, status as http_status
 from fastapi.responses import HTMLResponse, Response
 
 from app.templates import templates
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/packages", tags=["packages"])
 async def list_packages(
     request: Request,
     query: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
+    package_status: Optional[str] = Query(None, alias="status"),
     department: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
@@ -71,7 +71,7 @@ async def list_packages(
     # Build filters
     filters = PackageFilters(
         query=query,
-        status=status,
+        status=package_status,
         department=department,
         date_from=date_from_dt,
         date_to=date_to_dt,
@@ -95,7 +95,7 @@ async def list_packages(
             "packages": packages,
             "filters": {
                 "query": query,
-                "status": status,
+                "status": package_status,
                 "department": department,
                 "date_from": date_from,
                 "date_to": date_to,
@@ -166,7 +166,7 @@ async def register_package(
     
     if not validate_csrf_token(request, csrf_token):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="CSRF token validation failed",
         )
     
@@ -252,7 +252,7 @@ async def get_package_details(request: Request, package_id: str):
 async def update_package_status(
     request: Request,
     package_id: str,
-    status: str = Form(...),
+    new_status: str = Form(..., alias="status"),
     notes: Optional[str] = Form(None),
     csrf_token: str = Form(...),
 ):
@@ -274,7 +274,7 @@ async def update_package_status(
     
     if not validate_csrf_token(request, csrf_token):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="CSRF token validation failed",
         )
     
@@ -282,7 +282,7 @@ async def update_package_status(
         package_uuid = UUID(package_id)
         
         status_update = PackageStatusUpdate(
-            status=status,
+            status=new_status,
             notes=notes,
         )
         
@@ -295,7 +295,7 @@ async def update_package_status(
                 "request": request,
                 "user": user,
                 "package": package,
-                "message": f"Status updated to {status}",
+                "message": f"Status updated to {new_status}",
             },
         )
     
@@ -330,7 +330,7 @@ async def add_package_photo(
     
     if not validate_csrf_token(request, csrf_token):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="CSRF token validation failed",
         )
     

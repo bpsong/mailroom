@@ -1,5 +1,6 @@
-"""Database connection management with connection pooling."""
+"""Database connection management with thread-local read connection reuse."""
 
+import threading
 import duckdb
 from contextlib import contextmanager
 from typing import Generator
@@ -9,10 +10,11 @@ from app.config import get_settings
 
 class DatabaseConnection:
     """
-    Database connection manager with connection pooling for reads.
+    Database connection manager with thread-local read connection reuse.
     
     This class manages DuckDB connections with WAL mode enabled for better
-    concurrency. It provides separate connections for read and write operations.
+    concurrency. It provides reusable per-thread read connections and dedicated
+    write connections for write operations.
     """
     
     def __init__(self, db_path: str):
@@ -23,29 +25,32 @@ class DatabaseConnection:
             db_path: Path to the DuckDB database file
         """
         self.db_path = db_path
+        self._local = threading.local()
     
     def _get_read_connection(self) -> duckdb.DuckDBPyConnection:
         """
-        Get a fresh read connection.
+        Get or create the current thread's persistent read connection.
         
         Returns:
             DuckDB connection for read operations
         """
-        return duckdb.connect(self.db_path, read_only=False)
+        conn = getattr(self._local, "read_connection", None)
+
+        if conn is None:
+            conn = duckdb.connect(self.db_path, read_only=False)
+            self._local.read_connection = conn
+
+        return conn
     
     @contextmanager
     def get_read_connection(self) -> Generator[duckdb.DuckDBPyConnection, None, None]:
         """
-        Context manager for read connections.
+        Context manager for the current thread's read connection.
         
         Yields:
             DuckDB connection for read operations
         """
-        conn = self._get_read_connection()
-        try:
-            yield conn
-        finally:
-            conn.close()
+        yield self._get_read_connection()
     
     @contextmanager
     def get_write_connection(self) -> Generator[duckdb.DuckDBPyConnection, None, None]:
@@ -69,8 +74,12 @@ class DatabaseConnection:
             conn.close()
     
     def close(self) -> None:
-        """Close resources (no-op for read connections)."""
-        pass
+        """Close the current thread's persistent read connection, if present."""
+        conn = getattr(self._local, "read_connection", None)
+
+        if conn is not None:
+            conn.close()
+            self._local.read_connection = None
 
 
 # Global database connection instance

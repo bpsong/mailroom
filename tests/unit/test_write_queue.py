@@ -1,0 +1,83 @@
+"""Unit tests for write queue timeout semantics."""
+
+import asyncio
+from typing import cast
+
+import pytest
+
+from app.database.write_queue import WriteOperation, WriteQueue
+
+
+@pytest.mark.asyncio
+async def test_timeout_skips_operation_when_execution_has_not_started():
+    """Timed-out operations are skipped when the worker has not started execution."""
+    queue = WriteQueue("test_mailroom.db")
+    queue.result_timeout_seconds = 0.01
+    captured: dict[str, WriteOperation] = {}
+
+    async def fake_worker() -> None:
+        operation = await queue.queue.get()
+        captured["operation"] = operation
+        await asyncio.sleep(0.03)
+
+        assert operation.should_skip_execution() is True
+
+        queue.queue.task_done()
+
+    async def fake_start() -> None:
+        queue.is_running = True
+        queue.worker_task = asyncio.create_task(fake_worker())
+
+    queue.start = fake_start  # type: ignore[method-assign]
+
+    with pytest.raises(TimeoutError):
+        await queue.execute("INSERT INTO users VALUES (1)", return_result=True)
+
+    assert queue.worker_task is not None
+    await queue.worker_task
+
+    operation = captured["operation"]
+    assert operation.result_future is not None
+    assert operation.expired is True
+    assert operation.execution_started is False
+    assert operation.result_future.cancelled() is True
+
+
+@pytest.mark.asyncio
+async def test_timeout_does_not_interrupt_in_flight_operation_completion():
+    """Timed-out operations may still finish after execution has started."""
+    queue = WriteQueue("test_mailroom.db")
+    queue.result_timeout_seconds = 0.01
+    captured: dict[str, WriteOperation] = {}
+    execution_state = {"completed": False}
+
+    async def fake_worker() -> None:
+        operation = await queue.queue.get()
+        captured["operation"] = operation
+        operation.mark_execution_started()
+
+        await asyncio.sleep(0.03)
+
+        execution_state["completed"] = True
+        assert operation.result_future is not None
+        queue._resolve_future_success(operation.result_future, [("done",)])
+        queue.queue.task_done()
+
+    async def fake_start() -> None:
+        queue.is_running = True
+        queue.worker_task = asyncio.create_task(fake_worker())
+
+    queue.start = fake_start  # type: ignore[method-assign]
+
+    with pytest.raises(TimeoutError):
+        await queue.execute("INSERT INTO users VALUES (1)", return_result=True)
+
+    assert queue.worker_task is not None
+    await queue.worker_task
+
+    operation = cast(WriteOperation, captured["operation"])
+    assert operation.result_future is not None
+    assert operation.expired is True
+    assert operation.execution_started is True
+    assert execution_state["completed"] is True
+    assert operation.result_future.cancelled() is True
