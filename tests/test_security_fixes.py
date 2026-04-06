@@ -2,6 +2,7 @@
 
 import pytest
 from uuid import uuid4
+from typing import cast
 from pydantic import ValidationError
 
 from app.services.auth_service import auth_service
@@ -36,16 +37,16 @@ class TestCSRFProtection:
         request = MockRequest()
         
         # Should fail without cookie token
-        assert validate_csrf_token(request, "some_token") is False
+        assert validate_csrf_token(cast(Request, request), "some_token") is False
         
         # Should fail with mismatched tokens
         request.cookies["csrf_token"] = "cookie_token"
-        assert validate_csrf_token(request, "different_token") is False
+        assert validate_csrf_token(cast(Request, request), "different_token") is False
         
         # Should succeed with matching tokens
         token = "matching_token"
         request.cookies["csrf_token"] = token
-        assert validate_csrf_token(request, token) is True
+        assert validate_csrf_token(cast(Request, request), token) is True
 
 
 class TestSessionLimits:
@@ -55,10 +56,9 @@ class TestSessionLimits:
     They should be run separately with proper database setup.
     """
     
-    @pytest.mark.skip(reason="Requires database setup - run as integration test")
-    async def test_session_limit_enforcement(self):
+    async def test_session_limit_enforcement(self, test_user):
         """Test that session limit is enforced."""
-        user_id = uuid4()
+        user_id = test_user["id"]
         
         # Create 3 sessions (at limit)
         session1 = await auth_service.create_session(
@@ -100,10 +100,9 @@ class TestSessionLimits:
         # Cleanup
         await auth_service.terminate_user_sessions(user_id)
     
-    @pytest.mark.skip(reason="Requires database setup - run as integration test")
-    async def test_multiple_session_evictions(self):
+    async def test_multiple_session_evictions(self, test_user):
         """Test that multiple old sessions are evicted if needed."""
-        user_id = uuid4()
+        user_id = test_user["id"]
         
         # Create 5 sessions (2 over limit)
         sessions = []
@@ -142,11 +141,13 @@ class TestDepartmentRequirement:
         """Test that department is required when creating recipient."""
         # Should fail without department
         with pytest.raises(ValidationError) as exc_info:
-            RecipientCreate(
-                employee_id="EMP001",
-                name="John Doe",
-                email="john@example.com",
-                # department missing
+            RecipientCreate.model_validate(
+                {
+                    "employee_id": "EMP001",
+                    "name": "John Doe",
+                    "email": "john@example.com",
+                    # department missing
+                }
             )
         
         # Verify error is about department field
@@ -162,6 +163,8 @@ class TestDepartmentRequirement:
                 name="John Doe",
                 email="john@example.com",
                 department="",  # Empty string
+                phone=None,
+                location=None,
             )
         
         errors = exc_info.value.errors()
@@ -175,6 +178,8 @@ class TestDepartmentRequirement:
             name="John Doe",
             email="john@example.com",
             department="Engineering",
+            phone=None,
+            location=None,
         )
         
         assert recipient.department == "Engineering"
@@ -191,6 +196,8 @@ class TestDepartmentRequirement:
                 name="John Doe",
                 email="john@example.com",
                 department="   ",  # Only whitespace
+                phone=None,
+                location=None,
             )
         
         errors = exc_info.value.errors()

@@ -19,6 +19,12 @@ from app.main import app
 from app.services.auth_service import auth_service
 
 
+@pytest.fixture
+def anyio_backend():
+    """Use a single AnyIO backend to avoid duplicate test runs."""
+    return "asyncio"
+
+
 @pytest.fixture(scope="session")
 def test_db_path():
     """Create a temporary test database."""
@@ -95,6 +101,7 @@ def test_user(test_db):
             """,
             [username, password_hash, "Test User", "operator", True, False]
         ).fetchone()
+        assert result is not None
         
         conn.commit()
         
@@ -125,6 +132,7 @@ def test_admin(test_db):
             """,
             [username, password_hash, "Test Admin", "admin", True, False]
         ).fetchone()
+        assert result is not None
         
         conn.commit()
         
@@ -153,6 +161,7 @@ def test_recipient(test_db):
             """,
             [employee_id, "Test Recipient", "test@example.com", "Engineering"]
         ).fetchone()
+        assert result is not None
         
         conn.commit()
         
@@ -165,10 +174,55 @@ def test_recipient(test_db):
         conn.close()
 
 
+def _prime_csrf_token(client: TestClient, path: str = "/auth/login") -> str:
+    """Ensure a CSRF token cookie exists for subsequent protected requests."""
+    client.get(path)
+    token = client.cookies.get("csrf_token")
+    assert token, "CSRF token cookie was not set"
+    return token
+
+
+def _login(client: TestClient, username: str, password: str, next_url: str | None = None) -> tuple[dict, str]:
+    """Login user via form workflow and return response payload + current CSRF token."""
+    csrf_token = _prime_csrf_token(client)
+    data = {
+        "username": username,
+        "password": password,
+        "csrf_token": csrf_token,
+    }
+    if next_url:
+        data["next"] = next_url
+
+    response = client.post(
+        "/auth/login",
+        data=data,
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+
+    # CSRF cookie may be refreshed by middleware; always use latest value.
+    csrf_token = client.cookies.get("csrf_token") or csrf_token
+
+    return payload, csrf_token
+
+
 @pytest.fixture
-def client():
+def client(test_db):
     """Create a test client for the FastAPI application."""
     return TestClient(app)
+
+
+@pytest.fixture
+def login_user(client):
+    """Return helper that logs in a user and returns (client, payload, csrf_token)."""
+
+    def _login_user(username: str, password: str, next_url: str | None = None):
+        payload, csrf_token = _login(client, username, password, next_url)
+        return client, payload, csrf_token
+
+    return _login_user
 
 
 @pytest.fixture

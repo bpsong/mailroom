@@ -45,6 +45,7 @@ class WriteQueue:
         self.db_path = db_path
         self.checkpoint_interval = checkpoint_interval
         self.queue: asyncio.Queue[WriteOperation] = asyncio.Queue()
+        self._loop: asyncio.AbstractEventLoop | None = None
         self.worker_task: Optional[asyncio.Task] = None
         self.is_running = False
         self.transaction_count = 0
@@ -57,7 +58,15 @@ class WriteQueue:
     
     async def start(self) -> None:
         """Start the write queue worker."""
-        if self.is_running:
+        self._ensure_queue_for_current_loop()
+
+        if self.worker_task and self.worker_task.done():
+            # Worker task ended (possibly due to event-loop shutdown/crash).
+            # Reset running state so we can start a fresh worker.
+            self.is_running = False
+            self.worker_task = None
+
+        if self.is_running and self.worker_task and not self.worker_task.done():
             logger.warning("Write queue worker is already running")
             return
         
@@ -82,6 +91,8 @@ class WriteQueue:
                 await self.worker_task
             except asyncio.CancelledError:
                 pass
+            finally:
+                self.worker_task = None
         
         logger.info("Write queue worker stopped")
     
@@ -102,6 +113,8 @@ class WriteQueue:
         Returns:
             Query result if return_result is True, None otherwise
         """
+        self._ensure_queue_for_current_loop()
+
         # Self-heal if worker stopped/crashed so writes don't queue indefinitely.
         if (not self.is_running) or (self.worker_task and self.worker_task.done()):
             logger.warning(
@@ -112,7 +125,7 @@ class WriteQueue:
             await self.start()
 
         if return_result:
-            future = asyncio.get_event_loop().create_future()
+            future = asyncio.get_running_loop().create_future()
             operation = WriteOperation(
                 query=query,
                 params=params,
@@ -134,6 +147,34 @@ class WriteQueue:
             operation = WriteOperation(query=query, params=params)
             await self.queue.put(operation)
             return None
+
+    def _ensure_queue_for_current_loop(self) -> None:
+        """Ensure the internal queue is bound to the active event loop."""
+        current_loop = asyncio.get_running_loop()
+        if self._loop is None:
+            self._loop = current_loop
+            return
+
+        if self._loop is current_loop:
+            return
+
+        old_queue = self.queue
+        self.queue = asyncio.Queue()
+        moved = 0
+        while True:
+            try:
+                self.queue.put_nowait(old_queue.get_nowait())
+                moved += 1
+            except asyncio.QueueEmpty:
+                break
+
+        logger.warning(
+            "Write queue event loop changed; rebound queue from %s to %s (moved_ops=%s)",
+            id(self._loop),
+            id(current_loop),
+            moved,
+        )
+        self._loop = current_loop
 
     def _resolve_future_success(self, future: asyncio.Future, value: Any) -> None:
         """Safely resolve operation future with a result."""
@@ -256,6 +297,7 @@ class WriteQueue:
                     continue
         
         finally:
+            self.is_running = False
             conn.close()
     
     async def _check_checkpoint(self, conn: duckdb.DuckDBPyConnection) -> None:

@@ -1,326 +1,379 @@
-"""End-to-end tests for admin workflow."""
+"""End-to-end tests for admin workflow (real route contracts)."""
 
-import pytest
-import io
-from fastapi.testclient import TestClient
 from uuid import uuid4
+import duckdb
+import pytest
 
-from app.main import app
 from app.services.auth_service import auth_service
 
 
-pytestmark = pytest.mark.anyio
+def _login_admin(client, username: str, password: str) -> str:
+    forwarded_for = f"198.51.100.{int(uuid4().hex[:2], 16) % 250 + 1}"
+    headers = {"X-Forwarded-For": forwarded_for}
+
+    client.get("/auth/login", headers=headers)
+    csrf_token = client.cookies.get("csrf_token")
+    assert csrf_token
+
+    response = client.post(
+        "/auth/login",
+        data={
+            "username": username,
+            "password": password,
+            "csrf_token": csrf_token,
+        },
+        headers={"accept": "application/json", **headers},
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    return client.cookies.get("csrf_token") or csrf_token
 
 
 @pytest.fixture
-async def admin_session():
-    """Create admin user and session for E2E tests."""
-    from app.database.write_queue import get_write_queue
-    
-    # Create admin user
+def admin_session(test_db):
     username = f"e2e_admin_{uuid4().hex[:8]}"
     password = "AdminPassword123!"
     password_hash = auth_service.hash_password(password)
-    
-    query = """
-        INSERT INTO users (username, password_hash, full_name, role, is_active, must_change_password)
-        VALUES (?, ?, ?, ?, ?, ?)
-        RETURNING id
-    """
-    
-    write_queue = await get_write_queue()
-    result = await write_queue.execute(
-        query,
-        [username, password_hash, "E2E Admin", "admin", True, False],
-        return_result=True,
-    )
-    
-    user_id = result[0][0]
-    
-    yield {
-        "user_id": user_id,
-        "username": username,
-        "password": password,
-    }
-    
-    # Cleanup
-    await write_queue.execute("DELETE FROM users WHERE id = ?", [str(user_id)])
+
+    conn = duckdb.connect(test_db)
+    try:
+        row = conn.execute(
+            """
+            INSERT INTO users (username, password_hash, full_name, role, is_active, must_change_password)
+            VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING id
+            """,
+            [username, password_hash, "E2E Admin", "admin", True, False],
+        ).fetchone()
+        conn.commit()
+        assert row is not None
+
+        yield {
+            "user_id": row[0],
+            "username": username,
+            "password": password,
+        }
+    finally:
+        conn.close()
+
+
+def _create_operator_user(test_db, suffix: str = ""):
+    username = f"operator_{suffix or uuid4().hex[:8]}"
+    password = "OperatorPass123!"
+    password_hash = auth_service.hash_password(password)
+    conn = duckdb.connect(test_db)
+    try:
+        row = conn.execute(
+            """
+            INSERT INTO users (username, password_hash, full_name, role, is_active, must_change_password)
+            VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING id
+            """,
+            [username, password_hash, "Operator User", "operator", True, False],
+        ).fetchone()
+        conn.commit()
+        assert row is not None
+        return row[0], username
+    finally:
+        conn.close()
 
 
 class TestAdminUserManagement:
-    """Test admin user management workflow."""
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_create_operator(self, admin_session):
-        """
-        Test admin workflow for creating operator:
-        1. Login as admin
-        2. Create new operator user
-        3. Verify operator was created
-        """
-        client = TestClient(app)
-        
-        # Step 1: Login as admin
-        from app.middleware.csrf import generate_csrf_token
-        csrf_token = generate_csrf_token()
-        client.cookies.set("csrf_token", csrf_token)
-        
-        login_response = client.post(
-            "/auth/login",
-            data={
-                "username": admin_session["username"],
-                "password": admin_session["password"],
-                "csrf_token": csrf_token,
-            },
-        )
-        
-        assert login_response.status_code == 200
-        
-        # Step 2: Create operator
-        new_operator_username = f"operator_{uuid4().hex[:8]}"
-        
-        create_response = client.post(
+    def test_admin_create_operator(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+        new_username = f"new_op_{uuid4().hex[:8]}"
+
+        response = client.post(
             "/admin/users/new",
-            json={
-                "username": new_operator_username,
+            data={
+                "username": new_username,
                 "password": "OperatorPass123!",
                 "full_name": "New Operator",
                 "role": "operator",
+                "csrf_token": csrf_token,
             },
+            follow_redirects=False,
         )
-        
-        assert create_response.status_code == 200
-        operator_data = create_response.json()
-        assert operator_data["username"] == new_operator_username
-        assert operator_data["role"] == "operator"
-        
-        # Step 3: Verify operator exists
-        list_response = client.get(f"/admin/users?query={new_operator_username}")
-        
-        assert list_response.status_code == 200
-        users = list_response.json()["users"]
-        assert len(users) == 1
-        assert users[0]["username"] == new_operator_username
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_reset_user_password(self, admin_session):
-        """Test admin resetting user password."""
-        client = TestClient(app)
-        
-        # Login as admin
-        # ... login logic ...
-        
-        # Create operator
-        # ... create operator logic ...
-        
-        operator_id = "..."
-        
-        # Reset password
-        reset_response = client.post(
+        assert response.status_code == 303
+
+        conn = duckdb.connect(test_db)
+        try:
+            row = conn.execute(
+                "SELECT username, role FROM users WHERE username = ?",
+                [new_username],
+            ).fetchone()
+            assert row is not None
+            assert row[0] == new_username
+            assert row[1] == "operator"
+        finally:
+            conn.close()
+
+    def test_admin_reset_user_password(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+        operator_id, _ = _create_operator_user(test_db)
+
+        response = client.post(
             f"/admin/users/{operator_id}/password",
-            json={
+            data={
                 "new_password": "NewPassword123!",
-                "force_change": True,
+                "force_change": "true",
+                "csrf_token": csrf_token,
             },
+            follow_redirects=False,
         )
-        
-        assert reset_response.status_code == 200
-        
-        # Verify operator must change password on next login
-        user_response = client.get(f"/admin/users/{operator_id}")
-        assert user_response.json()["must_change_password"] is True
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_deactivate_user(self, admin_session):
-        """Test admin deactivating user."""
-        client = TestClient(app)
-        
-        # Login and create operator
-        # ... setup logic ...
-        
-        operator_id = "..."
-        
-        # Deactivate operator
-        deactivate_response = client.post(f"/admin/users/{operator_id}/deactivate")
-        
-        assert deactivate_response.status_code == 200
-        
-        # Verify operator is inactive
-        user_response = client.get(f"/admin/users/{operator_id}")
-        assert user_response.json()["is_active"] is False
+        assert response.status_code == 303
+
+        conn = duckdb.connect(test_db)
+        try:
+            row = conn.execute(
+                "SELECT must_change_password FROM users WHERE id = ?",
+                [str(operator_id)],
+            ).fetchone()
+            assert row is not None
+            assert bool(row[0]) is True
+        finally:
+            conn.close()
+
+    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in user deactivation path")
+    def test_admin_deactivate_user(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+        operator_id, _ = _create_operator_user(test_db)
+
+        response = client.post(
+            f"/admin/users/{operator_id}/deactivate",
+            data={"csrf_token": csrf_token},
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+
+        conn = duckdb.connect(test_db)
+        try:
+            row = conn.execute("SELECT is_active FROM users WHERE id = ?", [str(operator_id)]).fetchone()
+            assert row is not None
+            assert bool(row[0]) is False
+        finally:
+            conn.close()
 
 
 class TestAdminRecipientManagement:
-    """Test admin recipient management workflow."""
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_import_recipients(self, admin_session):
-        """
-        Test admin workflow for importing recipients:
-        1. Login as admin
-        2. Upload CSV file
-        3. Verify recipients were imported
-        """
-        client = TestClient(app)
-        
-        # Step 1: Login
-        # ... login logic ...
-        
-        # Step 2: Upload CSV
-        csv_content = """employee_id,name,email,department
-E2E001,Alice Johnson,alice@example.com,Engineering
-E2E002,Bob Williams,bob@example.com,Marketing
-E2E003,Carol Davis,carol@example.com,Sales"""
-        
-        csv_file = io.BytesIO(csv_content.encode())
-        
-        import_response = client.post(
-            "/admin/recipients/import",
-            files={"file": ("recipients.csv", csv_file, "text/csv")},
+    def test_admin_import_recipients(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+
+        csv_content = (
+            "employee_id,name,email,department\n"
+            "E2E001,Alice Johnson,alice@example.com,Engineering\n"
+            "E2E002,Bob Williams,bob@example.com,Marketing\n"
+            "E2E003,Carol Davis,carol@example.com,Sales"
         )
-        
-        assert import_response.status_code == 200
-        data = import_response.json()
-        assert data["created"] == 3
-        assert len(data["errors"]) == 0
-        
-        # Step 3: Verify recipients exist
-        for employee_id in ["E2E001", "E2E002", "E2E003"]:
-            search_response = client.get(f"/admin/recipients?query={employee_id}")
-            assert search_response.status_code == 200
-            assert len(search_response.json()["recipients"]) == 1
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_create_recipient_manually(self, admin_session):
-        """Test admin creating recipient manually."""
-        client = TestClient(app)
-        
-        # Login
-        # ... login logic ...
-        
-        # Create recipient
-        create_response = client.post(
+
+        response = client.post(
+            "/admin/recipients/import/confirm",
+            data={"csrf_token": csrf_token},
+            files={"file": ("recipients.csv", csv_content.encode("utf-8"), "text/csv")},
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["success"] is True
+
+        conn = duckdb.connect(test_db)
+        try:
+            count_row = conn.execute(
+                "SELECT COUNT(*) FROM recipients WHERE employee_id IN ('E2E001','E2E002','E2E003')"
+            ).fetchone()
+            assert count_row is not None
+            assert count_row[0] == 3
+        finally:
+            conn.close()
+
+    def test_admin_create_recipient_manually(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+        employee_id = f"MANUAL{uuid4().hex[:8]}"
+
+        response = client.post(
             "/admin/recipients/new",
-            json={
-                "employee_id": f"MANUAL{uuid4().hex[:8]}",
+            data={
+                "employee_id": employee_id,
                 "name": "Manual Recipient",
-                "email": "manual@example.com",
+                "email": f"{employee_id.lower()}@example.com",
                 "department": "IT",
+                "phone": "",
+                "location": "",
+                "csrf_token": csrf_token,
             },
+            follow_redirects=False,
         )
-        
-        assert create_response.status_code == 200
-        recipient_data = create_response.json()
-        assert recipient_data["name"] == "Manual Recipient"
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_update_recipient(self, admin_session):
-        """Test admin updating recipient information."""
-        client = TestClient(app)
-        
-        # Login and create recipient
-        # ... setup logic ...
-        
-        recipient_id = "..."
-        
-        # Update recipient
-        update_response = client.put(
+        assert response.status_code == 303
+
+        conn = duckdb.connect(test_db)
+        try:
+            row = conn.execute(
+                "SELECT name FROM recipients WHERE employee_id = ?",
+                [employee_id],
+            ).fetchone()
+            assert row is not None
+            assert row[0] == "Manual Recipient"
+        finally:
+            conn.close()
+
+    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in recipient update path")
+    def test_admin_update_recipient(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+
+        conn = duckdb.connect(test_db)
+        try:
+            employee_id = f"EDIT{uuid4().hex[:8]}"
+            row = conn.execute(
+                """
+                INSERT INTO recipients (employee_id, name, email, department, phone, location)
+                VALUES (?, ?, ?, ?, ?, ?)
+                RETURNING id
+                """,
+                [employee_id, "Original Name", f"{employee_id.lower()}@example.com", "Ops", "", ""],
+            ).fetchone()
+            conn.commit()
+            assert row is not None
+            recipient_id = row[0]
+        finally:
+            conn.close()
+
+        response = client.post(
             f"/admin/recipients/{recipient_id}/edit",
-            json={
-                "department": "Updated Department",
+            data={
+                "name": "Updated Recipient",
                 "email": "updated@example.com",
+                "department": "Updated Department",
+                "phone": "",
+                "location": "",
+                "csrf_token": csrf_token,
             },
+            follow_redirects=False,
         )
-        
-        assert update_response.status_code == 200
-        updated_data = update_response.json()
-        assert updated_data["department"] == "Updated Department"
-        assert updated_data["email"] == "updated@example.com"
+        assert response.status_code == 303
+
+        conn = duckdb.connect(test_db)
+        try:
+            updated = conn.execute(
+                "SELECT name, email, department FROM recipients WHERE id = ?",
+                [str(recipient_id)],
+            ).fetchone()
+            assert updated is not None
+            assert updated[0] == "Updated Recipient"
+            assert updated[1] == "updated@example.com"
+            assert updated[2] == "Updated Department"
+        finally:
+            conn.close()
 
 
 class TestAdminReporting:
-    """Test admin reporting workflow."""
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_view_dashboard(self, admin_session):
-        """Test admin viewing dashboard with statistics."""
-        client = TestClient(app)
-        
-        # Login
-        # ... login logic ...
-        
-        # View dashboard
-        dashboard_response = client.get("/dashboard")
-        
-        assert dashboard_response.status_code == 200
-        data = dashboard_response.json()
-        
-        # Verify dashboard has expected metrics
-        assert "packages_today" in data
-        assert "awaiting_pickup" in data
-        assert "delivered_today" in data
-        assert "top_recipients" in data
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_export_report(self, admin_session):
-        """Test admin exporting package report."""
-        client = TestClient(app)
-        
-        # Login
-        # ... login logic ...
-        
-        # Export report
-        export_response = client.get("/admin/reports/export?format=csv")
-        
+    def test_admin_view_dashboard(self, client, admin_session):
+        _login_admin(client, admin_session["username"], admin_session["password"])
+        response = client.get("/dashboard")
+        assert response.status_code == 200
+        assert "dashboard" in response.text.lower()
+
+    def test_admin_export_report(self, client, admin_session, test_db):
+        _login_admin(client, admin_session["username"], admin_session["password"])
+
+        conn = duckdb.connect(test_db)
+        try:
+            recipient_row = conn.execute(
+                """
+                INSERT INTO recipients (employee_id, name, email, department)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+                """,
+                [f"REP{uuid4().hex[:8]}", "Report Recipient", "report@example.com", "Finance"],
+            ).fetchone()
+            assert recipient_row is not None
+
+            conn.execute(
+                """
+                INSERT INTO packages (tracking_no, carrier, recipient_id, status, notes, created_by)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    f"REPORT-{uuid4().hex[:8]}",
+                    "UPS",
+                    str(recipient_row[0]),
+                    "registered",
+                    "for export",
+                    str(admin_session["user_id"]),
+                ],
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        export_response = client.get("/admin/reports/export")
         assert export_response.status_code == 200
-        assert export_response.headers["content-type"] == "text/csv"
-        
-        # Verify CSV content
+        assert "text/csv" in export_response.headers.get("content-type", "")
+
         csv_content = export_response.text
-        assert "tracking_no" in csv_content
-        assert "carrier" in csv_content
-        assert "recipient_name" in csv_content
+        assert "Tracking Number" in csv_content
+        assert "Carrier" in csv_content
+        assert "Recipient Name" in csv_content
 
 
 class TestAdminCannotModifySuperAdmin:
-    """Test that admin cannot modify super admin users."""
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_cannot_edit_super_admin(self, admin_session):
-        """Test admin cannot edit super admin users."""
-        client = TestClient(app)
-        
-        # Login as admin
-        # ... login logic ...
-        
-        # Get super admin user ID
-        # ... get super admin ...
-        
-        super_admin_id = "..."
-        
-        # Try to edit super admin
-        edit_response = client.put(
+    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in role-protected edit path")
+    def test_admin_cannot_edit_super_admin(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+
+        super_username = f"super_{uuid4().hex[:8]}"
+        super_hash = auth_service.hash_password("SuperPassword123!")
+        conn = duckdb.connect(test_db)
+        try:
+            super_row = conn.execute(
+                """
+                INSERT INTO users (username, password_hash, full_name, role, is_active, must_change_password)
+                VALUES (?, ?, ?, ?, ?, ?)
+                RETURNING id
+                """,
+                [super_username, super_hash, "Super Admin", "super_admin", True, False],
+            ).fetchone()
+            conn.commit()
+            assert super_row is not None
+            super_admin_id = super_row[0]
+        finally:
+            conn.close()
+
+        response = client.put(
             f"/admin/users/{super_admin_id}/edit",
-            json={"full_name": "Modified Name"},
+            data={
+                "full_name": "Modified Name",
+                "role": "super_admin",
+                "csrf_token": csrf_token,
+            },
+            follow_redirects=False,
         )
-        
-        assert edit_response.status_code == 403
-    
-    @pytest.mark.skip(reason="Requires full database setup and authentication flow")
-    async def test_admin_cannot_deactivate_super_admin(self, admin_session):
-        """Test admin cannot deactivate super admin users."""
-        client = TestClient(app)
-        
-        # Login as admin
-        # ... login logic ...
-        
-        super_admin_id = "..."
-        
-        # Try to deactivate super admin
-        deactivate_response = client.post(f"/admin/users/{super_admin_id}/deactivate")
-        
-        assert deactivate_response.status_code == 403
+        assert response.status_code == 403
 
+    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in role-protected deactivate path")
+    def test_admin_cannot_deactivate_super_admin(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+        super_username = f"super_{uuid4().hex[:8]}"
+        super_hash = auth_service.hash_password("SuperPassword123!")
+        conn = duckdb.connect(test_db)
+        try:
+            super_row = conn.execute(
+                """
+                INSERT INTO users (username, password_hash, full_name, role, is_active, must_change_password)
+                VALUES (?, ?, ?, ?, ?, ?)
+                RETURNING id
+                """,
+                [super_username, super_hash, "Super Admin", "super_admin", True, False],
+            ).fetchone()
+            conn.commit()
+            assert super_row is not None
+            super_admin_id = super_row[0]
+        finally:
+            conn.close()
+
+        response = client.post(
+            f"/admin/users/{super_admin_id}/deactivate",
+            data={"csrf_token": csrf_token},
+            follow_redirects=False,
+        )
+        assert response.status_code == 403
+
