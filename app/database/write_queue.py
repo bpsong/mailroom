@@ -112,6 +112,17 @@ class WriteQueue:
             
         Returns:
             Query result if return_result is True, None otherwise
+
+        Raises:
+            TimeoutError: Raised only for the *caller wait window* when
+                `return_result=True` and the result future is not resolved
+                within `self.result_timeout_seconds`.
+
+        Notes:
+            A timeout does not guarantee the queued operation was cancelled.
+            The worker may still execute and commit the write later because
+            operations are serialized and processed independently from caller
+            request lifetimes.
         """
         self._ensure_queue_for_current_loop()
 

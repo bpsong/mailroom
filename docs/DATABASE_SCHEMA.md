@@ -14,6 +14,20 @@ Mailroom Tracking uses DuckDB with an async write queue for serialized writes.
 - Reads use fresh connections from `DatabaseConnection.get_read_connection()`
 - Checkpoints run every 1000 write transactions or `DATABASE_CHECKPOINT_INTERVAL` seconds
 
+### Write Queue Timeout Semantics
+
+When application code calls write queue execution with `return_result=True`, the caller waits only up to `WRITE_QUEUE_RESULT_TIMEOUT` seconds (default `30.0`).
+
+Important behavior:
+- A timeout is a caller-side wait timeout, not a guaranteed database rollback.
+- The operation may still execute and commit later if it was already queued and processed by the worker.
+- This can produce "timeout seen by caller" while data eventually persists.
+
+Operational guidance:
+- Prefer idempotent write operations where practical.
+- Handle timeout responses as "unknown final commit state" unless follow-up verification confirms outcome.
+- See `app/database/write_queue.py` for the exact implementation behavior.
+
 ## Core Tables (Base Schema)
 
 ### `users`

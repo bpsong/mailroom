@@ -86,7 +86,16 @@ async def login(
         next: Optional URL to redirect to after login
         
     Returns:
-        Redirect to next URL or dashboard on success, error response on failure
+        JSON payload with `redirect_url` and user summary, plus `session_token` cookie.
+
+    Raises:
+        HTTPException: For CSRF failures (403), lockout/inactive account (403),
+            or invalid credentials (401).
+
+    Notes:
+        This endpoint intentionally returns JSON (not HTTP redirect) because
+        the frontend uses form+HTMX style interactions and client-side redirect
+        handling based on `redirect_url`.
     """
     ip_address = get_client_ip(request)
     user_agent = get_user_agent(request)

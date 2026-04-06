@@ -158,6 +158,25 @@ async def force_password_change_submit(
 ):
     """
     Process forced password change.
+
+    This endpoint is intentionally accessible without `@require_auth` so users
+    flagged with `must_change_password` can complete first-login/admin-reset
+    password rotation before accessing fully protected routes.
+
+    Args:
+        request: FastAPI request object.
+        current_password: Existing password for verification.
+        new_password: New password candidate (minimum length enforced by FastAPI).
+        confirm_password: Confirmation value that must match `new_password`.
+        csrf_token: CSRF token from form submission.
+
+    Returns:
+        RedirectResponse: Redirects to `/dashboard` on successful password change.
+        TemplateResponse: Re-renders force-change form with inline error on
+            validation/business-rule failures.
+
+    Raises:
+        HTTPException: If CSRF validation fails (403) or session is missing/invalid (401).
     """
     if not validate_csrf_token(request, csrf_token):
         raise HTTPException(
