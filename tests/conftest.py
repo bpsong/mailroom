@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import patch
 
-from app.config import settings
+from app.config import clear_settings_cache, get_settings
 from app.database import connection as db_connection
 from app.database.schema import SCHEMA_SQL
 from app.database.write_queue import close_write_queue
@@ -55,7 +55,8 @@ def test_db(test_db_path, monkeypatch):
     """Set up test database for each test."""
     # Override the database path in the application
     monkeypatch.setenv("DATABASE_PATH", test_db_path)
-    settings.database_path = test_db_path
+    clear_settings_cache()
+    get_settings()
     
     # Reset database connection and write queue so tests use isolated DB
     db_connection.close_db()
@@ -82,6 +83,9 @@ def test_db(test_db_path, monkeypatch):
         conn.commit()
     finally:
         conn.close()
+
+    # Reset cached settings for subsequent tests
+    clear_settings_cache()
 
 
 @pytest.fixture

@@ -3,6 +3,7 @@
 import os
 import sys
 import logging
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        frozen=True,
     )
 
     # Application
@@ -136,7 +138,7 @@ def load_settings() -> Settings:
         SystemExit: If configuration is invalid
     """
     try:
-        settings = Settings()
+        settings = Settings()  # type: ignore[call-arg]
         
         # Log configuration status
         logger.info(f"Configuration loaded successfully")
@@ -190,5 +192,34 @@ def load_settings() -> Settings:
         sys.exit(1)
 
 
-# Global settings instance
-settings = load_settings()
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Return cached application settings instance."""
+    return load_settings()
+
+
+def clear_settings_cache() -> None:
+    """Clear cached settings instance (primarily for tests)."""
+    get_settings.cache_clear()
+
+
+def get_settings_dependency() -> Settings:
+    """FastAPI dependency provider for application settings."""
+    return get_settings()
+
+
+class _SettingsProxy:
+    """Backward-compatible proxy to cached immutable settings."""
+
+    def __getattr__(self, name: str):
+        return getattr(get_settings(), name)
+
+    def __setattr__(self, name: str, value) -> None:
+        raise AttributeError(
+            "Application settings are immutable. "
+            "Set environment variables and call clear_settings_cache() in tests."
+        )
+
+
+# Backward-compatible module alias. New code should prefer get_settings().
+settings = _SettingsProxy()

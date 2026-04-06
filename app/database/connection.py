@@ -4,7 +4,7 @@ import duckdb
 from contextlib import contextmanager
 from typing import Generator
 
-from app.config import settings
+from app.config import get_settings
 
 
 class DatabaseConnection:
@@ -87,7 +87,7 @@ def get_db() -> DatabaseConnection:
     global _db_connection
     
     if _db_connection is None:
-        _db_connection = DatabaseConnection(settings.database_path)
+        _db_connection = DatabaseConnection(get_settings().database_path)
     
     return _db_connection
 
