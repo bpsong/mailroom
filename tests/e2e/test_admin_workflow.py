@@ -161,6 +161,31 @@ class TestAdminUserManagement:
         finally:
             conn.close()
 
+    def test_admin_edit_own_profile_with_post(self, client, admin_session, test_db):
+        csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
+        admin_id = admin_session["user_id"]
+
+        response = client.post(
+            f"/admin/users/{admin_id}/edit",
+            data={
+                "full_name": "Updated Admin Name",
+                "csrf_token": csrf_token,
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+
+        conn = duckdb.connect(test_db)
+        try:
+            row = conn.execute(
+                "SELECT full_name FROM users WHERE id = ?",
+                [str(admin_id)],
+            ).fetchone()
+            assert row is not None
+            assert row[0] == "Updated Admin Name"
+        finally:
+            conn.close()
+
     @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in user deactivation path")
     def test_admin_deactivate_user(self, client, admin_session, test_db):
         csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])

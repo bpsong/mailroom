@@ -57,6 +57,7 @@ class TestRBACService:
         another_operator = create_test_user("operator")
         admin = create_test_user("admin")
         
+        assert rbac_service.can_manage_user(operator, operator) is True
         assert rbac_service.can_manage_user(operator, another_operator) is False
         assert rbac_service.can_manage_user(operator, admin) is False
     
@@ -162,8 +163,9 @@ class TestRBACService:
         another_admin = create_test_user("admin")
         assert rbac_service.can_modify_user_field(admin, another_admin, "full_name") is False
         
-        # Operator cannot modify anyone
-        assert rbac_service.can_modify_user_field(operator, operator, "full_name") is False
+        # Users can modify their own non-role fields
+        assert rbac_service.can_modify_user_field(operator, operator, "full_name") is True
+        assert rbac_service.can_modify_user_field(operator, operator, "role") is False
 
 
 if __name__ == "__main__":
