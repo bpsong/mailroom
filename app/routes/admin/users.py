@@ -168,7 +168,7 @@ async def create_user(
         )
 
 
-@router.put("/users/{user_id}/edit")
+@router.api_route("/users/{user_id}/edit", methods=["POST", "PUT"])
 @require_role("admin")
 async def edit_user(
     request: Request,

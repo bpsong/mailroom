@@ -243,65 +243,32 @@ class RecipientService:
         ):
             return recipient  # No changes
 
-        replacement_updated_at = datetime.utcnow()
-
-        # Avoid DuckDB UPDATE on recipients entirely. Use row replacement with
-        # separate fresh write connections for delete and insert. Also close the
-        # thread-local read connection first so the replacement does not reuse a
-        # stale read transaction state while re-inserting the same primary key.
-        db = get_db()
-        db.close()
-
-        with db.get_write_connection() as conn:
-            conn.execute(
-                "DELETE FROM recipients WHERE id = ?",
-                [str(recipient_id)],
-            )
-
-        with db.get_write_connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO recipients (
-                    id,
-                    employee_id,
-                    name,
-                    email,
-                    department,
-                    phone,
-                    location,
-                    is_active,
-                    created_at,
-                    updated_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    str(recipient.id),
-                    recipient.employee_id,
-                    replacement_name,
-                    replacement_email,
-                    replacement_department,
-                    replacement_phone,
-                    replacement_location,
-                    recipient.is_active,
-                    recipient.created_at,
-                    replacement_updated_at,
-                ],
-            )
-            result = conn.execute(
-                """
-                SELECT id, employee_id, name, email, department, phone, location,
-                       is_active, created_at, updated_at
-                FROM recipients
-                WHERE id = ?
-                """,
-                [str(recipient_id)],
-            ).fetchone()
+        query = """
+            UPDATE recipients
+            SET name = ?, email = ?, department = ?, phone = ?, location = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            RETURNING id, employee_id, name, email, department, phone, location,
+                      is_active, created_at, updated_at
+        """
+        write_queue = await get_write_queue()
+        result = await write_queue.execute(
+            query,
+            [
+                replacement_name,
+                replacement_email,
+                replacement_department,
+                replacement_phone,
+                replacement_location,
+                str(recipient_id),
+            ],
+            return_result=True,
+        )
 
         if not result:
             raise ValueError("Recipient not found after update")
         
-        row = result
+        row = result[0]
         updated_recipient = Recipient(
             id=row[0],
             employee_id=row[1],
