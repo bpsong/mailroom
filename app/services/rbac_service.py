@@ -62,6 +62,7 @@ class RBACService:
         Check if actor can manage (create, edit, deactivate) target user.
         
         Rules:
+        - Users can manage their own account profile/password fields
         - Super admin can manage anyone
         - Admin can manage operators only (not other admins or super admins)
         - Operators cannot manage anyone
@@ -73,6 +74,11 @@ class RBACService:
         Returns:
             True if actor can manage target, False otherwise
         """
+        # Allow self-management (route-level checks still enforce guardrails,
+        # e.g. cannot deactivate self and non-super-admin cannot change roles)
+        if actor.id == target.id:
+            return True
+
         # Super admin can manage anyone
         if actor.role == "super_admin":
             return True

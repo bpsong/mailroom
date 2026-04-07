@@ -314,7 +314,14 @@ class WriteQueue:
                             params_repr,
                             e,
                         )
-                        conn.rollback()
+                        try:
+                            conn.rollback()
+                        except Exception as rollback_error:
+                            logger.warning(
+                                "Rollback skipped/failed op=%s reason=%s",
+                                op_fingerprint,
+                                rollback_error,
+                            )
                         
                         # Set exception on future if provided
                         if operation.result_future:
