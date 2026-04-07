@@ -7,7 +7,7 @@ async function main() {
     try {
         await page.goto('http://127.0.0.1:8000/auth/login', { waitUntil: 'networkidle' });
         await page.fill('#username', 'playwright_user');
-        await page.fill('#password', 'Playwright123!');
+        await page.fill('#password', 'Password!1234');
 
         await Promise.all([
             page.waitForURL('**/dashboard', { timeout: 15000 }),

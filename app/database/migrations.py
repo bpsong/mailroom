@@ -49,6 +49,11 @@ class MigrationManager:
                 self._create_database()
             else:
                 logger.info("Schema verification passed")
+
+        # Repair older databases that still have package_events/attachments
+        # foreign keys referencing packages. Those constraints trigger DuckDB
+        # UPDATE rewrite issues on package status changes.
+        self._remove_package_dependent_foreign_keys_if_needed()
         
         # Enforce data quality requirements on existing data
         self._enforce_recipient_department_requirement()
@@ -58,6 +63,94 @@ class MigrationManager:
         logger.info("Initializing database schema")
         init_database(self.db_path)
         logger.info("Database schema created successfully")
+
+    def _remove_package_dependent_foreign_keys_if_needed(self) -> None:
+        """Repair legacy schemas that still reference packages via foreign keys."""
+        conn: duckdb.DuckDBPyConnection | None = None
+        try:
+            conn = duckdb.connect(self.db_path)
+            fk_rows = conn.execute(
+                """
+                SELECT table_name, constraint_text
+                FROM duckdb_constraints()
+                WHERE table_name IN ('package_events', 'attachments')
+                  AND constraint_type = 'FOREIGN KEY'
+                """
+            ).fetchall()
+
+            if not fk_rows:
+                return
+
+            logger.warning(
+                "Repairing legacy foreign keys on package_events/attachments: %s",
+                fk_rows,
+            )
+
+            events_backup = conn.execute(
+                "SELECT id, package_id, old_status, new_status, notes, actor_id, created_at FROM package_events"
+            ).fetchall()
+            attachments_backup = conn.execute(
+                "SELECT id, package_id, filename, file_path, mime_type, file_size, uploaded_by, created_at FROM attachments"
+            ).fetchall()
+
+            conn.execute("BEGIN TRANSACTION")
+            conn.execute("DROP TABLE IF EXISTS attachments")
+            conn.execute("DROP TABLE IF EXISTS package_events")
+
+            conn.execute(
+                """
+                CREATE TABLE package_events (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    package_id UUID NOT NULL,
+                    old_status VARCHAR,
+                    new_status VARCHAR NOT NULL,
+                    notes TEXT,
+                    actor_id UUID NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE attachments (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    package_id UUID NOT NULL,
+                    filename VARCHAR NOT NULL,
+                    file_path VARCHAR NOT NULL,
+                    mime_type VARCHAR NOT NULL,
+                    file_size INTEGER NOT NULL,
+                    uploaded_by UUID NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+
+            for row in events_backup:
+                conn.execute(
+                    "INSERT INTO package_events VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    list(row),
+                )
+
+            for row in attachments_backup:
+                conn.execute(
+                    "INSERT INTO attachments VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    list(row),
+                )
+
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_package_events_package_id ON package_events(package_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_package_events_actor_id ON package_events(actor_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_package_events_created_at ON package_events(created_at)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_attachments_package_id ON attachments(package_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_attachments_uploaded_by ON attachments(uploaded_by)")
+            conn.commit()
+            logger.info("Legacy package foreign keys removed successfully")
+        except Exception:
+            if conn is not None:
+                conn.rollback()
+            raise
+        finally:
+            if conn is not None:
+                conn.close()
     
     def bootstrap_super_admin(
         self,

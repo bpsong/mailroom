@@ -201,18 +201,18 @@ class RecipientService:
         Raises:
             ValueError: If recipient not found or validation fails
         """
-        # Get current recipient
         recipient = await self.get_recipient_by_id(recipient_id)
         if not recipient:
             raise ValueError("Recipient not found")
         
-        # Build update query dynamically
-        updates = []
-        params = []
+        replacement_name = recipient.name
+        replacement_email = recipient.email
+        replacement_department = recipient.department
+        replacement_phone = recipient.phone
+        replacement_location = recipient.location
         
         if recipient_data.name is not None:
-            updates.append("name = ?")
-            params.append(recipient_data.name)
+            replacement_name = recipient_data.name
         
         if recipient_data.email is not None:
             if not is_valid_email(recipient_data.email):
@@ -220,42 +220,88 @@ class RecipientService:
             # Check if email already exists (excluding current recipient)
             if await self._email_exists(recipient_data.email, exclude_id=recipient_id):
                 raise ValueError(f"Email '{recipient_data.email}' already exists")
-            updates.append("email = ?")
-            params.append(recipient_data.email)
+            replacement_email = recipient_data.email
         
         if recipient_data.department is not None:
             department_value = recipient_data.department.strip()
             if not department_value:
                 raise ValueError("Department is required and cannot be empty")
-            updates.append("department = ?")
-            params.append(department_value)
+            replacement_department = department_value
         
         if recipient_data.phone is not None:
-            updates.append("phone = ?")
-            params.append(recipient_data.phone)
+            replacement_phone = recipient_data.phone
         
         if recipient_data.location is not None:
-            updates.append("location = ?")
-            params.append(recipient_data.location)
+            replacement_location = recipient_data.location
         
-        if not updates:
+        if (
+            replacement_name == recipient.name
+            and replacement_email == recipient.email
+            and replacement_department == recipient.department
+            and replacement_phone == recipient.phone
+            and replacement_location == recipient.location
+        ):
             return recipient  # No changes
+
+        replacement_updated_at = datetime.utcnow()
+
+        # Avoid DuckDB UPDATE on recipients entirely. Use row replacement with
+        # separate fresh write connections for delete and insert. Also close the
+        # thread-local read connection first so the replacement does not reuse a
+        # stale read transaction state while re-inserting the same primary key.
+        db = get_db()
+        db.close()
+
+        with db.get_write_connection() as conn:
+            conn.execute(
+                "DELETE FROM recipients WHERE id = ?",
+                [str(recipient_id)],
+            )
+
+        with db.get_write_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO recipients (
+                    id,
+                    employee_id,
+                    name,
+                    email,
+                    department,
+                    phone,
+                    location,
+                    is_active,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    str(recipient.id),
+                    recipient.employee_id,
+                    replacement_name,
+                    replacement_email,
+                    replacement_department,
+                    replacement_phone,
+                    replacement_location,
+                    recipient.is_active,
+                    recipient.created_at,
+                    replacement_updated_at,
+                ],
+            )
+            result = conn.execute(
+                """
+                SELECT id, employee_id, name, email, department, phone, location,
+                       is_active, created_at, updated_at
+                FROM recipients
+                WHERE id = ?
+                """,
+                [str(recipient_id)],
+            ).fetchone()
+
+        if not result:
+            raise ValueError("Recipient not found after update")
         
-        updates.append("updated_at = CURRENT_TIMESTAMP")
-        params.append(str(recipient_id))
-        
-        query = f"""
-            UPDATE recipients
-            SET {', '.join(updates)}
-            WHERE id = ?
-            RETURNING id, employee_id, name, email, department, phone, location,
-                      is_active, created_at, updated_at
-        """
-        
-        write_queue = await get_write_queue()
-        result = await write_queue.execute(query, params, return_result=True)
-        
-        row = result[0]
+        row = result
         updated_recipient = Recipient(
             id=row[0],
             employee_id=row[1],
@@ -408,7 +454,7 @@ class RecipientService:
                 f"SELECT COUNT(*) FROM recipients WHERE {where_sql}",
                 params,
             ).fetchone()
-            total_count = count_result[0]
+            total_count = count_result[0] if count_result else 0
             
             # Get recipients
             result = conn.execute(
@@ -464,7 +510,7 @@ class RecipientService:
                     "SELECT COUNT(*) FROM recipients WHERE employee_id = ?",
                     [employee_id],
                 ).fetchone()
-            return result[0] > 0
+            return (result[0] if result else 0) > 0
     
     async def _email_exists(self, email: str, exclude_id: Optional[UUID] = None) -> bool:
         """
@@ -489,7 +535,7 @@ class RecipientService:
                     "SELECT COUNT(*) FROM recipients WHERE email = ?",
                     [email],
                 ).fetchone()
-            return result[0] > 0
+            return (result[0] if result else 0) > 0
 
 
 # Global recipient service instance

@@ -215,7 +215,6 @@ class TestAdminRecipientManagement:
         finally:
             conn.close()
 
-    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in recipient update path")
     def test_admin_update_recipient(self, client, admin_session, test_db):
         csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
 

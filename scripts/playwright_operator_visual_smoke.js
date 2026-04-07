@@ -2,7 +2,7 @@ const { chromium } = require('@playwright/test');
 
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:8000';
 const USERNAME = process.env.OPERATOR_USERNAME || 'playwright_user';
-const PASSWORD = process.env.OPERATOR_PASSWORD || 'Playwright123!';
+const PASSWORD = process.env.OPERATOR_PASSWORD || 'Password!1234';
 const RECIPIENT_SEARCH = process.env.OPERATOR_RECIPIENT_SEARCH || 'Test Recipient';
 const TARGET_STATUS = process.env.OPERATOR_TARGET_STATUS || 'awaiting_pickup';
 const HEADLESS = (process.env.PLAYWRIGHT_HEADLESS || 'false').toLowerCase() !== 'false';

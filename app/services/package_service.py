@@ -1,6 +1,7 @@
 """Package management service for CRUD operations."""
 
 from datetime import datetime
+import logging
 from typing import Optional, List, Tuple
 from uuid import UUID, uuid4
 
@@ -26,6 +27,9 @@ from app.database.write_queue import get_write_queue
 from app.services.recipient_service import recipient_service
 from app.services.file_service import file_service
 from app.services.audit_service import audit_service
+
+
+logger = logging.getLogger(__name__)
 
 
 class PackageService:
@@ -204,26 +208,101 @@ class PackageService:
             raise ValueError("Package not found")
         
         old_status = package.status
-        
-        # Update package status
-        query = """
-            UPDATE packages
-            SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-            RETURNING id, tracking_no, carrier, recipient_id, status, notes,
-                      created_by, created_at, updated_at
-        """
-        
+
         write_queue = await get_write_queue()
+        logger.debug(
+            "Package status update enqueue package_id=%s old_status=%s new_status=%s queue_depth=%s uses_returning=%s",
+            package_id,
+            old_status,
+            status_update.status,
+            write_queue.queue.qsize(),
+            False,
+        )
         try:
+            replacement_result = await write_queue.execute(
+                """
+                SELECT tracking_no, carrier, recipient_id, created_by, created_at
+                FROM packages
+                WHERE id = ?
+                """,
+                [str(package_id)],
+                return_result=True,
+            )
+
+            if not replacement_result:
+                raise ValueError("Package not found before status replacement")
+
+            replacement_row = replacement_result[0]
+            replacement_updated_at = datetime.utcnow()
+
+            logger.debug(
+                "Package status update using DuckDB row-replacement workaround package_id=%s old_status=%s new_status=%s",
+                package_id,
+                old_status,
+                status_update.status,
+            )
+
+            await write_queue.execute(
+                "DELETE FROM packages WHERE id = ?",
+                [str(package_id)],
+            )
+
+            await write_queue.execute(
+                """
+                INSERT INTO packages (
+                    id,
+                    tracking_no,
+                    carrier,
+                    recipient_id,
+                    status,
+                    notes,
+                    created_by,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    str(package_id),
+                    replacement_row[0],
+                    replacement_row[1],
+                    str(replacement_row[2]),
+                    status_update.status,
+                    status_update.notes,
+                    str(replacement_row[3]),
+                    replacement_row[4],
+                    replacement_updated_at,
+                ],
+            )
+
+            # Avoid DuckDB UPDATE on packages entirely. Some live DuckDB
+            # databases can still raise duplicate-primary-key errors during
+            # in-place UPDATE even after inbound package foreign keys are
+            # removed. Read the updated row in a separate queued SELECT on the
+            # writer connection after a delete+insert replacement.
             result = await write_queue.execute(
-                query,
-                [status_update.status, status_update.notes, str(package_id)],
+                """
+                SELECT id, tracking_no, carrier, recipient_id, status, notes,
+                       created_by, created_at, updated_at
+                FROM packages
+                WHERE id = ?
+                """,
+                [str(package_id)],
                 return_result=True,
             )
         except Exception as e:
+            logger.exception(
+                "Package status update failed package_id=%s old_status=%s new_status=%s error=%s",
+                package_id,
+                old_status,
+                status_update.status,
+                e,
+            )
             raise ValueError(f"Failed to update package status: {str(e)}")
         
+        if not result:
+            raise ValueError("Package not found after status update")
+
         row = result[0]
         updated_package = Package(
             id=row[0],
@@ -321,7 +400,7 @@ class PackageService:
                 """,
                 params,
             ).fetchone()
-            total_count = count_result[0]
+            total_count = count_result[0] if count_result is not None else 0
             
             # Get packages with recipient and creator info
             result = conn.execute(
