@@ -1,4 +1,4 @@
-"""Tests for package update behavior."""
+"""Tests for package update behavior on SQLite."""
 
 import asyncio
 from datetime import UTC, datetime
@@ -11,19 +11,15 @@ from app.services.package_service import PackageService
 
 
 class _FakeWriteQueue:
-    def __init__(self, fail_first: bool = False, fail_all: bool = False):
-        self.fail_first = fail_first
-        self.fail_all = fail_all
+    def __init__(self, fail: bool = False):
+        self.fail = fail
         self.calls: list[tuple[str, list[str | None]]] = []
         self.queue = asyncio.Queue()
 
     async def execute(self, query, params, return_result=False):
         self.calls.append((query, params))
-        if self.fail_all:
-            raise Exception('Constraint Error: Duplicate key "id: abc" violates primary key constraint')
-        if self.fail_first:
-            self.fail_first = False
-            raise Exception('Constraint Error: Duplicate key "id: abc" violates primary key constraint')
+        if self.fail:
+            raise Exception("database unavailable")
         return None
 
 
@@ -32,7 +28,7 @@ async def _return_queue(queue):
 
 
 @pytest.mark.asyncio
-async def test_update_status_retries_with_merge_on_duplicate_key(monkeypatch):
+async def test_update_status_updates_once_and_logs_events(monkeypatch):
     service = PackageService()
     package_id = uuid4()
     recipient_id = uuid4()
@@ -65,13 +61,13 @@ async def test_update_status_retries_with_merge_on_duplicate_key(monkeypatch):
         created_at=now,
         updated_at=now,
     )
-    queue = _FakeWriteQueue(fail_first=True)
+    queue = _FakeWriteQueue()
     package_event_calls: list[tuple] = []
     audit_calls: list[tuple] = []
 
     async def fake_get_package_by_id(target_id):
         assert target_id == package_id
-        if len(queue.calls) >= 2:
+        if queue.calls:
             return updated
         return original
 
@@ -93,16 +89,14 @@ async def test_update_status_retries_with_merge_on_duplicate_key(monkeypatch):
     )
 
     assert result.status == "delivered"
-    assert len(queue.calls) == 2
+    assert len(queue.calls) == 1
     assert "update packages" in queue.calls[0][0].lower()
-    assert "insert into packages" in queue.calls[1][0].lower()
-    assert "on conflict (id) do update" in queue.calls[1][0].lower()
     assert package_event_calls == [("awaiting_pickup", "delivered", "done")]
     assert audit_calls == [("awaiting_pickup", "delivered", "done")]
 
 
 @pytest.mark.asyncio
-async def test_update_status_does_not_create_event_when_update_and_merge_fail(monkeypatch):
+async def test_update_status_does_not_create_event_when_update_fails(monkeypatch):
     service = PackageService()
     package_id = uuid4()
     recipient_id = uuid4()
@@ -134,7 +128,7 @@ async def test_update_status_does_not_create_event_when_update_and_merge_fail(mo
         created_at=now,
         updated_at=now,
     )
-    queue = _FakeWriteQueue(fail_all=True)
+    queue = _FakeWriteQueue(fail=True)
     package_event_calls: list[dict] = []
     audit_calls: list[dict] = []
 
@@ -160,6 +154,6 @@ async def test_update_status_does_not_create_event_when_update_and_merge_fail(mo
             actor=actor,
         )
 
-    assert len(queue.calls) == 2
+    assert len(queue.calls) == 1
     assert package_event_calls == []
     assert audit_calls == []

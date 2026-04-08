@@ -1,4 +1,4 @@
-# Deployment Scripts
+﻿# Deployment Scripts
 
 This directory contains PowerShell scripts for deploying and maintaining the Mailroom Tracking System on Windows Server.
 
@@ -77,7 +77,7 @@ Creates backups of the database, uploaded files, and configuration.
 ```
 
 **Key Features:**
-- Backs up DuckDB database (including WAL files)
+- Backs up SQLite database (including WAL files)
 - Backs up uploaded package photos
 - Backs up .env configuration
 - Creates backup manifest with details
@@ -233,3 +233,4 @@ For issues or questions:
 1. Check the [Deployment Guide](../docs/DEPLOYMENT.md)
 2. Review script help: `.\script.ps1 -Help`
 3. Check application logs: `C:\MailroomApp\logs\`
+

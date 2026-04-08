@@ -1,4 +1,4 @@
-# Configuration Reference
+﻿# Configuration Reference
 
 ## Overview
 
@@ -131,18 +131,18 @@ SECRET_KEY=your-secure-random-key-min-32-characters-long
 
 #### DATABASE_PATH
 
-**Description**: Path to DuckDB database file  
+**Description**: Path to SQLite database file  
 **Type**: String (file path)  
-**Default**: `./data/mailroom.duckdb`  
+**Default**: `./data/mailroom.sqlite3`  
 **Required**: No
 
 **Path Types**:
-- Relative path: `./data/mailroom.duckdb` (relative to application root)
-- Absolute path: `C:\MailroomApp\data\mailroom.duckdb`
+- Relative path: `./data/mailroom.sqlite3` (relative to application root)
+- Absolute path: `C:\MailroomApp\data\mailroom.sqlite3`
 
 **Example**:
 ```env
-DATABASE_PATH=./data/mailroom.duckdb
+DATABASE_PATH=./data/mailroom.sqlite3
 ```
 
 **Notes**:
@@ -578,7 +578,7 @@ LOG_RETENTION_DAYS=365
 ```
 
 **Notes**:
-- Audit events in DuckDB can be cleaned by service logic/maintenance tasks
+- Audit events in SQLite can be cleaned by service logic/maintenance tasks
 - Automatic deletion of application log files is not enforced by the main logger today
 - Consider disk space and compliance requirements when setting this value
 
@@ -658,7 +658,7 @@ APP_PORT=8000
 SECRET_KEY=dev-secret-key-change-in-production
 
 # Database
-DATABASE_PATH=./data/mailroom-dev.duckdb
+DATABASE_PATH=./data/mailroom-dev.sqlite3
 
 # Logging
 LOG_LEVEL=DEBUG
@@ -680,7 +680,7 @@ APP_PORT=8000
 SECRET_KEY=<generate-secure-random-key-min-32-chars>
 
 # Database
-DATABASE_PATH=./data/mailroom.duckdb
+DATABASE_PATH=./data/mailroom.sqlite3
 DATABASE_CHECKPOINT_INTERVAL=300
 
 # File Storage
@@ -858,5 +858,7 @@ Before changing configuration:
 
 - [Pydantic Settings Documentation](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
 - [Argon2 Parameters](https://github.com/P-H-C/phc-winner-argon2#command-line-utility)
-- [DuckDB Configuration](https://duckdb.org/docs/configuration/overview)
+- [SQLite Configuration](https://www.sqlite.org/pragma.html)
 - [Caddy Configuration](https://caddyserver.com/docs/caddyfile)
+
+

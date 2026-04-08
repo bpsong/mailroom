@@ -1,12 +1,18 @@
 """End-to-end tests for concurrent-like operations (stable coverage)."""
 
+import asyncio
 from uuid import uuid4
-import duckdb
+
 import pytest
 from fastapi.testclient import TestClient
 
+from app.database.connection import create_connection
 from app.main import app
+from app.models import RecipientCreate
 from app.services.auth_service import auth_service
+from app.services.csv_import_service import csv_import_service
+from app.services.recipient_service import recipient_service
+from app.services.user_service import user_service
 
 
 def _login(client: TestClient, username: str, password: str) -> str:
@@ -28,7 +34,7 @@ def _login(client: TestClient, username: str, password: str) -> str:
 
 @pytest.fixture
 def multiple_operators(test_db):
-    conn = duckdb.connect(test_db)
+    conn = create_connection(test_db)
     try:
         operators = []
         for i in range(3):
@@ -55,8 +61,6 @@ def multiple_operators(test_db):
             [f"SHARED{uuid4().hex[:8]}", "Shared Recipient", "shared@example.com", "Engineering"],
         ).fetchone()
         assert recipient_row is not None
-        conn.commit()
-
         yield {"operators": operators, "recipient_id": recipient_row[0], "test_db": test_db}
     finally:
         conn.close()
@@ -81,7 +85,7 @@ class TestConcurrentPackageRegistration:
             )
             assert response.status_code == 200
 
-        conn = duckdb.connect(multiple_operators["test_db"])
+        conn = create_connection(multiple_operators["test_db"])
         try:
             row = conn.execute(
                 "SELECT COUNT(*) FROM packages WHERE tracking_no LIKE 'CONCURRENT-%'"
@@ -109,7 +113,7 @@ class TestConcurrentSessionManagement:
             client = TestClient(app)
             _login(client, operator["username"], operator["password"])
 
-        conn = duckdb.connect(multiple_operators["test_db"])
+        conn = create_connection(multiple_operators["test_db"])
         try:
             row = conn.execute(
                 "SELECT COUNT(*) FROM sessions WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP",
@@ -122,17 +126,96 @@ class TestConcurrentSessionManagement:
 
 
 class TestConcurrentCSVImport:
-    @pytest.mark.skip(reason="Requires dedicated multi-admin import orchestration and deterministic merge checks")
-    def test_concurrent_csv_imports(self):
-        pass
+    @pytest.mark.asyncio
+    async def test_concurrent_csv_imports(self, test_admin, test_db):
+        actor = await user_service.get_user_by_id(test_admin["id"])
+        assert actor is not None
+
+        batch_one = [
+            RecipientCreate(
+                employee_id=f"CSV-A-{i}-{uuid4().hex[:6]}",
+                name=f"Batch A {i}",
+                email=f"batch-a-{i}-{uuid4().hex[:6]}@example.com",
+                department="Operations",
+                phone=None,
+                location=None,
+            )
+            for i in range(2)
+        ]
+        batch_two = [
+            RecipientCreate(
+                employee_id=f"CSV-B-{i}-{uuid4().hex[:6]}",
+                name=f"Batch B {i}",
+                email=f"batch-b-{i}-{uuid4().hex[:6]}@example.com",
+                department="Engineering",
+                phone=None,
+                location=None,
+            )
+            for i in range(2)
+        ]
+
+        results = await asyncio.gather(
+            csv_import_service.import_recipients(batch_one, actor, filename="batch-one.csv"),
+            csv_import_service.import_recipients(batch_two, actor, filename="batch-two.csv"),
+        )
+
+        assert sum(result.created_count for result in results) == 4
+        conn = create_connection(test_db)
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM recipients WHERE employee_id LIKE 'CSV-%'"
+            ).fetchone()
+            assert row is not None
+            assert row[0] == 4
+        finally:
+            conn.close()
 
 
 class TestDatabaseWriteQueue:
-    @pytest.mark.skip(reason="Requires dedicated load profile/stress harness")
-    def test_write_queue_handles_concurrent_writes(self):
-        pass
+    @pytest.mark.asyncio
+    async def test_write_queue_handles_concurrent_writes(self, test_db):
+        async def insert_auth_event(index: int) -> None:
+            await auth_service.log_auth_event(
+                event_type="load_test",
+                username=f"queue-user-{index}",
+                details=f'{{"index": {index}}}',
+            )
 
-    @pytest.mark.skip(reason="Requires dedicated load profile/stress harness")
-    def test_no_database_locking_under_load(self):
-        pass
+        await asyncio.gather(*(insert_auth_event(i) for i in range(12)))
+
+        conn = create_connection(test_db)
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM auth_events WHERE event_type = 'load_test'"
+            ).fetchone()
+            assert row is not None
+            assert row[0] == 12
+        finally:
+            conn.close()
+
+    @pytest.mark.asyncio
+    async def test_no_database_locking_under_load(self, test_db):
+        async def create_recipient(index: int) -> None:
+            await recipient_service.create_recipient(
+                RecipientCreate(
+                    employee_id=f"LOAD-{index}-{uuid4().hex[:6]}",
+                    name=f"Load Recipient {index}",
+                    email=f"load-{index}-{uuid4().hex[:6]}@example.com",
+                    department="Load Test",
+                    phone=None,
+                    location=None,
+                )
+            )
+
+        await asyncio.gather(*(create_recipient(i) for i in range(10)))
+
+        conn = create_connection(test_db)
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM recipients WHERE employee_id LIKE 'LOAD-%'"
+            ).fetchone()
+            assert row is not None
+            assert row[0] == 10
+        finally:
+            conn.close()
 

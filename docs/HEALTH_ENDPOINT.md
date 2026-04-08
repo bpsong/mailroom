@@ -1,4 +1,4 @@
-# Health Check Endpoint Documentation
+﻿# Health Check Endpoint Documentation
 
 ## Overview
 
@@ -69,7 +69,7 @@ The endpoint returns a JSON object with the following structure:
 ## Health Checks
 
 ### 1. Database Connection
-Verifies that the application can connect to and query the DuckDB database.
+Verifies that the application can connect to and query the SQLite database.
 
 **Healthy Criteria:**
 - Database connection successful
@@ -88,7 +88,7 @@ Monitors available disk space for critical directories.
 - Upload directory has < 90% disk usage
 
 **Warning Criteria:**
-- Either directory has ≥ 90% disk usage
+- Either directory has â‰¥ 90% disk usage
 
 **Response Fields:**
 - `status`: Health status
@@ -197,3 +197,4 @@ If the health endpoint doesn't respond:
 - [Deployment Guide](DEPLOYMENT.md)
 - [Configuration Guide](CONFIGURATION.md)
 - [Caddy Setup](CADDY_SETUP.md)
+

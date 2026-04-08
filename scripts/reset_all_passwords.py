@@ -1,20 +1,19 @@
-"""List users in the DuckDB database and reset all passwords."""
+"""List users in the SQLite database and reset all passwords."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import duckdb
-
+from app.database.connection import create_connection
 from app.services.auth_service import auth_service
 
 
 NEW_PASSWORD = "Password!1234"
-DB_PATH = Path("data/mailroom.duckdb")
+DB_PATH = Path("data/mailroom.sqlite3")
 
 
-def fetch_users(conn: duckdb.DuckDBPyConnection) -> list[dict]:
+def fetch_users(conn) -> list[dict]:
     """Return user account rows for reporting."""
     rows = conn.execute(
         """
@@ -59,7 +58,7 @@ def main() -> int:
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database file not found: {DB_PATH.resolve()}")
 
-    conn = duckdb.connect(str(DB_PATH))
+    conn = create_connection(str(DB_PATH))
     try:
         before_users = fetch_users(conn)
         print(f"DATABASE_PATH={DB_PATH.resolve()}")

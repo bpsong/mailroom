@@ -1,4 +1,4 @@
-# Deployment Guide for Windows Server
+﻿# Deployment Guide for Windows Server
 
 ## Overview
 
@@ -12,24 +12,24 @@ This guide provides step-by-step instructions for deploying the Mailroom Trackin
 
 ```
 Internet/Intranet
-       │
-       ▼
-┌─────────────────┐
-│  Caddy (HTTPS)  │  Port 443
-│  Reverse Proxy  │
-└─────────────────┘
-       │
-       ▼
-┌─────────────────┐
-│  FastAPI App    │  Port 8000
-│  (Uvicorn)      │
-└─────────────────┘
-       │
-       ▼
-┌─────────────────┐
-│  DuckDB         │  File-based
-│  Database       │
-└─────────────────┘
+       â”‚
+       â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Caddy (HTTPS)  â”‚  Port 443
+â”‚  Reverse Proxy  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+       â”‚
+       â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  FastAPI App    â”‚  Port 8000
+â”‚  (Uvicorn)      â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+       â”‚
+       â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  SQLite         â”‚  File-based
+â”‚  Database       â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ## System Requirements
@@ -74,8 +74,8 @@ Internet/Intranet
 1. Download Python 3.12+ from [python.org](https://www.python.org/downloads/windows/)
 
 2. Run the installer with these options:
-   - ✅ Add Python to PATH
-   - ✅ Install for all users
+   - âœ… Add Python to PATH
+   - âœ… Install for all users
    - Installation directory: `C:\Python312`
 
 3. Verify installation:
@@ -160,7 +160,7 @@ Internet/Intranet
 
 4. Verify installation:
    ```powershell
-   python -c "import fastapi; import duckdb; print('Dependencies OK')"
+   python -c "import fastapi; import sqlite3; print('Dependencies OK')"
    ```
 
 ### Step 5: Configure Application
@@ -184,7 +184,7 @@ Internet/Intranet
    SECRET_KEY=<generate-secure-random-key-min-32-chars>
    
    # Database
-   DATABASE_PATH=./data/mailroom.duckdb
+   DATABASE_PATH=./data/mailroom.sqlite3
    
    # File Storage
    UPLOAD_DIR=./uploads
@@ -228,7 +228,7 @@ Internet/Intranet
 
 3. Verify database creation:
    ```powershell
-   Test-Path "C:\MailroomApp\data\mailroom.duckdb"
+   Test-Path "C:\MailroomApp\data\mailroom.sqlite3"
    # Should return: True
    ```
 
@@ -459,7 +459,7 @@ Internet/Intranet
    - email
    - department
 
-2. Navigate to "Recipient Management" → "Import CSV"
+2. Navigate to "Recipient Management" â†’ "Import CSV"
 3. Upload CSV file
 4. Review validation report
 5. Confirm import
@@ -468,7 +468,7 @@ Internet/Intranet
 
 1. Add DNS A record:
    ```
-   mailroom.company.local → <server-ip-address>
+   mailroom.company.local â†’ <server-ip-address>
    ```
 
 2. Verify DNS resolution:
@@ -524,13 +524,13 @@ Restart-Service CaddyMailroom
 **Weekly Tasks**:
 ```powershell
 # Vacuum database (reclaim space)
-python -c "import duckdb; conn = duckdb.connect('C:/MailroomApp/data/mailroom.duckdb'); conn.execute('VACUUM'); conn.close()"
+python -c "import sqlite3; conn = sqlite3.connect('C:/MailroomApp/data/mailroom.sqlite3'); conn.execute('VACUUM'); conn.close()"
 ```
 
 **Monthly Tasks**:
 ```powershell
 # Analyze database (update statistics)
-python -c "import duckdb; conn = duckdb.connect('C:/MailroomApp/data/mailroom.duckdb'); conn.execute('ANALYZE'); conn.close()"
+python -c "import sqlite3; conn = sqlite3.connect('C:/MailroomApp/data/mailroom.sqlite3'); conn.execute('ANALYZE'); conn.close()"
 ```
 
 ### Log Rotation
@@ -552,7 +552,7 @@ Clear-Content "C:\MailroomApp\logs\mailroom.log"
 Get-PSDrive C | Select-Object Used, Free
 
 # Check database size
-Get-ChildItem "C:\MailroomApp\data\mailroom.duckdb" | Select-Object Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB,2)}}
+Get-ChildItem "C:\MailroomApp\data\mailroom.sqlite3" | Select-Object Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB,2)}}
 
 # Check uploads size
 Get-ChildItem "C:\MailroomApp\uploads" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(GB)";Expression={[math]::Round($_.Sum/1GB,2)}}
@@ -681,7 +681,7 @@ Get-ChildItem "C:\MailroomApp\uploads" -Recurse | Measure-Object -Property Lengt
    Stop-Service MailroomTracking, CaddyMailroom
    
    # Backup database
-   Copy-Item "C:\MailroomApp\data\mailroom.duckdb" "C:\Backups\Mailroom\pre-upgrade-$(Get-Date -Format 'yyyyMMdd').duckdb"
+   Copy-Item "C:\MailroomApp\data\mailroom.sqlite3" "C:\Backups\Mailroom\pre-upgrade-$(Get-Date -Format 'yyyyMMdd').sqlite3"
    
    # Backup application
    Compress-Archive -Path "C:\MailroomApp" -DestinationPath "C:\Backups\Mailroom\app-backup-$(Get-Date -Format 'yyyyMMdd').zip"
@@ -731,7 +731,7 @@ If upgrade fails:
 
 3. **Restore Database**:
    ```powershell
-   Copy-Item "C:\Backups\Mailroom\pre-upgrade-<date>.duckdb" "C:\MailroomApp\data\mailroom.duckdb" -Force
+   Copy-Item "C:\Backups\Mailroom\pre-upgrade-<date>.sqlite3" "C:\MailroomApp\data\mailroom.sqlite3" -Force
    ```
 
 4. **Start Services**:
@@ -861,7 +861,7 @@ APP_ENV=production
 Stop-Service MailroomTracking
 
 # Restore database
-Copy-Item "C:\Backups\Mailroom\<date>\mailroom.duckdb" "C:\MailroomApp\data\mailroom.duckdb" -Force
+Copy-Item "C:\Backups\Mailroom\<date>\mailroom.sqlite3" "C:\MailroomApp\data\mailroom.sqlite3" -Force
 
 # Start service
 Start-Service MailroomTracking
@@ -883,7 +883,7 @@ Start-Service MailroomTracking
 - Service stdout: `C:\MailroomApp\logs\service-stdout.log`
 - Service stderr: `C:\MailroomApp\logs\service-stderr.log`
 - Caddy logs: `C:\MailroomApp\logs\caddy-access.log`
-- Windows Event Log: Event Viewer → Windows Logs → Application
+- Windows Event Log: Event Viewer â†’ Windows Logs â†’ Application
 
 ### Useful Commands
 
@@ -901,7 +901,7 @@ Get-Content "C:\MailroomApp\logs\mailroom.log" -Tail 100 -Wait
 Invoke-RestMethod -Uri "https://mailroom.company.local/health"
 
 # Database size
-Get-ChildItem "C:\MailroomApp\data\mailroom.duckdb" | Select-Object Name, Length
+Get-ChildItem "C:\MailroomApp\data\mailroom.sqlite3" | Select-Object Name, Length
 
 # Service configuration
 nssm dump MailroomTracking
@@ -935,3 +935,5 @@ See `scripts/backup.ps1` in application directory
 ### E. Database Initialization Script
 
 See `scripts/init_database.ps1` in application directory
+
+

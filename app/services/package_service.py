@@ -218,11 +218,6 @@ class PackageService:
             write_queue.queue.qsize(),
             False,
         )
-        update_params = [
-            status_update.status,
-            status_update.notes,
-            str(package_id),
-        ]
         try:
             await write_queue.execute(
                 """
@@ -230,71 +225,22 @@ class PackageService:
                 SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """,
-                update_params,
+                [
+                    status_update.status,
+                    status_update.notes,
+                    str(package_id),
+                ],
                 return_result=False,
             )
-        except Exception as e:
-            if self._is_duplicate_id_update_error(e):
-                logger.warning(
-                    "Retrying package status update with INSERT ... ON CONFLICT due to DuckDB UPDATE constraint error "
-                    "package_id=%s old_status=%s new_status=%s error=%s",
-                    package_id,
-                    old_status,
-                    status_update.status,
-                    e,
-                )
-                try:
-                    await write_queue.execute(
-                        """
-                        INSERT INTO packages (
-                            id,
-                            tracking_no,
-                            carrier,
-                            recipient_id,
-                            status,
-                            notes,
-                            created_by,
-                            created_at,
-                            updated_at
-                        )
-                        SELECT
-                            id,
-                            tracking_no,
-                            carrier,
-                            recipient_id,
-                            ?,
-                            ?,
-                            created_by,
-                            created_at,
-                            CURRENT_TIMESTAMP
-                        FROM packages
-                        WHERE id = ?
-                        ON CONFLICT (id) DO UPDATE SET
-                            status = EXCLUDED.status,
-                            notes = EXCLUDED.notes,
-                            updated_at = EXCLUDED.updated_at
-                        """,
-                        update_params,
-                        return_result=False,
-                    )
-                except Exception as merge_error:
-                    logger.exception(
-                        "Package status update MERGE retry failed package_id=%s old_status=%s new_status=%s error=%s",
-                        package_id,
-                        old_status,
-                        status_update.status,
-                        merge_error,
-                    )
-                    raise ValueError(f"Failed to update package status: {str(merge_error)}")
-            else:
-                logger.exception(
-                    "Package status update failed package_id=%s old_status=%s new_status=%s error=%s",
-                    package_id,
-                    old_status,
-                    status_update.status,
-                    e,
-                )
-                raise ValueError(f"Failed to update package status: {str(e)}")
+        except Exception as exc:
+            logger.exception(
+                "Package status update failed package_id=%s old_status=%s new_status=%s error=%s",
+                package_id,
+                old_status,
+                status_update.status,
+                exc,
+            )
+            raise ValueError(f"Failed to update package status: {str(exc)}")
         
         updated_package = await self.get_package_by_id(package_id)
         if not updated_package:
@@ -679,13 +625,6 @@ class PackageService:
                 timestamp,
             ],
         )
-
-    @staticmethod
-    def _is_duplicate_id_update_error(error: Exception) -> bool:
-        """Return True when DuckDB fails UPDATE with a duplicate id constraint error."""
-        error_message = str(error).lower()
-        return "duplicate key" in error_message and "id:" in error_message
-
 
 # Global package service instance
 package_service = PackageService()

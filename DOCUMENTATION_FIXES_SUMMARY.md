@@ -1,4 +1,4 @@
-# Documentation Fixes Summary
+﻿# Documentation Fixes Summary
 
 This document summarizes all documentation updates made to align specifications with the actual implementation.
 
@@ -16,7 +16,7 @@ The Mailroom Tracking System documentation has been updated to accurately reflec
 - **Impact**: Sets correct expectations for API consumers and developers
 
 #### Interactive Documentation URL
-- **Changed**: `/api/docs` → `/docs`
+- **Changed**: `/api/docs` â†’ `/docs`
 - **Reason**: FastAPI is instantiated with default settings, so docs are at `/docs`
 - **Impact**: Users can now find the Swagger UI at the correct URL
 
@@ -26,7 +26,7 @@ The Mailroom Tracking System documentation has been updated to accurately reflec
 - **Changed**: Request format from JSON to `application/x-www-form-urlencoded`
 - **Changed**: Response from JSON with 200 status to 303 redirect
 - **Changed**: Removed `Max-Age` from cookie documentation (session-scoped cookie)
-- **Changed**: HTTP 423 (Locked) → HTTP 403 (Forbidden) for account lockout
+- **Changed**: HTTP 423 (Locked) â†’ HTTP 403 (Forbidden) for account lockout
 - **Added**: CSRF token requirement
 - **Reason**: Implementation uses HTML forms with CSRF protection and redirects
 
@@ -39,7 +39,7 @@ The Mailroom Tracking System documentation has been updated to accurately reflec
 
 **List Packages (GET /packages)**
 - **Changed**: Response format from JSON to HTML
-- **Changed**: Query parameters: `skip` → `page`, `tracking_no` → `query`
+- **Changed**: Query parameters: `skip` â†’ `page`, `tracking_no` â†’ `query`
 - **Changed**: Pagination from offset-based to page-based
 - **Added**: HTMX partial response support
 - **Reason**: Implementation serves HTML templates with HTMX support
@@ -53,19 +53,19 @@ The Mailroom Tracking System documentation has been updated to accurately reflec
 **Update Status (POST /packages/{package_id}/status)**
 - **Changed**: Request format from JSON to `application/x-www-form-urlencoded`
 - **Changed**: Response from JSON to HTML partial
-- **Changed**: Field name: `new_status` → `status`
+- **Changed**: Field name: `new_status` â†’ `status`
 - **Added**: CSRF token requirement
 - **Reason**: Implementation uses HTML forms and returns HTMX partials
 
 ### 2. Requirements Document (.kiro/specs/mailroom-tracking-mvp/requirements.md)
 
 #### Account Lockout Timing (Requirement 1)
-- **Changed**: "5 failed login attempts within 15 minutes" → "5 consecutive failed login attempts"
+- **Changed**: "5 failed login attempts within 15 minutes" â†’ "5 consecutive failed login attempts"
 - **Reason**: Implementation counts consecutive failures without time window
 - **Impact**: Accurately describes the lockout behavior
 
 #### Session Expiration (Requirement 12)
-- **Changed**: "delete the Session record and return HTTP 401" → "return None during validation and leave the expired session record in the database"
+- **Changed**: "delete the Session record and return HTTP 401" â†’ "return None during validation and leave the expired session record in the database"
 - **Changed**: Added that expired sessions are cleaned up on startup
 - **Changed**: Browser requests redirect to login page with HTTP 303 instead of returning 401
 - **Reason**: Implementation leaves expired sessions in database and cleans them on startup
@@ -74,13 +74,13 @@ The Mailroom Tracking System documentation has been updated to accurately reflec
 ### 3. Design Document (.kiro/specs/mailroom-tracking-mvp/design.md)
 
 #### Technology Stack Versions
-- **Changed**: TailwindCSS 4.x → TailwindCSS 3.4.0
-- **Changed**: daisyUI 5.x → daisyUI 4.12.0
+- **Changed**: TailwindCSS 4.x â†’ TailwindCSS 3.4.0
+- **Changed**: daisyUI 5.x â†’ daisyUI 4.12.0
 - **Reason**: package.json shows actual versions in use
 - **Impact**: Ensures generated markup uses compatible CSS classes
 
 #### Session Management
-- **Changed**: "itsdangerous for secure cookies" → "Random tokens stored in DuckDB (no itsdangerous dependency)"
+- **Changed**: "itsdangerous for secure cookies" â†’ "Random tokens stored in SQLite (no itsdangerous dependency)"
 - **Reason**: Implementation uses random tokens stored in database, not itsdangerous
 - **Impact**: Removes confusion about unused dependency
 
@@ -88,7 +88,7 @@ The Mailroom Tracking System documentation has been updated to accurately reflec
 - **Changed**: Documented that caching is NOT currently implemented
 - **Added**: Note that current scale doesn't require caching
 - **Added**: Future enhancement suggestions if performance becomes an issue
-- **Reason**: Services query DuckDB directly without any caching layer
+- **Reason**: Services query SQLite directly without any caching layer
 - **Impact**: Prevents developers from looking for non-existent cache implementation
 
 ### 4. README.md
@@ -151,9 +151,9 @@ For developers working with this codebase:
 
 2. **CSRF Required**: All POST/PUT/DELETE requests must include valid CSRF token.
 
-3. **Session Management**: Sessions are simple random tokens in DuckDB, not signed cookies.
+3. **Session Management**: Sessions are simple random tokens in SQLite, not signed cookies.
 
-4. **Caching**: No caching layer exists. All queries hit DuckDB directly.
+4. **Caching**: No caching layer exists. All queries hit SQLite directly.
 
 5. **CSS Framework**: Use TailwindCSS 3.4 and daisyUI 4.12 classes, not newer versions.
 
@@ -180,3 +180,5 @@ All documentation now accurately reflects the implemented HTMX-based architectur
 **Updated**: 2024
 **Reviewed By**: Documentation Audit
 **Status**: Complete
+
+

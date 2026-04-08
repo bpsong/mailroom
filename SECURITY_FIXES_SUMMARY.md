@@ -1,4 +1,4 @@
-# Security Fixes Summary
+﻿# Security Fixes Summary
 
 ## Overview
 
@@ -6,7 +6,7 @@ Three critical security and validation issues have been identified and fixed in 
 
 ## Issues Fixed
 
-### 1. ✓ CSRF Protection (CRITICAL)
+### 1. âœ“ CSRF Protection (CRITICAL)
 
 **Problem:** CSRF middleware was effectively disabled, allowing cross-site request forgery attacks on all state-changing endpoints.
 
@@ -25,7 +25,7 @@ Three critical security and validation issues have been identified and fixed in 
 
 ---
 
-### 2. ✓ Session Limit Enforcement (HIGH)
+### 2. âœ“ Session Limit Enforcement (HIGH)
 
 **Problem:** No limit on concurrent sessions per user, allowing unlimited simultaneous logins with compromised credentials.
 
@@ -42,7 +42,7 @@ Three critical security and validation issues have been identified and fixed in 
 
 ---
 
-### 3. ✓ Department Field Requirement (MEDIUM)
+### 3. âœ“ Department Field Requirement (MEDIUM)
 
 **Problem:** Recipients could be created without a department, violating requirement 5.1 and breaking department-based filtering.
 
@@ -202,7 +202,7 @@ git revert <commit-hash>
 
 ### 2. Restore Database
 ```powershell
-.\scripts\restore.ps1 -BackupFile "backup-YYYYMMDD-HHMMSS.duckdb"
+.\scripts\restore.ps1 -BackupFile "backup-YYYYMMDD-HHMMSS.sqlite3"
 ```
 
 ### 3. Restart Application
@@ -256,3 +256,5 @@ Restart-Service MailroomTracking
 ## Questions or Issues?
 
 Contact the development team or review the detailed documentation in `docs/SECURITY_FIXES.md`.
+
+

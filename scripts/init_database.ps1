@@ -3,7 +3,7 @@
 
 param(
     [string]$InstallPath = "C:\MailroomApp",
-    [string]$PythonPath = "C:\Python312\python.exe",
+    [string]$PythonPath = "C:\Python313\python.exe",
     [string]$SuperAdminUsername = "admin",
     [string]$SuperAdminPassword,
     [string]$SuperAdminFullName = "System Administrator",
@@ -21,7 +21,7 @@ Usage:
 
 Options:
     -InstallPath <path>           Installation directory (default: C:\MailroomApp)
-    -PythonPath <path>            Path to Python executable (default: C:\Python312\python.exe)
+    -PythonPath <path>            Path to Python executable (default: C:\Python313\python.exe)
     -SuperAdminUsername <name>    Super admin username (default: admin)
     -SuperAdminPassword <pass>    Super admin password (will prompt if not provided)
     -SuperAdminFullName <name>    Super admin full name (default: System Administrator)
@@ -77,7 +77,7 @@ if (-not (Test-Path $envPath)) {
 Write-Host "Configuration: $envPath" -ForegroundColor Green
 
 # Determine database path from .env
-$dbPath = Join-Path $InstallPath "data\mailroom.duckdb"
+$dbPath = Join-Path $InstallPath "data\mailroom.sqlite3"
 $envContent = Get-Content $envPath
 foreach ($line in $envContent) {
     if ($line -match '^DATABASE_PATH=(.+)$') {
@@ -109,10 +109,14 @@ if ($dbExists) {
         Write-Host "`nDeleting existing database..." -ForegroundColor Yellow
         Remove-Item $dbPath -Force
         
-        # Also remove WAL files if they exist
-        $walPath = "$dbPath.wal"
+        # Also remove SQLite WAL/SHM files if they exist
+        $walPath = "$dbPath-wal"
         if (Test-Path $walPath) {
             Remove-Item $walPath -Force
+        }
+        $shmPath = "$dbPath-shm"
+        if (Test-Path $shmPath) {
+            Remove-Item $shmPath -Force
         }
         
         Write-Host "Database deleted" -ForegroundColor Green

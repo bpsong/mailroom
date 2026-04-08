@@ -1,4 +1,4 @@
-"""Tests for user update behavior under DuckDB FK limitations."""
+"""Tests for user update behavior on SQLite."""
 
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -11,13 +11,10 @@ from app.services.user_service import UserService
 
 class _FakeWriteQueue:
     def __init__(self):
-        self.connection_calls: list[str] = []
+        self.calls: list[tuple[str, list[str]]] = []
 
     async def execute(self, query, params, return_result=False):
-        raise Exception('Constraint Error: Violates foreign key constraint because key "user_id: abc" is still referenced')
-
-    async def execute_with_connection(self, description, operation_callable, return_result=False):
-        self.connection_calls.append(description)
+        self.calls.append((query, params))
         now = datetime.now(UTC)
         return [[
             uuid4(),
@@ -40,7 +37,7 @@ async def _return_queue(queue):
 
 
 @pytest.mark.asyncio
-async def test_update_user_uses_fk_safe_replace_on_fk_constraint(monkeypatch):
+async def test_update_user_executes_single_update_and_logs_audit(monkeypatch):
     service = UserService()
     user_id = uuid4()
     actor_id = uuid4()
@@ -96,5 +93,6 @@ async def test_update_user_uses_fk_safe_replace_on_fk_constraint(monkeypatch):
 
     assert result.full_name == "Admin Updated"
     assert result.role == "super_admin"
-    assert queue.connection_calls == ["USER_FK_SAFE_REPLACE users(id)"]
+    assert len(queue.calls) == 1
+    assert "update users" in queue.calls[0][0].lower()
     assert audit_calls and audit_calls[0]["action"] == "user_updated"

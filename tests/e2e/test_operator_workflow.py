@@ -1,9 +1,9 @@
 """End-to-end tests for operator workflow (real form + CSRF flow)."""
 
 from uuid import uuid4
-import duckdb
 import pytest
 
+from app.database.connection import create_connection
 from app.services.auth_service import auth_service
 
 
@@ -44,7 +44,7 @@ def operator_session(test_db):
     password_hash = auth_service.hash_password(password)
     employee_id = f"EMP{uuid4().hex[:8]}"
 
-    conn = duckdb.connect(test_db)
+    conn = create_connection(test_db)
     try:
         user_result = conn.execute(
             """
@@ -62,7 +62,6 @@ def operator_session(test_db):
             """,
             [employee_id, "Test Recipient", f"{employee_id.lower()}@example.com", "Engineering"],
         ).fetchone()
-        conn.commit()
         assert user_result is not None
         assert recipient_result is not None
 
@@ -96,7 +95,7 @@ class TestOperatorWorkflow:
         )
         assert register_response.status_code == 200
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 "SELECT id, status FROM packages WHERE tracking_no = ?",
@@ -129,7 +128,6 @@ class TestOperatorWorkflow:
         for tracking_no in tracking_numbers:
             assert tracking_no in body
 
-    @pytest.mark.skip(reason="Known DuckDB update/RETURNING constraint issue in status transition path")
     def test_operator_filter_by_status(self, client, operator_session, test_db):
         csrf_token = _login_operator(client, operator_session["username"], operator_session["password"])
 
@@ -158,7 +156,7 @@ class TestOperatorWorkflow:
         )
         assert response2.status_code == 200
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             package_row = conn.execute(
                 "SELECT id FROM packages WHERE tracking_no = ?",
@@ -204,7 +202,7 @@ class TestOperatorPhotoUpload:
         )
         assert response.status_code == 200
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 """
@@ -235,7 +233,7 @@ class TestOperatorPhotoUpload:
         )
         assert create_response.status_code == 200
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             package_id_row = conn.execute(
                 "SELECT id FROM packages WHERE tracking_no = ?",
@@ -253,7 +251,7 @@ class TestOperatorPhotoUpload:
         )
         assert response.status_code == 200
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 "SELECT COUNT(*) FROM attachments WHERE package_id = ?",

@@ -1,19 +1,20 @@
 """Pytest configuration and fixtures."""
 
+import asyncio
 import os
 import tempfile
-import asyncio
+from pathlib import Path
+from unittest.mock import patch
 from uuid import uuid4
 
-import duckdb
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
-from unittest.mock import patch
+from httpx import ASGITransport, AsyncClient
 
 from app.config import clear_settings_cache, get_settings
 from app.database import connection as db_connection
-from app.database.schema import SCHEMA_SQL
+from app.database.connection import create_connection
+from app.database.schema import init_database
 from app.database.write_queue import close_write_queue
 from app.main import app
 from app.services.auth_service import auth_service
@@ -30,23 +31,18 @@ def test_db_path():
     """Create a temporary test database."""
     # Create temporary directory for test database
     temp_dir = tempfile.mkdtemp()
-    db_path = os.path.join(temp_dir, "test_mailroom.db")
-    
-    # Initialize database with schema
-    conn = duckdb.connect(db_path)
-    try:
-        conn.execute(SCHEMA_SQL)
-        conn.commit()
-    finally:
-        conn.close()
+    db_path = os.path.join(temp_dir, "test_mailroom.sqlite3")
+
+    init_database(db_path)
     
     yield db_path
     
     # Cleanup
     try:
-        os.remove(db_path)
+        for suffix in ("", "-wal", "-shm"):
+            Path(db_path + suffix).unlink(missing_ok=True)
         os.rmdir(temp_dir)
-    except:
+    except OSError:
         pass
 
 
@@ -70,17 +66,17 @@ def test_db(test_db_path, monkeypatch):
     yield test_db_path
     
     # Clean up test data after each test
-    conn = duckdb.connect(test_db_path)
+    conn = create_connection(test_db_path)
     try:
         # Delete in reverse order of dependencies
         conn.execute("DELETE FROM attachments")
         conn.execute("DELETE FROM package_events")
         conn.execute("DELETE FROM packages")
+        conn.execute("DELETE FROM system_settings")
         conn.execute("DELETE FROM sessions")
         conn.execute("DELETE FROM auth_events")
         conn.execute("DELETE FROM recipients")
         conn.execute("DELETE FROM users")
-        conn.commit()
     finally:
         conn.close()
 
@@ -95,7 +91,7 @@ def test_user(test_db):
     password = "TestPassword123!"
     password_hash = auth_service.hash_password(password)
     
-    conn = duckdb.connect(test_db)
+    conn = create_connection(test_db)
     try:
         result = conn.execute(
             """
@@ -106,8 +102,6 @@ def test_user(test_db):
             [username, password_hash, "Test User", "operator", True, False]
         ).fetchone()
         assert result is not None
-        
-        conn.commit()
         
         yield {
             "id": result[0],
@@ -126,7 +120,7 @@ def test_admin(test_db):
     password = "AdminPassword123!"
     password_hash = auth_service.hash_password(password)
     
-    conn = duckdb.connect(test_db)
+    conn = create_connection(test_db)
     try:
         result = conn.execute(
             """
@@ -137,8 +131,6 @@ def test_admin(test_db):
             [username, password_hash, "Test Admin", "admin", True, False]
         ).fetchone()
         assert result is not None
-        
-        conn.commit()
         
         yield {
             "id": result[0],
@@ -155,7 +147,7 @@ def test_recipient(test_db):
     """Create a test recipient."""
     employee_id = f"EMP{uuid4().hex[:8]}"
     
-    conn = duckdb.connect(test_db)
+    conn = create_connection(test_db)
     try:
         result = conn.execute(
             """
@@ -166,8 +158,6 @@ def test_recipient(test_db):
             [employee_id, "Test Recipient", "test@example.com", "Engineering"]
         ).fetchone()
         assert result is not None
-        
-        conn.commit()
         
         yield {
             "id": result[0],

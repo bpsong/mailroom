@@ -1,6 +1,6 @@
-# Mailroom Tracking System
+﻿# Mailroom Tracking System
 
-A secure, mobile-friendly web application for tracking packages and managing mailroom operations in corporate environments. Built with FastAPI, DuckDB, and modern web technologies for reliable offline operation behind corporate firewalls.
+A secure, mobile-friendly web application for tracking packages and managing mailroom operations in corporate environments. Built with FastAPI, SQLite, and modern web technologies for reliable offline operation behind corporate firewalls.
 
 ## Overview
 
@@ -15,13 +15,13 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
 - **QR Code Stickers**: Generate, download, and print 2 cm x 2 cm high-error-correction QR codes that deep-link to package details for fast mobile scanning
 - **Comprehensive Audit Logging**: Track all system actions for security and compliance
 - **Secure Authentication**: Argon2id password hashing, session management, and account lockout protection
-- **Offline Operation**: Fully functional without internet connectivity using embedded DuckDB database
+- **Offline Operation**: Fully functional without internet connectivity using embedded SQLite database
 - **Dashboard & Reporting**: Real-time statistics and CSV export capabilities
 
 ### Technology Stack
 
 - **Backend**: FastAPI (Python 3.12+) with async support
-- **Database**: DuckDB (embedded, single-file)
+- **Database**: SQLite (embedded, single-file)
 - **Frontend**: HTMX + TailwindCSS 3.4 + daisyUI 4.12
 - **Authentication**: Argon2-cffi with secure session management
 - **Deployment**: Windows Service (NSSM) + Caddy reverse proxy
@@ -110,7 +110,7 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    
    Or manually with Python:
    ```bash
-   python -c "from app.database.init_db import init_database; init_database()"
+   python -c "from app.database.migrations import run_initial_migration; run_initial_migration()"
    ```
    
    This creates the database schema and a super admin account. **Save the credentials securely!**
@@ -142,86 +142,86 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
 
 ```
 mailroom-tracking/
-├── app/                          # Application source code
-│   ├── database/                 # Database layer
-│   │   ├── init_db.py           # Schema initialization
-│   │   └── service.py           # Database service with write queue
-│   ├── decorators/              # Route decorators
-│   │   └── auth.py              # Authentication & RBAC decorators
-│   ├── middleware/              # FastAPI middleware
-│   │   ├── auth.py              # Session validation
-│   │   ├── csrf.py              # CSRF protection
-│   │   └── rate_limit.py        # Rate limiting
-│   ├── models/                  # Pydantic models
-│   │   ├── user.py              # User models
-│   │   ├── package.py           # Package models
-│   │   └── recipient.py         # Recipient models
-│   ├── routes/                  # API route handlers
-│   │   ├── auth.py              # Authentication endpoints
-│   │   ├── packages.py          # Package management
-│   │   ├── recipients.py        # Recipient management
-│   │   ├── admin.py             # Admin endpoints
-│   │   └── dashboard.py         # Dashboard & reports
-│   ├── services/                # Business logic layer
-│   │   ├── auth_service.py      # Authentication & password hashing
-│   │   ├── rbac_service.py      # Role-based access control
-│   │   ├── user_service.py      # User management
-│   │   ├── package_service.py   # Package operations
-│   │   ├── recipient_service.py # Recipient operations
-│   │   ├── file_service.py      # File upload handling
-│   │   ├── audit_service.py     # Audit logging
-│   │   └── dashboard_service.py # Dashboard statistics
-│   ├── utils/                   # Utility functions
-│   │   ├── validators.py        # Input validation
-│   │   └── helpers.py           # Helper functions
-│   ├── config.py                # Configuration management
-│   ├── main.py                  # FastAPI application entry point
-│   └── __init__.py
-├── static/                      # Static assets
-│   ├── css/
-│   │   ├── input.css            # TailwindCSS source
-│   │   └── output.css           # Compiled CSS (generated)
-│   └── js/
-│       └── app.js               # Frontend JavaScript
-├── templates/                   # Jinja2 HTML templates
-│   ├── admin/                   # Admin pages
-│   ├── components/              # Reusable components
-│   ├── dashboard/               # Dashboard pages
-│   ├── packages/                # Package pages
-│   ├── user/                    # User management pages
-│   └── base.html                # Base template
-├── tests/                       # Test suite
-│   ├── unit/                    # Unit tests
-│   ├── integration/             # Integration tests
-│   ├── e2e/                     # End-to-end tests
-│   ├── conftest.py              # Pytest fixtures
-│   └── __init__.py
-├── scripts/                     # Deployment scripts (PowerShell)
-│   ├── init_database.ps1        # Database initialization
-│   ├── install_service.ps1      # Windows Service installation
-│   ├── backup.ps1               # Backup script
-│   ├── cleanup_backups.ps1      # Backup cleanup
-│   └── README.md                # Scripts documentation
-├── docs/                        # Documentation
-│   ├── API_DOCUMENTATION.md     # API reference
-│   ├── DATABASE_SCHEMA.md       # Database schema
-│   ├── DEPLOYMENT.md            # Deployment guide
-│   ├── CONFIGURATION.md         # Configuration reference
-│   ├── USER_GUIDE_*.md          # User guides by role
-│   └── SECURITY_IMPLEMENTATION.md
-├── data/                        # Database files (created at runtime)
-│   └── mailroom.duckdb          # DuckDB database
-├── uploads/                     # Uploaded package photos (created at runtime)
-├── logs/                        # Application logs (created at runtime)
-│   └── mailroom.log
-├── .env.example                 # Example environment configuration
-├── .env                         # Environment configuration (create from .env.example)
-├── .gitignore
-├── pyproject.toml               # Python project configuration
-├── package.json                 # Node.js configuration
-├── tailwind.config.js           # TailwindCSS configuration
-├── Caddyfile                    # Caddy reverse proxy config
-└── README.md                    # This file
+â”œâ”€â”€ app/                          # Application source code
+â”‚   â”œâ”€â”€ database/                 # Database layer
+â”‚   â”‚   â”œâ”€â”€ schema.py            # SQLite schema and indexes
+â”‚   â”‚   â””â”€â”€ write_queue.py       # Serialized write worker
+â”‚   â”œâ”€â”€ decorators/              # Route decorators
+â”‚   â”‚   â””â”€â”€ auth.py              # Authentication & RBAC decorators
+â”‚   â”œâ”€â”€ middleware/              # FastAPI middleware
+â”‚   â”‚   â”œâ”€â”€ auth.py              # Session validation
+â”‚   â”‚   â”œâ”€â”€ csrf.py              # CSRF protection
+â”‚   â”‚   â””â”€â”€ rate_limit.py        # Rate limiting
+â”‚   â”œâ”€â”€ models/                  # Pydantic models
+â”‚   â”‚   â”œâ”€â”€ user.py              # User models
+â”‚   â”‚   â”œâ”€â”€ package.py           # Package models
+â”‚   â”‚   â””â”€â”€ recipient.py         # Recipient models
+â”‚   â”œâ”€â”€ routes/                  # API route handlers
+â”‚   â”‚   â”œâ”€â”€ auth.py              # Authentication endpoints
+â”‚   â”‚   â”œâ”€â”€ packages.py          # Package management
+â”‚   â”‚   â”œâ”€â”€ recipients.py        # Recipient management
+â”‚   â”‚   â”œâ”€â”€ admin.py             # Admin endpoints
+â”‚   â”‚   â””â”€â”€ dashboard.py         # Dashboard & reports
+â”‚   â”œâ”€â”€ services/                # Business logic layer
+â”‚   â”‚   â”œâ”€â”€ auth_service.py      # Authentication & password hashing
+â”‚   â”‚   â”œâ”€â”€ rbac_service.py      # Role-based access control
+â”‚   â”‚   â”œâ”€â”€ user_service.py      # User management
+â”‚   â”‚   â”œâ”€â”€ package_service.py   # Package operations
+â”‚   â”‚   â”œâ”€â”€ recipient_service.py # Recipient operations
+â”‚   â”‚   â”œâ”€â”€ file_service.py      # File upload handling
+â”‚   â”‚   â”œâ”€â”€ audit_service.py     # Audit logging
+â”‚   â”‚   â””â”€â”€ dashboard_service.py # Dashboard statistics
+â”‚   â”œâ”€â”€ utils/                   # Utility functions
+â”‚   â”‚   â”œâ”€â”€ validators.py        # Input validation
+â”‚   â”‚   â””â”€â”€ helpers.py           # Helper functions
+â”‚   â”œâ”€â”€ config.py                # Configuration management
+â”‚   â”œâ”€â”€ main.py                  # FastAPI application entry point
+â”‚   â””â”€â”€ __init__.py
+â”œâ”€â”€ static/                      # Static assets
+â”‚   â”œâ”€â”€ css/
+â”‚   â”‚   â”œâ”€â”€ input.css            # TailwindCSS source
+â”‚   â”‚   â””â”€â”€ output.css           # Compiled CSS (generated)
+â”‚   â””â”€â”€ js/
+â”‚       â””â”€â”€ app.js               # Frontend JavaScript
+â”œâ”€â”€ templates/                   # Jinja2 HTML templates
+â”‚   â”œâ”€â”€ admin/                   # Admin pages
+â”‚   â”œâ”€â”€ components/              # Reusable components
+â”‚   â”œâ”€â”€ dashboard/               # Dashboard pages
+â”‚   â”œâ”€â”€ packages/                # Package pages
+â”‚   â”œâ”€â”€ user/                    # User management pages
+â”‚   â””â”€â”€ base.html                # Base template
+â”œâ”€â”€ tests/                       # Test suite
+â”‚   â”œâ”€â”€ unit/                    # Unit tests
+â”‚   â”œâ”€â”€ integration/             # Integration tests
+â”‚   â”œâ”€â”€ e2e/                     # End-to-end tests
+â”‚   â”œâ”€â”€ conftest.py              # Pytest fixtures
+â”‚   â””â”€â”€ __init__.py
+â”œâ”€â”€ scripts/                     # Deployment scripts (PowerShell)
+â”‚   â”œâ”€â”€ init_database.ps1        # Database initialization
+â”‚   â”œâ”€â”€ install_service.ps1      # Windows Service installation
+â”‚   â”œâ”€â”€ backup.ps1               # Backup script
+â”‚   â”œâ”€â”€ cleanup_backups.ps1      # Backup cleanup
+â”‚   â””â”€â”€ README.md                # Scripts documentation
+â”œâ”€â”€ docs/                        # Documentation
+â”‚   â”œâ”€â”€ API_DOCUMENTATION.md     # API reference
+â”‚   â”œâ”€â”€ DATABASE_SCHEMA.md       # Database schema
+â”‚   â”œâ”€â”€ DEPLOYMENT.md            # Deployment guide
+â”‚   â”œâ”€â”€ CONFIGURATION.md         # Configuration reference
+â”‚   â”œâ”€â”€ USER_GUIDE_*.md          # User guides by role
+â”‚   â””â”€â”€ SECURITY_IMPLEMENTATION.md
+â”œâ”€â”€ data/                        # Database files (created at runtime)
+â”‚   â””â”€â”€ mailroom.sqlite3          # SQLite database
+â”œâ”€â”€ uploads/                     # Uploaded package photos (created at runtime)
+â”œâ”€â”€ logs/                        # Application logs (created at runtime)
+â”‚   â””â”€â”€ mailroom.log
+â”œâ”€â”€ .env.example                 # Example environment configuration
+â”œâ”€â”€ .env                         # Environment configuration (create from .env.example)
+â”œâ”€â”€ .gitignore
+â”œâ”€â”€ pyproject.toml               # Python project configuration
+â”œâ”€â”€ package.json                 # Node.js configuration
+â”œâ”€â”€ tailwind.config.js           # TailwindCSS configuration
+â”œâ”€â”€ Caddyfile                    # Caddy reverse proxy config
+â””â”€â”€ README.md                    # This file
 ```
 
 ## Dependencies
@@ -231,7 +231,7 @@ mailroom-tracking/
 **Core Dependencies:**
 - `fastapi>=0.104.0` - Modern web framework
 - `uvicorn[standard]>=0.24.0` - ASGI server
-- `duckdb>=0.9.0` - Embedded SQL database
+- `sqlite3` - Embedded SQL database from the Python standard library
 - `jinja2>=3.1.0` - Template engine
 - `argon2-cffi>=23.1.0` - Password hashing
 - `python-multipart>=0.0.6` - File upload support
@@ -240,7 +240,7 @@ mailroom-tracking/
 - `python-dotenv>=1.0.0` - Environment variable loading
 - `python-magic>=0.4.27` - File type detection
 
-**Note**: Session management uses random tokens stored in DuckDB, not itsdangerous.
+**Note**: Session management uses random tokens stored in SQLite, not itsdangerous.
 
 **Development Dependencies:**
 - `pytest>=7.4.0` - Testing framework
@@ -270,7 +270,7 @@ APP_HOST=0.0.0.0            # Bind address
 APP_PORT=8000               # Port number
 
 # Database
-DATABASE_PATH=./data/mailroom.duckdb
+DATABASE_PATH=./data/mailroom.sqlite3
 
 # File uploads
 UPLOAD_DIR=./uploads
@@ -291,7 +291,7 @@ For complete configuration reference, see [docs/CONFIGURATION.md](docs/CONFIGURA
 
 ### QR Code Base URL Setting
 
-- Managed inside the application under **Admin → System Settings** (Super Admin only).
+- Managed inside the application under **Admin â†’ System Settings** (Super Admin only).
 - Enter the production hostname that operators use when scanning stickers (for example, `https://mailroom.company.local`).
 - The value must start with `http://` or `https://` and is stored in the `system_settings` table; every QR sticker uses this host when constructing the package detail URL.
 
@@ -400,9 +400,19 @@ For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.m
 ```
 
 Backups include:
-- DuckDB database (including WAL files)
+- SQLite database (including WAL files)
 - Uploaded package photos
 - Configuration files
+
+### Migrating Existing DuckDB Data
+
+If you're upgrading an existing installation that still has `data/mailroom.duckdb`, run:
+
+```powershell
+C:\Python313\python.exe .\scripts\migrate_duckdb_to_sqlite.py --force
+```
+
+This exports recipients to `data/recipient_export.csv` and imports all application tables into `data/mailroom.sqlite3`.
 
 #### Cleanup Old Backups
 
@@ -464,20 +474,20 @@ For complete maintenance procedures, see [scripts/README.md](scripts/README.md).
 
 1. Go to "Packages" and find the package row/card.
 2. Click or tap the "QR Actions" dropdown.
-3. Choose "Download QR Code" to save `qr_code_{package_id}.png`, or choose "Print QR Code" to open the 2 cm × 2 cm sticker view in a new tab.
+3. Choose "Download QR Code" to save `qr_code_{package_id}.png`, or choose "Print QR Code" to open the 2â€¯cm Ã—â€¯2â€¯cm sticker view in a new tab.
 4. Use the browser's print dialog to send the sticker to a label printer, then affix it to the physical package.
 5. When a teammate scans the sticker, they'll be redirected through login (if needed) and land on that package's detail page for quick updates.
 
 #### Import Recipients (Admin)
 
-1. Navigate to "Recipients" → "Import CSV"
+1. Navigate to "Recipients" â†’ "Import CSV"
 2. Upload CSV file with columns: employee_id, name, email, department
 3. Review validation report
 4. Confirm import
 
 #### Create User Account (Admin)
 
-1. Navigate to "Users" → "Add User"
+1. Navigate to "Users" â†’ "Add User"
 2. Enter username, full name, and role
 3. Set initial password
 4. User must change password on first login
@@ -510,7 +520,7 @@ For detailed user guides, see:
 1. Ensure only one instance of the application is running
 2. Check for stale lock files in `data/` directory
 3. Restart the application
-4. If persistent, check DuckDB WAL files: `data/mailroom.duckdb.wal`
+4. If persistent, check SQLite WAL files: `data/mailroom.sqlite3-wal`
 
 #### CSS Not Loading
 
@@ -592,8 +602,8 @@ For detailed user guides, see:
 
 3. **Database Inspection**
    ```python
-   import duckdb
-   conn = duckdb.connect('data/mailroom.duckdb')
+   import sqlite3
+   conn = sqlite3.connect('data/mailroom.sqlite3')
    conn.execute("SELECT * FROM users").fetchall()
    ```
 
@@ -691,3 +701,5 @@ For technical support or questions:
 **Version**: 1.0.0  
 **Last Updated**: 2024  
 **Maintained By**: Internal IT Team
+
+

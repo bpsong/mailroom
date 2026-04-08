@@ -1,4 +1,4 @@
-# Super Administrator User Guide
+﻿# Super Administrator User Guide
 
 ## Introduction
 
@@ -44,7 +44,7 @@ Change this password immediately after the first login and store the new value i
    - Go to Admin -> Users -> New User.
    - Assign the `super_admin` role and enable "Force password change".
 4. **Review `.env` and restart the service.**
-   - Confirm host/port, log paths, DuckDB file, and rate limits.
+   - Confirm host/port, log paths, SQLite file, and rate limits.
 5. **Configure the QR Code Base URL (new).**
    - Open Admin -> System Settings.
    - Enter the production host that operators will use when scanning stickers (for example, `https://mailroom.company.local`).
@@ -154,7 +154,7 @@ APP_PORT=8000
 SECRET_KEY=<generate a random 32 byte string>
 
 # Database
-DATABASE_PATH=./data/mailroom.duckdb
+DATABASE_PATH=./data/mailroom.sqlite3
 DATABASE_CHECKPOINT_INTERVAL=300
 
 # Security
@@ -203,9 +203,9 @@ LOG_RETENTION_DAYS=365
 
 ### Weekly
 
-- Run DuckDB maintenance:
+- Run SQLite maintenance:
   ```powershell
-  duckdb C:\MailroomApp\data\mailroom.duckdb "VACUUM; ANALYZE;"
+  python -c "import sqlite3; conn = sqlite3.connect('C:/MailroomApp/data/mailroom.sqlite3'); conn.execute('VACUUM'); conn.execute('ANALYZE'); conn.close()"
   ```
 - Archive or rotate `logs/mailroom.log` if it exceeds expected size.
 - Validate that QR codes still resolve correctly by scanning a random sticker.
@@ -246,7 +246,7 @@ LOG_RETENTION_DAYS=365
 ### Restore Checklist
 
 1. Stop the Mailroom service.
-2. Copy the backup DuckDB file and uploads directory into place.
+2. Copy the backup SQLite file and uploads directory into place.
 3. Start the service.
 4. Log in and confirm recent packages exist.
 
@@ -293,7 +293,7 @@ LOG_RETENTION_DAYS=365
 
 ### Database Locked
 
-1. Make sure no DuckDB CLI sessions are open.
+1. Make sure no SQLite CLI sessions are open.
 2. Confirm the async write queue worker is running.
 3. Restart the service if locks persist.
 
@@ -339,3 +339,6 @@ LOG_RETENTION_DAYS=365
 **Version:** 2.0 (QR code update)  
 **Last Updated:** November 2025  
 **Maintained By:** System Administrator
+
+
+

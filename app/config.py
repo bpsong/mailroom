@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     secret_key: str
 
     # Database
-    database_path: str = "./data/mailroom.duckdb"
+    database_path: str = "./data/mailroom.sqlite3"
     database_checkpoint_interval: int = 300
 
     # File Storage

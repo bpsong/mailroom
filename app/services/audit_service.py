@@ -321,21 +321,27 @@ class AuditService:
         """
         cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
         
+        db = get_db()
+        with db.get_read_connection() as conn:
+            count_result = conn.execute(
+                "SELECT COUNT(*) FROM auth_events WHERE created_at < ?",
+                [cutoff_date],
+            ).fetchone()
+            deleted_count = count_result[0] if count_result else 0
+
+        if deleted_count == 0:
+            return 0
+
         query = "DELETE FROM auth_events WHERE created_at < ?"
-        
         write_queue = await get_write_queue()
-        result = await write_queue.execute(
-            query,
-            [cutoff_date],
-            return_result=True,
-        )
+        await write_queue.execute(query, [cutoff_date], return_result=False)
         
         # Log the cleanup
         self.logger.info(
             f"AUDIT_CLEANUP: Deleted auth_events older than {cutoff_date.date()}"
         )
         
-        return 0  # DuckDB doesn't return affected rows easily
+        return deleted_count
     
     def get_log_file_path(self) -> Path:
         """

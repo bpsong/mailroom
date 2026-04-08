@@ -1,4 +1,4 @@
-# ADR-0003: Use Server-Side Session Authentication Instead of JWT
+﻿# ADR-0003: Use Server-Side Session Authentication Instead of JWT
 
 - **Status:** Accepted
 - **Date:** 2026-04-06
@@ -34,4 +34,5 @@ Use server-side session tokens stored in database-backed session records, delive
 ## Related
 
 - [API documentation](docs/API_DOCUMENTATION.md)
-- [DuckDB decision](docs/adr/0001-use-duckdb.md)
+- [SQLite decision](0001-use-sqlite.md)
+

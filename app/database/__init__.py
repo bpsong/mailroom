@@ -1,4 +1,4 @@
-"""Database package for DuckDB connection and schema management."""
+"""Database package for SQLite connection and schema management."""
 
 from app.database.connection import DatabaseConnection, get_db
 from app.database.schema import init_database

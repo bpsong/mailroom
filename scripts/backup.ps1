@@ -73,7 +73,7 @@ Write-Host "`nCreating backup directory..." -ForegroundColor Yellow
 New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 
 # Backup database
-$dbPath = Join-Path $InstallPath "data\mailroom.duckdb"
+$dbPath = Join-Path $InstallPath "data\mailroom.sqlite3"
 if (Test-Path $dbPath) {
     Write-Host "Backing up database..." -ForegroundColor Yellow
     
@@ -84,10 +84,14 @@ if (Test-Path $dbPath) {
         # Copy main database file
         Copy-Item $dbPath $dbBackupPath -Force
         
-        # Copy WAL file if it exists
-        $walPath = "$dbPath.wal"
+        # Copy WAL/SHM files if they exist
+        $walPath = "$dbPath-wal"
         if (Test-Path $walPath) {
             Copy-Item $walPath $dbBackupPath -Force
+        }
+        $shmPath = "$dbPath-shm"
+        if (Test-Path $shmPath) {
+            Copy-Item $shmPath $dbBackupPath -Force
         }
         
         $dbSize = (Get-Item $dbPath).Length
@@ -159,9 +163,9 @@ Contents:
 ---------
 "@
 
-if (Test-Path (Join-Path $backupDir "data\mailroom.duckdb")) {
-    $dbSize = (Get-Item (Join-Path $backupDir "data\mailroom.duckdb")).Length
-    $manifest += "`n- Database: mailroom.duckdb ($([math]::Round($dbSize/1MB, 2)) MB)"
+if (Test-Path (Join-Path $backupDir "data\mailroom.sqlite3")) {
+    $dbSize = (Get-Item (Join-Path $backupDir "data\mailroom.sqlite3")).Length
+    $manifest += "`n- Database: mailroom.sqlite3 ($([math]::Round($dbSize/1MB, 2)) MB)"
 }
 
 if (Test-Path (Join-Path $backupDir "uploads")) {

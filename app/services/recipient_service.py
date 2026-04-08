@@ -253,74 +253,18 @@ class RecipientService:
             WHERE id = ?
         """
         write_queue = await get_write_queue()
-        update_params = [
-            replacement_name,
-            replacement_email,
-            replacement_department,
-            replacement_phone,
-            replacement_location,
-            str(recipient_id),
-        ]
-        try:
-            await write_queue.execute(
-                query,
-                update_params,
-                return_result=False,
-            )
-        except Exception as exc:
-            # DuckDB can raise a duplicate primary-key error on UPDATE for tables with
-            # multiple UNIQUE constraints and can also reject parent-row updates when
-            # referenced by foreign keys. Retry via delete+insert within one transaction.
-            if not (
-                self._is_duplicate_id_update_error(exc)
-                or self._is_referenced_parent_update_error(exc)
-            ):
-                raise
-
-            logger.warning(
-                "Retrying recipient update with transactional delete+insert due to DuckDB UPDATE constraint error "
-                "recipient_id=%s error=%s",
-                recipient_id,
-                exc,
-            )
-            def replace_recipient(conn):
-                deleted_row = conn.execute(
-                    """
-                    DELETE FROM recipients
-                    WHERE id = ?
-                    RETURNING id, employee_id, name, email, department, phone, location,
-                              is_active, created_at
-                    """,
-                    [str(recipient_id)],
-                ).fetchone()
-                if not deleted_row:
-                    raise ValueError("Recipient not found during fallback update")
-
-                conn.execute(
-                    """
-                    INSERT INTO recipients (
-                        id, employee_id, name, email, department, phone, location,
-                        is_active, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                    """,
-                    [
-                        deleted_row[0],
-                        deleted_row[1],
-                        replacement_name,
-                        replacement_email,
-                        replacement_department,
-                        replacement_phone,
-                        replacement_location,
-                        deleted_row[7],
-                        deleted_row[8],
-                    ],
-                )
-
-            await write_queue.execute_with_connection(
-                description="RECIPIENT_FK_SAFE_REPLACE recipients(id)",
-                operation_callable=replace_recipient,
-                return_result=False,
-            )
+        await write_queue.execute(
+            query,
+            [
+                replacement_name,
+                replacement_email,
+                replacement_department,
+                replacement_phone,
+                replacement_location,
+                str(recipient_id),
+            ],
+            return_result=False,
+        )
 
         updated_recipient = await self.get_recipient_by_id(recipient_id)
         if not updated_recipient:
@@ -328,18 +272,6 @@ class RecipientService:
         
         return updated_recipient
 
-    @staticmethod
-    def _is_duplicate_id_update_error(error: Exception) -> bool:
-        """Return True when DuckDB fails UPDATE with a duplicate id constraint error."""
-        error_message = str(error).lower()
-        return "duplicate key" in error_message and "id:" in error_message
-
-    @staticmethod
-    def _is_referenced_parent_update_error(error: Exception) -> bool:
-        """Return True when DuckDB blocks updating a referenced parent row."""
-        error_message = str(error).lower()
-        return "violates foreign key constraint" in error_message and "recipient_id:" in error_message
-    
     async def deactivate_recipient(
         self,
         recipient_id: UUID,

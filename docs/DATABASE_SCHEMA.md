@@ -1,177 +1,142 @@
-﻿# Database Schema Documentation
+# Database Schema
 
 ## Overview
 
-Mailroom Tracking uses DuckDB with an async write queue for serialized writes.
+Mailroom Tracking uses SQLite as an embedded application database.
 
-- Default DB path: `./data/mailroom.duckdb`
-- Base schema source: `app/database/schema.py`
-- Startup migration entry: `app/database/migrations.py`
+- Default path: `./data/mailroom.sqlite3`
+- Schema source: `app/database/schema.py`
+- Bootstrap entrypoint: `app/database/migrations.py`
+- Legacy DuckDB migration tool: `scripts/migrate_duckdb_to_sqlite.py`
 
-## Concurrency Model
+## Runtime Model
 
-- Writes are funneled through `WriteQueue` (`app/database/write_queue.py`)
-- Reads use fresh connections from `DatabaseConnection.get_read_connection()`
-- Checkpoints run every 1000 write transactions or `DATABASE_CHECKPOINT_INTERVAL` seconds
+- Reads use thread-local SQLite connections from `app/database/connection.py`.
+- Writes are serialized through `WriteQueue` in `app/database/write_queue.py`.
+- Each connection enables WAL mode, foreign keys, and a 30 second busy timeout.
+- The write queue runs `PRAGMA wal_checkpoint(PASSIVE)` periodically using `DATABASE_CHECKPOINT_INTERVAL`.
 
-### Write Queue Timeout Semantics
-
-When application code calls write queue execution with `return_result=True`, the caller waits only up to `WRITE_QUEUE_RESULT_TIMEOUT` seconds (default `30.0`).
-
-Important behavior:
-- A timeout is a caller-side wait timeout, not a guaranteed database rollback.
-- The operation may still execute and commit later if it was already queued and processed by the worker.
-- This can produce "timeout seen by caller" while data eventually persists.
-
-Operational guidance:
-- Prefer idempotent write operations where practical.
-- Handle timeout responses as "unknown final commit state" unless follow-up verification confirms outcome.
-- See `app/database/write_queue.py` for the exact implementation behavior.
-
-## Core Tables (Base Schema)
+## Core Tables
 
 ### `users`
 
-Columns:
-- `id` UUID PK
-- `username` VARCHAR NOT NULL UNIQUE
-- `password_hash` VARCHAR NOT NULL
-- `full_name` VARCHAR NOT NULL
-- `role` VARCHAR CHECK (`super_admin`, `admin`, `operator`)
-- `is_active` BOOLEAN DEFAULT true
-- `must_change_password` BOOLEAN DEFAULT false
-- `password_history` TEXT (JSON)
-- `failed_login_count` INTEGER DEFAULT 0
-- `locked_until` TIMESTAMP NULL
-- `created_at` TIMESTAMP
-- `updated_at` TIMESTAMP
-
-Indexes:
-- `idx_users_username`, `idx_users_role`, `idx_users_is_active`
+- `id` TEXT primary key with generated UUID-like default
+- `username` unique
+- `password_hash`
+- `full_name`
+- `role` constrained to `super_admin`, `admin`, `operator`
+- `is_active`
+- `must_change_password`
+- `password_history`
+- `failed_login_count`
+- `locked_until`
+- `created_at`
+- `updated_at`
 
 ### `sessions`
 
-Columns:
-- `id` UUID PK
-- `user_id` UUID NOT NULL FK -> `users(id)`
-- `token` VARCHAR NOT NULL UNIQUE
-- `expires_at` TIMESTAMP NOT NULL
-- `last_activity` TIMESTAMP
-- `ip_address` VARCHAR NULL
-- `user_agent` TEXT NULL
-- `created_at` TIMESTAMP
-
-Indexes:
-- `idx_sessions_token`, `idx_sessions_user_id`, `idx_sessions_expires_at`
+- `id`
+- `user_id` -> `users.id`
+- `token` unique
+- `expires_at`
+- `last_activity`
+- `ip_address`
+- `user_agent`
+- `created_at`
 
 ### `auth_events`
 
-Columns:
-- `id` UUID PK
-- `user_id` UUID NULL FK -> `users(id)`
-- `event_type` VARCHAR NOT NULL
-- `username` VARCHAR NULL
-- `ip_address` VARCHAR NULL
-- `details` TEXT NULL (JSON)
-- `created_at` TIMESTAMP
-
-Indexes:
-- `idx_auth_events_user_id`, `idx_auth_events_event_type`, `idx_auth_events_created_at`
+- `id`
+- `user_id` -> `users.id` nullable
+- `event_type`
+- `username`
+- `ip_address`
+- `details`
+- `created_at`
 
 ### `recipients`
 
-Columns:
-- `id` UUID PK
-- `employee_id` VARCHAR NOT NULL UNIQUE
-- `name` VARCHAR NOT NULL
-- `email` VARCHAR NOT NULL UNIQUE
-- `department` VARCHAR NULL in DB (app-level logic enforces non-empty on create/update)
-- `phone` VARCHAR NULL
-- `location` VARCHAR NULL
-- `is_active` BOOLEAN DEFAULT true
-- `created_at` TIMESTAMP
-- `updated_at` TIMESTAMP
-
-Indexes:
-- `idx_recipients_employee_id`, `idx_recipients_is_active`, `idx_recipients_name`, `idx_recipients_department`
+- `id`
+- `employee_id` unique
+- `name`
+- `email` unique
+- `department`
+- `phone`
+- `location`
+- `is_active`
+- `created_at`
+- `updated_at`
 
 ### `packages`
 
-Columns:
-- `id` UUID PK
-- `tracking_no` VARCHAR NOT NULL
-- `carrier` VARCHAR NOT NULL
-- `recipient_id` UUID NOT NULL FK -> `recipients(id)`
-- `status` VARCHAR CHECK (`registered`, `awaiting_pickup`, `out_for_delivery`, `delivered`, `returned`)
-- `notes` TEXT NULL
-- `created_by` UUID NOT NULL FK -> `users(id)`
-- `created_at` TIMESTAMP
-- `updated_at` TIMESTAMP
-
-Indexes:
-- `idx_packages_tracking_no`, `idx_packages_recipient_id`, `idx_packages_status`, `idx_packages_created_at`, `idx_packages_created_by`
+- `id`
+- `tracking_no`
+- `carrier`
+- `recipient_id` -> `recipients.id`
+- `status`
+- `notes`
+- `created_by` -> `users.id`
+- `created_at`
+- `updated_at`
 
 ### `package_events`
 
-Columns:
-- `id` UUID PK
-- `package_id` UUID NOT NULL
-- `old_status` VARCHAR NULL
-- `new_status` VARCHAR NOT NULL
-- `notes` TEXT NULL
-- `actor_id` UUID NOT NULL
-- `created_at` TIMESTAMP
-
-Important note:
-- In current base schema, `package_events` has no foreign keys (DuckDB update/workflow constraints noted in source comments).
-
-Indexes:
-- `idx_package_events_package_id`, `idx_package_events_actor_id`, `idx_package_events_created_at`
+- `id`
+- `package_id` -> `packages.id`
+- `old_status`
+- `new_status`
+- `notes`
+- `actor_id` -> `users.id`
+- `created_at`
 
 ### `attachments`
 
-Columns:
-- `id` UUID PK
-- `package_id` UUID NOT NULL
-- `filename` VARCHAR NOT NULL
-- `file_path` VARCHAR NOT NULL
-- `mime_type` VARCHAR NOT NULL
-- `file_size` INTEGER NOT NULL
-- `uploaded_by` UUID NOT NULL
-- `created_at` TIMESTAMP
+- `id`
+- `package_id` -> `packages.id`
+- `filename`
+- `file_path`
+- `mime_type`
+- `file_size`
+- `uploaded_by` -> `users.id`
+- `created_at`
 
-Important note:
-- In current base schema, `attachments` has no foreign keys (same rationale as above).
+### `system_settings`
 
-Indexes:
-- `idx_attachments_package_id`, `idx_attachments_uploaded_by`
+- `key` primary key
+- `value`
+- `updated_by` -> `users.id` nullable
+- `updated_at`
 
-## `system_settings` Table Status
+## Indexes
 
-`system_settings` is used by QR base URL features (`app/services/system_settings_service.py`) but is **not** part of the base schema in `app/database/schema.py`.
+The schema creates indexes for the main lookup and reporting paths:
 
-It is created by standalone migration scripts under `app/database/migrations/`:
-- `create_system_settings_table.py`
-- `fix_system_settings_fk.py`
-- `simplify_system_settings.py`
+- users: username, role, active flag
+- sessions: token, user_id, expires_at
+- auth events: user_id, event_type, created_at
+- recipients: employee_id, active flag, name, department
+- packages: tracking number, recipient_id, status, created_at, created_by
+- package events: package_id, actor_id, created_at
+- attachments: package_id, uploaded_by
 
-Current service behavior:
-- Reads gracefully handle missing table (`get_qr_base_url()` returns `None`)
-- Writes require table existence (`set_qr_base_url()` inserts/updates `system_settings`)
+## Migration Notes
 
-## Operational Notes
-
-- Startup runs `run_initial_migration(create_super_admin=True)`.
-- Initial super admin defaults: username `admin`, password `ChangeMe123!` (forced password change on first login).
-- Recipient department backfill enforcement runs on migration manager startup (`_enforce_recipient_department_requirement`).
+- `scripts/migrate_duckdb_to_sqlite.py` exports recipients to `data/recipient_export.csv`.
+- The same script imports all application tables into `data/mailroom.sqlite3`.
+- Current production migration was verified with matching row counts for all tables.
 
 ## Maintenance
 
-Common maintenance SQL:
-```sql
-VACUUM;
-ANALYZE;
-CHECKPOINT;
+Typical maintenance commands:
+
+```python
+import sqlite3
+
+conn = sqlite3.connect("data/mailroom.sqlite3")
+conn.execute("VACUUM")
+conn.execute("ANALYZE")
+conn.execute("PRAGMA wal_checkpoint(PASSIVE)")
+conn.close()
 ```
 
-Session cleanup logic is implemented in app services, and expired sessions are cleaned during startup.
+Expired sessions are cleaned up by application startup logic in `AuthService.cleanup_expired_sessions()`.

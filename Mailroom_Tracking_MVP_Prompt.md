@@ -1,20 +1,20 @@
-# 🧠 AI Product Design Prompt — Mailroom Tracking MVP
+﻿# ðŸ§  AI Product Design Prompt â€” Mailroom Tracking MVP
 
 You are an **AI Product Designer and Technical System Planner**.  
 Your job is to create a complete **Product Requirements Document (PRD)** and **Design Specification** for a new **Mailroom Tracking Web Application (MVP)**.
 
 ---
 
-## 🏢 Project Overview
+## ðŸ¢ Project Overview
 
-This is an **internal web application** that will run **behind a corporate firewall** on a **Windows Server** using **Python (FastAPI)** and **DuckDB** as the local database.  
-It will help the company’s **mailroom team** register, track, and manage incoming and outgoing physical packages.
+This is an **internal web application** that will run **behind a corporate firewall** on a **Windows Server** using **Python (FastAPI)** and **SQLite** as the local database.  
+It will help the companyâ€™s **mailroom team** register, track, and manage incoming and outgoing physical packages.
 
 The app must be **mobile-friendly**, usable on tablets or phones by mailroom staff, and accessed only by authorized users via **username and password login**.
 
 ---
 
-## 🎯 System Objectives
+## ðŸŽ¯ System Objectives
 
 1. Record and track all incoming mail and packages.
 2. Manage the chain of custody until pickup or delivery.
@@ -24,7 +24,7 @@ The app must be **mobile-friendly**, usable on tablets or phones by mailroom sta
 
 ---
 
-## 👥 User Roles and Access
+## ðŸ‘¥ User Roles and Access
 
 | Role | Description | Permissions |
 |------|--------------|--------------|
@@ -34,7 +34,7 @@ The app must be **mobile-friendly**, usable on tablets or phones by mailroom sta
 
 ---
 
-## 🧩 Core MVP Features
+## ðŸ§© Core MVP Features
 
 ### 1. Authentication & Roles
 - Username/password login (Argon2id or bcrypt hashing).
@@ -50,17 +50,17 @@ The app must be **mobile-friendly**, usable on tablets or phones by mailroom sta
 ### 2. User Management (Admin & Super Admin)
 - Create, edit, and deactivate users.
 - Assign/change user roles (admin/operator).
-- Reset passwords or force “must change password on next login”.
+- Reset passwords or force â€œmust change password on next loginâ€.
 - Audit log of user actions (created, updated, deactivated).
 - Self password change for all users.
 
 **Endpoints & Pages**
-- `/admin/users` — list/search users.
-- `/admin/users/new` — create user.
-- `/admin/users/:id/edit` — edit details.
-- `/admin/users/:id/deactivate` — toggle active.
-- `/admin/users/:id/password` — reset password.
-- `/me/password` — change own password.
+- `/admin/users` â€” list/search users.
+- `/admin/users/new` â€” create user.
+- `/admin/users/:id/edit` â€” edit details.
+- `/admin/users/:id/deactivate` â€” toggle active.
+- `/admin/users/:id/password` â€” reset password.
+- `/me/password` â€” change own password.
 
 ---
 
@@ -82,11 +82,11 @@ The app must be **mobile-friendly**, usable on tablets or phones by mailroom sta
 | `is_active` | BOOLEAN | Active/inactive status |
 
 **Endpoints & Pages**
-- `/admin/recipients` — list/search.
-- `/admin/recipients/import` — upload CSV (with dry-run validation).
-- `/admin/recipients/new` — add manually.
-- `/admin/recipients/:id/edit` — edit existing recipient.
-- `/recipients/search?q=` — used by operator form autocomplete.
+- `/admin/recipients` â€” list/search.
+- `/admin/recipients/import` â€” upload CSV (with dry-run validation).
+- `/admin/recipients/new` â€” add manually.
+- `/admin/recipients/:id/edit` â€” edit existing recipient.
+- `/recipients/search?q=` â€” used by operator form autocomplete.
 
 **CSV Example**
 ```csv
@@ -149,7 +149,7 @@ Operators record each incoming mail/package.
 
 ---
 
-## 🗂️ Database (DuckDB)
+## ðŸ—‚ï¸ Database (SQLite)
 
 Tables:
 - `users`
@@ -160,17 +160,17 @@ Tables:
 - `package_events`
 - `attachments`
 
-All writes funnel through a single async writer task to avoid DuckDB locking issues.
+All writes funnel through a single async writer task to avoid SQLite locking issues.
 
 ---
 
-## 🖥️ Technical Requirements
+## ðŸ–¥ï¸ Technical Requirements
 
 | Component | Technology / Spec |
 |------------|-------------------|
 | **Backend** | Python 3.12+, FastAPI, Jinja2, HTMX |
 | **Frontend** | TailwindCSS + HTMX (responsive mobile-first) |
-| **Database** | DuckDB (single file `.duckdb`) |
+| **Database** | SQLite (single file `.sqlite3`) |
 | **Auth** | Argon2id / bcrypt password hashing, secure session cookies |
 | **Deployment** | Windows Service (via NSSM or WinSW) |
 | **Reverse Proxy** | Caddy or IIS ARR (HTTPS) |
@@ -181,7 +181,7 @@ All writes funnel through a single async writer task to avoid DuckDB locking iss
 
 ---
 
-## 📱 UI / UX Requirements
+## ðŸ“± UI / UX Requirements
 
 ### Key Pages
 1. Login
@@ -203,7 +203,7 @@ All writes funnel through a single async writer task to avoid DuckDB locking iss
 
 ---
 
-## 🔒 Security & Access Controls
+## ðŸ”’ Security & Access Controls
 - HTTPS enforced (LAN TLS certs).
 - Only LAN/VPN IPs can connect.
 - Session timeout: 30 minutes idle.
@@ -213,36 +213,36 @@ All writes funnel through a single async writer task to avoid DuckDB locking iss
 
 ---
 
-## 🧮 Non-Functional Requirements
+## ðŸ§® Non-Functional Requirements
 - **Performance:** <200ms API response time (local LAN).
-- **Scalability:** Support 10–20 concurrent operators.
-- **Reliability:** Graceful restart and data durability (DuckDB WAL/checkpoint).
+- **Scalability:** Support 10â€“20 concurrent operators.
+- **Reliability:** Graceful restart and data durability (SQLite WAL/checkpoint).
 - **Maintainability:** Configurable `.env` for ports, file paths, retention.
 - **Backup Policy:** Nightly file copy + weekly verification restore test.
 
 ---
 
-## 🧠 Deliverables Required from AI Assistant
+## ðŸ§  Deliverables Required from AI Assistant
 
 Please generate the following documents in markdown format:
 
-1. **Product Requirements Document (PRD)** — detailed feature specs, field validation rules, and acceptance criteria.
-2. **Functional Design Specification (FDS)** — endpoints, data flow diagrams, and permission matrices.
-3. **Entity Relationship Diagram (ERD)** — database schema overview.
-4. **User Flow Diagrams** — for Operator, Admin, and Super Admin.
-5. **Wireframe Descriptions** — for mobile and desktop layouts.
-6. **Configuration Parameters Table** — password policy, timeout, retention, file paths.
-7. **MVP Readiness Checklist** — items to confirm before deployment.
-8. **Phase 2 Roadmap** — suggested future enhancements (notifications, QR scanning, analytics).
+1. **Product Requirements Document (PRD)** â€” detailed feature specs, field validation rules, and acceptance criteria.
+2. **Functional Design Specification (FDS)** â€” endpoints, data flow diagrams, and permission matrices.
+3. **Entity Relationship Diagram (ERD)** â€” database schema overview.
+4. **User Flow Diagrams** â€” for Operator, Admin, and Super Admin.
+5. **Wireframe Descriptions** â€” for mobile and desktop layouts.
+6. **Configuration Parameters Table** â€” password policy, timeout, retention, file paths.
+7. **MVP Readiness Checklist** â€” items to confirm before deployment.
+8. **Phase 2 Roadmap** â€” suggested future enhancements (notifications, QR scanning, analytics).
 
 ---
 
-## 🪄 Output Format
+## ðŸª„ Output Format
 
 Use this structure:
 
 ```
-# Mailroom Tracking MVP — Product Requirements & Design
+# Mailroom Tracking MVP â€” Product Requirements & Design
 
 ## 1. Overview
 ## 2. Goals & Constraints
@@ -260,7 +260,7 @@ Each section should include tables, bullet points, and optional Mermaid diagrams
 
 ---
 
-## ✍️ Tone & Style
+## âœï¸ Tone & Style
 
 - Professional, clear, and complete.
 - Structured for developers and managers to understand quickly.
@@ -269,3 +269,5 @@ Each section should include tables, bullet points, and optional Mermaid diagrams
 ---
 
 **End of Prompt**
+
+

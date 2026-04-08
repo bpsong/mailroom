@@ -1,9 +1,10 @@
 """End-to-end tests for admin workflow (real route contracts)."""
 
 from uuid import uuid4
-import duckdb
+
 import pytest
 
+from app.database.connection import create_connection
 from app.services.auth_service import auth_service
 
 
@@ -35,7 +36,7 @@ def admin_session(test_db):
     password = "AdminPassword123!"
     password_hash = auth_service.hash_password(password)
 
-    conn = duckdb.connect(test_db)
+    conn = create_connection(test_db)
     try:
         row = conn.execute(
             """
@@ -45,7 +46,6 @@ def admin_session(test_db):
             """,
             [username, password_hash, "E2E Admin", "admin", True, False],
         ).fetchone()
-        conn.commit()
         assert row is not None
 
         yield {
@@ -61,7 +61,7 @@ def _create_operator_user(test_db, suffix: str = ""):
     username = f"operator_{suffix or uuid4().hex[:8]}"
     password = "OperatorPass123!"
     password_hash = auth_service.hash_password(password)
-    conn = duckdb.connect(test_db)
+    conn = create_connection(test_db)
     try:
         row = conn.execute(
             """
@@ -71,7 +71,6 @@ def _create_operator_user(test_db, suffix: str = ""):
             """,
             [username, password_hash, "Operator User", "operator", True, False],
         ).fetchone()
-        conn.commit()
         assert row is not None
         return row[0], username
     finally:
@@ -96,7 +95,7 @@ class TestAdminUserManagement:
         )
         assert response.status_code == 303
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 "SELECT username, role FROM users WHERE username = ?",
@@ -123,7 +122,7 @@ class TestAdminUserManagement:
         )
         assert response.status_code == 303
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 "SELECT must_change_password FROM users WHERE id = ?",
@@ -149,7 +148,7 @@ class TestAdminUserManagement:
         )
         assert response.status_code == 303
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 "SELECT full_name, role FROM users WHERE id = ?",
@@ -175,7 +174,7 @@ class TestAdminUserManagement:
         )
         assert response.status_code == 303
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 "SELECT full_name FROM users WHERE id = ?",
@@ -186,7 +185,6 @@ class TestAdminUserManagement:
         finally:
             conn.close()
 
-    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in user deactivation path")
     def test_admin_deactivate_user(self, client, admin_session, test_db):
         csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
         operator_id, _ = _create_operator_user(test_db)
@@ -198,7 +196,7 @@ class TestAdminUserManagement:
         )
         assert response.status_code == 303
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute("SELECT is_active FROM users WHERE id = ?", [str(operator_id)]).fetchone()
             assert row is not None
@@ -227,7 +225,7 @@ class TestAdminRecipientManagement:
         payload = response.json()
         assert payload["success"] is True
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             count_row = conn.execute(
                 "SELECT COUNT(*) FROM recipients WHERE employee_id IN ('E2E001','E2E002','E2E003')"
@@ -256,7 +254,7 @@ class TestAdminRecipientManagement:
         )
         assert response.status_code == 303
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             row = conn.execute(
                 "SELECT name FROM recipients WHERE employee_id = ?",
@@ -270,7 +268,7 @@ class TestAdminRecipientManagement:
     def test_admin_update_recipient(self, client, admin_session, test_db):
         csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             employee_id = f"EDIT{uuid4().hex[:8]}"
             row = conn.execute(
@@ -281,7 +279,6 @@ class TestAdminRecipientManagement:
                 """,
                 [employee_id, "Original Name", f"{employee_id.lower()}@example.com", "Ops", "", ""],
             ).fetchone()
-            conn.commit()
             assert row is not None
             recipient_id = row[0]
         finally:
@@ -301,7 +298,7 @@ class TestAdminRecipientManagement:
         )
         assert response.status_code == 303
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             updated = conn.execute(
                 "SELECT name, email, department FROM recipients WHERE id = ?",
@@ -325,7 +322,7 @@ class TestAdminReporting:
     def test_admin_export_report(self, client, admin_session, test_db):
         _login_admin(client, admin_session["username"], admin_session["password"])
 
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             recipient_row = conn.execute(
                 """
@@ -351,7 +348,6 @@ class TestAdminReporting:
                     str(admin_session["user_id"]),
                 ],
             )
-            conn.commit()
         finally:
             conn.close()
 
@@ -366,13 +362,12 @@ class TestAdminReporting:
 
 
 class TestAdminCannotModifySuperAdmin:
-    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in role-protected edit path")
     def test_admin_cannot_edit_super_admin(self, client, admin_session, test_db):
         csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
 
         super_username = f"super_{uuid4().hex[:8]}"
         super_hash = auth_service.hash_password("SuperPassword123!")
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             super_row = conn.execute(
                 """
@@ -382,7 +377,6 @@ class TestAdminCannotModifySuperAdmin:
                 """,
                 [super_username, super_hash, "Super Admin", "super_admin", True, False],
             ).fetchone()
-            conn.commit()
             assert super_row is not None
             super_admin_id = super_row[0]
         finally:
@@ -399,13 +393,12 @@ class TestAdminCannotModifySuperAdmin:
         )
         assert response.status_code == 403
 
-    @pytest.mark.skip(reason="Known DuckDB UPDATE/constraint behavior in role-protected deactivate path")
     def test_admin_cannot_deactivate_super_admin(self, client, admin_session, test_db):
         csrf_token = _login_admin(client, admin_session["username"], admin_session["password"])
 
         super_username = f"super_{uuid4().hex[:8]}"
         super_hash = auth_service.hash_password("SuperPassword123!")
-        conn = duckdb.connect(test_db)
+        conn = create_connection(test_db)
         try:
             super_row = conn.execute(
                 """
@@ -415,7 +408,6 @@ class TestAdminCannotModifySuperAdmin:
                 """,
                 [super_username, super_hash, "Super Admin", "super_admin", True, False],
             ).fetchone()
-            conn.commit()
             assert super_row is not None
             super_admin_id = super_row[0]
         finally:

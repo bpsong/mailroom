@@ -21,24 +21,24 @@ class TestSettingsProvider:
         """Cache clear should make new environment values visible."""
         monkeypatch.setenv("SECRET_KEY", "test-secret-key-for-reload")
         monkeypatch.setenv("APP_ENV", "testing")
-        monkeypatch.setenv("DATABASE_PATH", "./data/test_first.duckdb")
+        monkeypatch.setenv("DATABASE_PATH", "./data/test_first.sqlite3")
 
         clear_settings_cache()
         first = get_settings()
-        assert first.database_path == "./data/test_first.duckdb"
+        assert first.database_path == "./data/test_first.sqlite3"
 
-        monkeypatch.setenv("DATABASE_PATH", "./data/test_second.duckdb")
+        monkeypatch.setenv("DATABASE_PATH", "./data/test_second.sqlite3")
         second_without_clear = get_settings()
-        assert second_without_clear.database_path == "./data/test_first.duckdb"
+        assert second_without_clear.database_path == "./data/test_first.sqlite3"
 
         clear_settings_cache()
         second_with_clear = get_settings()
-        assert second_with_clear.database_path == "./data/test_second.duckdb"
+        assert second_with_clear.database_path == "./data/test_second.sqlite3"
 
     def test_legacy_settings_alias_is_immutable(self):
         """Backward-compatible alias should reject mutation attempts."""
         try:
-            settings.database_path = "./data/forbidden.duckdb"
+            settings.database_path = "./data/forbidden.sqlite3"
             raised = False
         except AttributeError:
             raised = True

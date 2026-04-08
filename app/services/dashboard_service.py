@@ -48,17 +48,11 @@ class DashboardService:
         """
         db = get_db()
         with db.get_read_connection() as conn:
-            try:
-                db_version = conn.execute("SELECT version()").fetchone()
-                logger.debug("Dashboard summary using DuckDB version: %s", db_version[0] if db_version else "unknown")
-            except Exception as exc:
-                logger.debug("Could not determine DuckDB version in dashboard summary: %s", exc)
-
             # Get packages registered today
             packages_today_sql = """
                 SELECT COUNT(*)
                 FROM packages
-                WHERE CAST(created_at AS DATE) = CURRENT_DATE
+                WHERE DATE(created_at) = DATE('now')
                 """
             logger.debug("Dashboard SQL [packages_today]: %s", " ".join(packages_today_sql.split()))
             packages_today_row = conn.execute(packages_today_sql).fetchone()
@@ -79,7 +73,7 @@ class DashboardService:
                 SELECT COUNT(*)
                 FROM packages
                 WHERE status = 'delivered'
-                AND CAST(updated_at AS DATE) = CURRENT_DATE
+                AND DATE(updated_at) = DATE('now')
                 """
             logger.debug("Dashboard SQL [packages_delivered_today]: %s", " ".join(packages_delivered_today_sql.split()))
             packages_delivered_today_row = conn.execute(packages_delivered_today_sql).fetchone()
@@ -119,9 +113,9 @@ class DashboardService:
         # Build date filter based on period
         date_filter = ""
         if period == "month":
-            date_filter = "AND DATE_TRUNC('month', p.created_at) = DATE_TRUNC('month', CURRENT_DATE)"
+            date_filter = "AND strftime('%Y-%m', p.created_at) = strftime('%Y-%m', 'now')"
         elif period == "week":
-            date_filter = "AND DATE_TRUNC('week', p.created_at) = DATE_TRUNC('week', CURRENT_DATE)"
+            date_filter = "AND strftime('%Y-%W', p.created_at) = strftime('%Y-%W', 'now')"
         # 'all' has no date filter
         
         db = get_db()

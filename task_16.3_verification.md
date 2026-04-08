@@ -50,9 +50,9 @@
 ### Additional Features Implemented
 
 - [x] **Database table for system_settings**
-  - ✓ Migration exists: `app/database/migrations/simplify_system_settings.py`
+  - ✓ Table is part of the base SQLite schema in `app/database/schema.py`
   - ✓ Table structure: key (TEXT PRIMARY KEY), value (TEXT), updated_by (TEXT), updated_at (TIMESTAMP)
-  - ✓ No foreign key constraints (stores user ID as text for audit trail)
+  - ✓ `updated_by` can reference `users.id` when present
 
 - [x] **System Settings Service**
   - ✓ Service exists at `app/services/system_settings_service.py`

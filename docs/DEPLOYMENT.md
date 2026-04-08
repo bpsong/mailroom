@@ -1,4 +1,4 @@
-# Deployment Guide
+﻿# Deployment Guide
 
 This document provides comprehensive instructions for deploying the Mailroom Tracking System on Windows Server.
 
@@ -59,12 +59,12 @@ This document provides comprehensive instructions for deploying the Mailroom Tra
    # Copy all application files to C:\MailroomApp
    # Ensure the following structure:
    # C:\MailroomApp\
-   #   ├── app\
-   #   ├── scripts\
-   #   ├── static\
-   #   ├── templates\
-   #   ├── .env.example
-   #   └── pyproject.toml
+   #   â”œâ”€â”€ app\
+   #   â”œâ”€â”€ scripts\
+   #   â”œâ”€â”€ static\
+   #   â”œâ”€â”€ templates\
+   #   â”œâ”€â”€ .env.example
+   #   â””â”€â”€ pyproject.toml
    ```
 
 3. **Install Python dependencies:**
@@ -86,7 +86,7 @@ This document provides comprehensive instructions for deploying the Mailroom Tra
    ```env
    APP_ENV=production
    SECRET_KEY=<generate-secure-key>
-   DATABASE_PATH=C:\MailroomApp\data\mailroom.duckdb
+   DATABASE_PATH=C:\MailroomApp\data\mailroom.sqlite3
    UPLOAD_DIR=C:\MailroomApp\uploads
    LOG_FILE=C:\MailroomApp\logs\mailroom.log
    ```
@@ -285,7 +285,7 @@ Creates backups of the database and uploaded files.
 - `-Help`: Display help message
 
 **Features:**
-- Backs up DuckDB database (including WAL files)
+- Backs up SQLite database (including WAL files)
 - Backs up uploaded files
 - Backs up .env configuration
 - Creates backup manifest
@@ -459,12 +459,12 @@ cd C:\MailroomApp\scripts
 3. **Restore database:**
    ```powershell
    # Backup current database (just in case)
-   Copy-Item "C:\MailroomApp\data\mailroom.duckdb" `
-       "C:\MailroomApp\data\mailroom.duckdb.old"
+   Copy-Item "C:\MailroomApp\data\mailroom.sqlite3" `
+       "C:\MailroomApp\data\mailroom.sqlite3.old"
    
    # Restore database from backup
-   Copy-Item "C:\Temp\restore\data\mailroom.duckdb" `
-       "C:\MailroomApp\data\mailroom.duckdb" -Force
+   Copy-Item "C:\Temp\restore\data\mailroom.sqlite3" `
+       "C:\MailroomApp\data\mailroom.sqlite3" -Force
    ```
 
 4. **Restore uploads:**
@@ -521,10 +521,10 @@ Get-Content C:\MailroomApp\logs\mailroom.log | Select-String "login_failed"
 
 ```powershell
 # Check database size
-Get-Item C:\MailroomApp\data\mailroom.duckdb | Select-Object Length
+Get-Item C:\MailroomApp\data\mailroom.sqlite3 | Select-Object Length
 
 # Check WAL file size
-Get-Item C:\MailroomApp\data\mailroom.duckdb.wal | Select-Object Length
+Get-Item C:\MailroomApp\data\mailroom.sqlite3-wal | Select-Object Length
 ```
 
 ### Performance Monitoring
@@ -584,7 +584,7 @@ Get-Content C:\MailroomApp\logs\mailroom.log -Tail 100
 Stop-Service MailroomTracking
 
 # Check for WAL file
-Get-Item C:\MailroomApp\data\mailroom.duckdb.wal
+Get-Item C:\MailroomApp\data\mailroom.sqlite3-wal
 
 # Start service
 Start-Service MailroomTracking
@@ -664,6 +664,8 @@ icacls "C:\MailroomApp\.env" /grant "NT SERVICE\MailroomTracking:F" /inheritance
 - [RBAC Implementation](RBAC_IMPLEMENTATION.md)
 - [Security Implementation](SECURITY_IMPLEMENTATION.md)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [DuckDB Documentation](https://duckdb.org/docs/)
+- [SQLite Documentation](https://www.sqlite.org/docs.html)
 - [NSSM Documentation](https://nssm.cc/usage)
 - [Caddy Documentation](https://caddyserver.com/docs/)
+
+

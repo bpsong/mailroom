@@ -1,114 +1,122 @@
 """Database schema definitions and initialization."""
 
-import duckdb
+from __future__ import annotations
+
 from pathlib import Path
 
-# SQL schema for all tables
-SCHEMA_SQL = """
--- Users table
+from app.database.connection import create_connection
+
+
+UUID_DEFAULT_SQL = (
+    "("
+    "lower(hex(randomblob(4))) || '-' || "
+    "lower(hex(randomblob(2))) || '-' || "
+    "'4' || substr(lower(hex(randomblob(2))), 2) || '-' || "
+    "substr('89ab', 1 + (abs(random()) % 4), 1) || substr(lower(hex(randomblob(2))), 2) || '-' || "
+    "lower(hex(randomblob(6)))"
+    ")"
+)
+
+
+SCHEMA_SQL = f"""
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username VARCHAR NOT NULL UNIQUE,
-    password_hash VARCHAR NOT NULL,
-    full_name VARCHAR NOT NULL,
-    role VARCHAR NOT NULL CHECK (role IN ('super_admin', 'admin', 'operator')),
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    must_change_password BOOLEAN NOT NULL DEFAULT false,
-    password_history TEXT,  -- JSON array of previous password hashes
+    id TEXT PRIMARY KEY NOT NULL DEFAULT {UUID_DEFAULT_SQL},
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'operator')),
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    must_change_password BOOLEAN NOT NULL DEFAULT 0,
+    password_history TEXT,
     failed_login_count INTEGER NOT NULL DEFAULT 0,
     locked_until TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Sessions table
 CREATE TABLE IF NOT EXISTS sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
-    token VARCHAR NOT NULL UNIQUE,
+    id TEXT PRIMARY KEY NOT NULL DEFAULT {UUID_DEFAULT_SQL},
+    user_id TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
     expires_at TIMESTAMP NOT NULL,
     last_activity TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR,
+    ip_address TEXT,
     user_agent TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Authentication events table
 CREATE TABLE IF NOT EXISTS auth_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID,
-    event_type VARCHAR NOT NULL,
-    username VARCHAR,
-    ip_address VARCHAR,
-    details TEXT,  -- JSON for additional event data
+    id TEXT PRIMARY KEY NOT NULL DEFAULT {UUID_DEFAULT_SQL},
+    user_id TEXT,
+    event_type TEXT NOT NULL,
+    username TEXT,
+    ip_address TEXT,
+    details TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Recipients table
 CREATE TABLE IF NOT EXISTS recipients (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    employee_id VARCHAR NOT NULL UNIQUE,
-    name VARCHAR NOT NULL,
-    email VARCHAR NOT NULL UNIQUE,
-    department VARCHAR,
-    phone VARCHAR,
-    location VARCHAR,
-    is_active BOOLEAN NOT NULL DEFAULT true,
+    id TEXT PRIMARY KEY NOT NULL DEFAULT {UUID_DEFAULT_SQL},
+    employee_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    department TEXT,
+    phone TEXT,
+    location TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Packages table
 CREATE TABLE IF NOT EXISTS packages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tracking_no VARCHAR NOT NULL,
-    carrier VARCHAR NOT NULL,
-    recipient_id UUID NOT NULL,
-    status VARCHAR NOT NULL CHECK (status IN ('registered', 'awaiting_pickup', 'out_for_delivery', 'delivered', 'returned')),
+    id TEXT PRIMARY KEY NOT NULL DEFAULT {UUID_DEFAULT_SQL},
+    tracking_no TEXT NOT NULL,
+    carrier TEXT NOT NULL,
+    recipient_id TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('registered', 'awaiting_pickup', 'out_for_delivery', 'delivered', 'returned')),
     notes TEXT,
-    created_by UUID NOT NULL,
+    created_by TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (recipient_id) REFERENCES recipients(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
--- Package events table (audit trail for status changes)
--- Note: No foreign keys due to DuckDB limitations with UPDATE operations
 CREATE TABLE IF NOT EXISTS package_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    package_id UUID NOT NULL,
-    old_status VARCHAR,
-    new_status VARCHAR NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL DEFAULT {UUID_DEFAULT_SQL},
+    package_id TEXT NOT NULL,
+    old_status TEXT,
+    new_status TEXT NOT NULL,
     notes TEXT,
-    actor_id UUID NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    actor_id TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (package_id) REFERENCES packages(id),
+    FOREIGN KEY (actor_id) REFERENCES users(id)
 );
 
--- Attachments table (for package photos)
--- Note: No foreign keys due to DuckDB limitations with UPDATE operations
 CREATE TABLE IF NOT EXISTS attachments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    package_id UUID NOT NULL,
-    filename VARCHAR NOT NULL,
-    file_path VARCHAR NOT NULL,
-    mime_type VARCHAR NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL DEFAULT {UUID_DEFAULT_SQL},
+    package_id TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
     file_size INTEGER NOT NULL,
-    uploaded_by UUID NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    uploaded_by TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (package_id) REFERENCES packages(id),
+    FOREIGN KEY (uploaded_by) REFERENCES users(id)
 );
 
--- System settings table
 CREATE TABLE IF NOT EXISTS system_settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,
     updated_by TEXT,
-    updated_at TIMESTAMP NOT NULL
+    updated_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (updated_by) REFERENCES users(id)
 );
 
--- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
@@ -142,49 +150,39 @@ CREATE INDEX IF NOT EXISTS idx_attachments_uploaded_by ON attachments(uploaded_b
 
 
 def init_database(db_path: str) -> None:
-    """
-    Initialize the database with schema.
-    
-    Args:
-        db_path: Path to the DuckDB database file
-    """
-    # Ensure the directory exists
+    """Initialize the database with the current schema."""
     db_file = Path(db_path)
     db_file.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Connect and create schema
-    conn = duckdb.connect(db_path)
+
+    conn = create_connection(db_path)
     try:
-        # Execute schema creation
-        conn.execute(SCHEMA_SQL)
-        
-        # Commit changes
-        conn.commit()
+        conn.executescript(SCHEMA_SQL)
     finally:
         conn.close()
 
 
 def verify_schema(db_path: str) -> bool:
-    """
-    Verify that all required tables exist in the database.
-    
-    Args:
-        db_path: Path to the DuckDB database file
-        
-    Returns:
-        True if all tables exist, False otherwise
-    """
+    """Return True when the required tables exist."""
     required_tables = {
-        'users', 'sessions', 'auth_events', 'recipients',
-        'packages', 'package_events', 'attachments', 'system_settings'
+        "users",
+        "sessions",
+        "auth_events",
+        "recipients",
+        "packages",
+        "package_events",
+        "attachments",
+        "system_settings",
     }
-    
-    conn = duckdb.connect(db_path, read_only=True)
+
+    conn = create_connection(db_path)
     try:
         result = conn.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+            """
         ).fetchall()
-        
         existing_tables = {row[0] for row in result}
         return required_tables.issubset(existing_tables)
     finally:
