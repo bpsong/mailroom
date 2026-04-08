@@ -1,6 +1,7 @@
 """Recipient management service for CRUD operations."""
 
 import json
+import logging
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
@@ -16,6 +17,8 @@ from app.models import (
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
 from app.utils.validation import is_valid_email
+
+logger = logging.getLogger(__name__)
 
 
 class RecipientService:
@@ -250,24 +253,71 @@ class RecipientService:
             WHERE id = ?
         """
         write_queue = await get_write_queue()
-        await write_queue.execute(
-            query,
-            [
-                replacement_name,
-                replacement_email,
-                replacement_department,
-                replacement_phone,
-                replacement_location,
-                str(recipient_id),
-            ],
-            return_result=False,
-        )
+        update_params = [
+            replacement_name,
+            replacement_email,
+            replacement_department,
+            replacement_phone,
+            replacement_location,
+            str(recipient_id),
+        ]
+        try:
+            await write_queue.execute(
+                query,
+                update_params,
+                return_result=False,
+            )
+        except Exception as exc:
+            # DuckDB can raise a duplicate primary-key error on UPDATE for tables with
+            # multiple UNIQUE constraints. Retry with MERGE to avoid UPDATE rewrite edge
+            # cases while keeping the operation scoped to the same recipient row.
+            if not self._is_duplicate_id_update_error(exc):
+                raise
+
+            logger.warning(
+                "Retrying recipient update with MERGE due to DuckDB UPDATE constraint error "
+                "recipient_id=%s error=%s",
+                recipient_id,
+                exc,
+            )
+            merge_query = """
+                MERGE INTO recipients AS recipients_target
+                USING (
+                    SELECT
+                        ? AS name,
+                        ? AS email,
+                        ? AS department,
+                        ? AS phone,
+                        ? AS location,
+                        ?::UUID AS id
+                ) AS recipients_source
+                ON recipients_target.id = recipients_source.id
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        name = recipients_source.name,
+                        email = recipients_source.email,
+                        department = recipients_source.department,
+                        phone = recipients_source.phone,
+                        location = recipients_source.location,
+                        updated_at = CURRENT_TIMESTAMP
+            """
+            await write_queue.execute(
+                merge_query,
+                update_params,
+                return_result=False,
+            )
 
         updated_recipient = await self.get_recipient_by_id(recipient_id)
         if not updated_recipient:
             raise ValueError("Recipient not found after update")
         
         return updated_recipient
+
+    @staticmethod
+    def _is_duplicate_id_update_error(error: Exception) -> bool:
+        """Return True when DuckDB fails UPDATE with a duplicate id constraint error."""
+        error_message = str(error).lower()
+        return "duplicate key" in error_message and "id:" in error_message
     
     async def deactivate_recipient(
         self,
