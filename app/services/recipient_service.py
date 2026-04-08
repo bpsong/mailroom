@@ -248,11 +248,9 @@ class RecipientService:
             SET name = ?, email = ?, department = ?, phone = ?, location = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-            RETURNING id, employee_id, name, email, department, phone, location,
-                      is_active, created_at, updated_at
         """
         write_queue = await get_write_queue()
-        result = await write_queue.execute(
+        await write_queue.execute(
             query,
             [
                 replacement_name,
@@ -262,25 +260,12 @@ class RecipientService:
                 replacement_location,
                 str(recipient_id),
             ],
-            return_result=True,
+            return_result=False,
         )
 
-        if not result:
+        updated_recipient = await self.get_recipient_by_id(recipient_id)
+        if not updated_recipient:
             raise ValueError("Recipient not found after update")
-        
-        row = result[0]
-        updated_recipient = Recipient(
-            id=row[0],
-            employee_id=row[1],
-            name=row[2],
-            email=row[3],
-            department=row[4],
-            phone=row[5],
-            location=row[6],
-            is_active=row[7],
-            created_at=row[8],
-            updated_at=row[9],
-        )
         
         return updated_recipient
     
