@@ -10,26 +10,11 @@ This guide provides step-by-step instructions for deploying the Mailroom Trackin
 
 ## Architecture Overview
 
-```
+```text
 Internet/Intranet
-       â”‚
-       â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Caddy (HTTPS)  â”‚  Port 443
-â”‚  Reverse Proxy  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-       â”‚
-       â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  FastAPI App    â”‚  Port 8000
-â”‚  (Uvicorn)      â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-       â”‚
-       â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  SQLite         â”‚  File-based
-â”‚  Database       â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+  -> Caddy reverse proxy on port 443
+  -> FastAPI application on port 8000
+  -> SQLite database files on local disk
 ```
 
 ## System Requirements
@@ -74,8 +59,8 @@ Internet/Intranet
 1. Download Python 3.12+ from [python.org](https://www.python.org/downloads/windows/)
 
 2. Run the installer with these options:
-   - âœ… Add Python to PATH
-   - âœ… Install for all users
+   - Add Python to PATH
+   - Install for all users
    - Installation directory: `C:\Python312`
 
 3. Verify installation:
@@ -459,7 +444,7 @@ Internet/Intranet
    - email
    - department
 
-2. Navigate to "Recipient Management" â†’ "Import CSV"
+2. Navigate to "Recipient Management" -> "Import CSV"
 3. Upload CSV file
 4. Review validation report
 5. Confirm import
@@ -468,7 +453,7 @@ Internet/Intranet
 
 1. Add DNS A record:
    ```
-   mailroom.company.local â†’ <server-ip-address>
+   mailroom.company.local -> <server-ip-address>
    ```
 
 2. Verify DNS resolution:
@@ -883,7 +868,7 @@ Start-Service MailroomTracking
 - Service stdout: `C:\MailroomApp\logs\service-stdout.log`
 - Service stderr: `C:\MailroomApp\logs\service-stderr.log`
 - Caddy logs: `C:\MailroomApp\logs\caddy-access.log`
-- Windows Event Log: Event Viewer â†’ Windows Logs â†’ Application
+- Windows Event Log: Event Viewer -> Windows Logs -> Application
 
 ### Useful Commands
 

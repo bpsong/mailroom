@@ -59,12 +59,12 @@ This document provides comprehensive instructions for deploying the Mailroom Tra
    # Copy all application files to C:\MailroomApp
    # Ensure the following structure:
    # C:\MailroomApp\
-   #   â”œâ”€â”€ app\
-   #   â”œâ”€â”€ scripts\
-   #   â”œâ”€â”€ static\
-   #   â”œâ”€â”€ templates\
-   #   â”œâ”€â”€ .env.example
-   #   â””â”€â”€ pyproject.toml
+   #   |-- app\
+   #   |-- scripts\
+   #   |-- static\
+   #   |-- templates\
+   #   |-- .env.example
+   #   `-- pyproject.toml
    ```
 
 3. **Install Python dependencies:**

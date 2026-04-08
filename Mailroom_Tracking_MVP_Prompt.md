@@ -1,157 +1,78 @@
-﻿# ðŸ§  AI Product Design Prompt â€” Mailroom Tracking MVP
+# AI Product Design Prompt - Mailroom Tracking MVP
 
-You are an **AI Product Designer and Technical System Planner**.  
-Your job is to create a complete **Product Requirements Document (PRD)** and **Design Specification** for a new **Mailroom Tracking Web Application (MVP)**.
+This file is a cleaned, retained product-planning prompt for the Mailroom Tracking application.
 
----
+## Role
 
-## ðŸ¢ Project Overview
+You are an AI product designer and technical planner. Produce a complete Product Requirements Document (PRD) and Design Specification for an internal Mailroom Tracking web application MVP.
 
-This is an **internal web application** that will run **behind a corporate firewall** on a **Windows Server** using **Python (FastAPI)** and **SQLite** as the local database.  
-It will help the companyâ€™s **mailroom team** register, track, and manage incoming and outgoing physical packages.
+## Project Overview
 
-The app must be **mobile-friendly**, usable on tablets or phones by mailroom staff, and accessed only by authorized users via **username and password login**.
+- Internal web app behind a corporate firewall
+- Windows Server deployment
+- Python with FastAPI
+- SQLite as the local application database
+- Mobile-friendly for tablet and phone use by mailroom staff
+- Username and password authentication only
 
----
+## System Objectives
 
-## ðŸŽ¯ System Objectives
+1. Track incoming packages and internal mail.
+2. Maintain chain-of-custody visibility until delivery or pickup.
+3. Let admins manage users and recipients.
+4. Provide dashboards and exports.
+5. Operate fully offline inside the internal network.
 
-1. Record and track all incoming mail and packages.
-2. Manage the chain of custody until pickup or delivery.
-3. Enable admins to manage operators and recipients.
-4. Provide simple dashboards and reports.
-5. Operate fully offline within an internal network (no external APIs).
-
----
-
-## ðŸ‘¥ User Roles and Access
+## Roles
 
 | Role | Description | Permissions |
-|------|--------------|--------------|
-| **Super Admin** | System owner who bootstraps the app. | Full access to all data, configuration, and users. |
-| **Admin (Sub-admin)** | Oversees mailroom operations. | Manage operators, recipients, and view reports. Cannot delete or modify the super admin. |
-| **Operator** | Frontline staff who handle mail and packages. | Register new packages, update status, upload photos/signatures. |
+|---|---|---|
+| Super Admin | System owner | Full access to users, configuration, and data |
+| Admin | Mailroom administrator | Manage operators, recipients, and reports |
+| Operator | Frontline mailroom staff | Register packages, update status, upload attachments |
 
----
+## Core MVP Scope
 
-## ðŸ§© Core MVP Features
+### Authentication and roles
 
-### 1. Authentication & Roles
-- Username/password login (Argon2id or bcrypt hashing).
-- Session management (secure cookies).
-- Logout, timeout, and account lockout after repeated failures.
-- Role-based access control (super_admin, admin, operator).
-- Password policy: min 12 chars, mixed case/symbols, forced reset option.
-- Admin can reset passwords for operators and other admins.
-- Super_admin cannot be deactivated or modified by others.
+- Username and password login
+- Argon2id password hashing
+- Session management with secure cookies
+- Role-based access control
+- Password reset and forced password change flows
+- Account lockout after repeated failures
 
----
+### User management
 
-### 2. User Management (Admin & Super Admin)
-- Create, edit, and deactivate users.
-- Assign/change user roles (admin/operator).
-- Reset passwords or force â€œmust change password on next loginâ€.
-- Audit log of user actions (created, updated, deactivated).
-- Self password change for all users.
+- Create, edit, and deactivate users
+- Assign roles
+- Reset passwords
+- Record audit events
 
-**Endpoints & Pages**
-- `/admin/users` â€” list/search users.
-- `/admin/users/new` â€” create user.
-- `/admin/users/:id/edit` â€” edit details.
-- `/admin/users/:id/deactivate` â€” toggle active.
-- `/admin/users/:id/password` â€” reset password.
-- `/me/password` â€” change own password.
+### Recipient management
 
----
+- Manual CRUD
+- CSV import with validation
+- Search by name, email, or employee ID
 
-### 3. Recipient Management
-- Maintain a master list of employees who receive mail.
-- **Import via CSV** (admin-only).
-- Manual add/edit/deactivate.
-- Searchable and autocompletable by name, email, or employee ID.
+### Package tracking
 
-**Recipient Fields**
-| Field | Type | Description |
-|--------|------|-------------|
-| `employee_id` | TEXT | Unique staff ID |
-| `name` | TEXT | Full name |
-| `email` | TEXT | Work email |
-| `department` | TEXT | Department name |
-| `phone` | TEXT | Optional contact number |
-| `location` | TEXT | Floor or office location |
-| `is_active` | BOOLEAN | Active/inactive status |
+- Register package
+- Link package to recipient
+- Track lifecycle through status changes
+- Upload supporting images
+- Generate QR code links to package detail pages
 
-**Endpoints & Pages**
-- `/admin/recipients` â€” list/search.
-- `/admin/recipients/import` â€” upload CSV (with dry-run validation).
-- `/admin/recipients/new` â€” add manually.
-- `/admin/recipients/:id/edit` â€” edit existing recipient.
-- `/recipients/search?q=` â€” used by operator form autocomplete.
+### Reporting
 
-**CSV Example**
-```csv
-employee_id,name,email,department,phone,location,is_active
-E001,Jane Tan,jane.tan@company.com,Finance,91234567,Level 5,true
-E002,Ahmad Rahim,ahmad.rahim@company.com,HR,92345678,Level 7,true
-```
+- Dashboard summaries
+- CSV export
+- Audit visibility
 
----
+## Data Model Expectations
 
-### 4. Package Registration & Tracking
-Operators record each incoming mail/package.
+Core tables:
 
-**Workflow**
-1. Operator logs in.
-2. Registers a package (tracking number, courier, recipient, notes, photo).
-3. Status starts as `Registered`.
-4. Operator marks as `Awaiting Pickup`, `Out for Delivery`, `Delivered`, or `Returned`.
-5. Status changes are logged as events with timestamps and actor IDs.
-
-**Data captured**
-| Field | Type | Description |
-|--------|------|-------------|
-| `tracking_no` | TEXT | Courier tracking number or internal ref |
-| `carrier` | TEXT | DHL, SingPost, etc. |
-| `recipient_id` | UUID | Link to recipient |
-| `status` | TEXT | registered / awaiting_pickup / out_for_delivery / delivered / returned |
-| `notes` | TEXT | Optional comments |
-| `photo_path` | TEXT | Path to stored photo (if any) |
-| `created_at` | TIMESTAMP | Auto-captured |
-| `updated_at` | TIMESTAMP | Auto-captured |
-
----
-
-### 5. Search & Filter
-- Search by tracking number, recipient name, department, or status.
-- Filters: date range, status, operator.
-- Paginated list view.
-
----
-
-### 6. Dashboard & Reports
-- Admin dashboard with summary tiles:
-  - Packages registered today
-  - Packages awaiting pickup
-  - Packages delivered / returned
-  - Top recipients / departments
-- CSV export of logs or daily summary.
-
----
-
-### 7. Audit & Logging
-- Track all important actions:
-  - Logins, logouts, failed attempts.
-  - User CRUD and password resets.
-  - Recipient imports.
-  - Package status updates.
-- Logs stored in `auth_events` and `package_events` tables.
-- System log file rotated weekly.
-
----
-
-## ðŸ—‚ï¸ Database (SQLite)
-
-Tables:
 - `users`
 - `sessions`
 - `auth_events`
@@ -159,115 +80,65 @@ Tables:
 - `packages`
 - `package_events`
 - `attachments`
+- `system_settings`
 
-All writes funnel through a single async writer task to avoid SQLite locking issues.
+## Technical Constraints
 
----
+| Component | Expected technology |
+|---|---|
+| Backend | Python 3.12+, FastAPI, Jinja2, HTMX |
+| Frontend | TailwindCSS, daisyUI, HTMX |
+| Database | SQLite |
+| Deployment | Windows Service plus reverse proxy |
+| Storage | Local NTFS for uploads |
+| Security | HTTPS, CSRF, rate limiting, role enforcement |
+| Testing | Pytest-based automated coverage |
 
-## ðŸ–¥ï¸ Technical Requirements
+## UI and UX Requirements
 
-| Component | Technology / Spec |
-|------------|-------------------|
-| **Backend** | Python 3.12+, FastAPI, Jinja2, HTMX |
-| **Frontend** | TailwindCSS + HTMX (responsive mobile-first) |
-| **Database** | SQLite (single file `.sqlite3`) |
-| **Auth** | Argon2id / bcrypt password hashing, secure session cookies |
-| **Deployment** | Windows Service (via NSSM or WinSW) |
-| **Reverse Proxy** | Caddy or IIS ARR (HTTPS) |
-| **Storage** | Local NTFS folder for attachments/photos |
-| **Backup** | Daily VSS snapshot of DB and attachments |
-| **Security** | HTTPS, HttpOnly cookies, rate limit, CSRF tokens |
-| **Testing** | Pytest + httpx for integration tests |
+- Mobile-first responsive layouts
+- Large touch-friendly controls
+- Fast search flows for operators
+- Clear status color coding
+- Minimal friction for scanning QR stickers and updating a package
 
----
+## Non-Functional Requirements
 
-## ðŸ“± UI / UX Requirements
+- Fast response times on LAN
+- Durable local persistence
+- Operationally simple backups
+- Clear environment-based configuration
+- Suitable for roughly 10 to 20 concurrent operators
 
-### Key Pages
-1. Login
-2. Dashboard
-3. Package Registration
-4. Package List / Search
-5. Package Detail (timeline)
-6. Recipient List / Import
-7. User Management
-8. Change Password
-9. Reports
+## Deliverables Required
 
-### UI Guidelines
-- Responsive design (mobile/tablet first).
-- Use large buttons for touchscreens.
-- Color-coded package statuses.
-- Quick search bar on top of all operator views.
-- Light/dark mode optional.
+Produce the following in Markdown:
 
----
+1. PRD
+2. Functional design specification
+3. ERD
+4. User flows
+5. Wireframe descriptions
+6. Configuration table
+7. MVP readiness checklist
+8. Phase 2 roadmap
 
-## ðŸ”’ Security & Access Controls
-- HTTPS enforced (LAN TLS certs).
-- Only LAN/VPN IPs can connect.
-- Session timeout: 30 minutes idle.
-- Rate-limit login attempts.
-- Password hashes never displayed.
-- Role-based access enforcement at route level.
+## Output Structure
 
----
-
-## ðŸ§® Non-Functional Requirements
-- **Performance:** <200ms API response time (local LAN).
-- **Scalability:** Support 10â€“20 concurrent operators.
-- **Reliability:** Graceful restart and data durability (SQLite WAL/checkpoint).
-- **Maintainability:** Configurable `.env` for ports, file paths, retention.
-- **Backup Policy:** Nightly file copy + weekly verification restore test.
-
----
-
-## ðŸ§  Deliverables Required from AI Assistant
-
-Please generate the following documents in markdown format:
-
-1. **Product Requirements Document (PRD)** â€” detailed feature specs, field validation rules, and acceptance criteria.
-2. **Functional Design Specification (FDS)** â€” endpoints, data flow diagrams, and permission matrices.
-3. **Entity Relationship Diagram (ERD)** â€” database schema overview.
-4. **User Flow Diagrams** â€” for Operator, Admin, and Super Admin.
-5. **Wireframe Descriptions** â€” for mobile and desktop layouts.
-6. **Configuration Parameters Table** â€” password policy, timeout, retention, file paths.
-7. **MVP Readiness Checklist** â€” items to confirm before deployment.
-8. **Phase 2 Roadmap** â€” suggested future enhancements (notifications, QR scanning, analytics).
-
----
-
-## ðŸª„ Output Format
-
-Use this structure:
-
-```
-# Mailroom Tracking MVP â€” Product Requirements & Design
-
+```text
+# Mailroom Tracking MVP - Product Requirements and Design
 ## 1. Overview
-## 2. Goals & Constraints
-## 3. Roles & Permissions
+## 2. Goals and Constraints
+## 3. Roles and Permissions
 ## 4. Functional Requirements
 ## 5. Data Design
-## 6. UI/UX Design
+## 6. UI and UX Design
 ## 7. System Architecture
 ## 8. Non-Functional Requirements
 ## 9. MVP Readiness Checklist
 ## 10. Phase 2 Recommendations
 ```
 
-Each section should include tables, bullet points, and optional Mermaid diagrams (ERD, sequence, flow).
+## Note
 
----
-
-## âœï¸ Tone & Style
-
-- Professional, clear, and complete.
-- Structured for developers and managers to understand quickly.
-- Include assumptions, constraints, and clear acceptance criteria.
-
----
-
-**End of Prompt**
-
-
+Treat this file as a planning prompt artifact. For the current implemented system, prefer the root `README.md` and the docs under `docs/`.

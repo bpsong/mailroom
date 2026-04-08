@@ -88,7 +88,7 @@ Monitors available disk space for critical directories.
 - Upload directory has < 90% disk usage
 
 **Warning Criteria:**
-- Either directory has â‰¥ 90% disk usage
+- Either directory has >= 90% disk usage
 
 **Response Fields:**
 - `status`: Health status

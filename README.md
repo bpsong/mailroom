@@ -140,88 +140,31 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
 
 ## Project Structure
 
-```
+```text
 mailroom-tracking/
-â”œâ”€â”€ app/                          # Application source code
-â”‚   â”œâ”€â”€ database/                 # Database layer
-â”‚   â”‚   â”œâ”€â”€ schema.py            # SQLite schema and indexes
-â”‚   â”‚   â””â”€â”€ write_queue.py       # Serialized write worker
-â”‚   â”œâ”€â”€ decorators/              # Route decorators
-â”‚   â”‚   â””â”€â”€ auth.py              # Authentication & RBAC decorators
-â”‚   â”œâ”€â”€ middleware/              # FastAPI middleware
-â”‚   â”‚   â”œâ”€â”€ auth.py              # Session validation
-â”‚   â”‚   â”œâ”€â”€ csrf.py              # CSRF protection
-â”‚   â”‚   â””â”€â”€ rate_limit.py        # Rate limiting
-â”‚   â”œâ”€â”€ models/                  # Pydantic models
-â”‚   â”‚   â”œâ”€â”€ user.py              # User models
-â”‚   â”‚   â”œâ”€â”€ package.py           # Package models
-â”‚   â”‚   â””â”€â”€ recipient.py         # Recipient models
-â”‚   â”œâ”€â”€ routes/                  # API route handlers
-â”‚   â”‚   â”œâ”€â”€ auth.py              # Authentication endpoints
-â”‚   â”‚   â”œâ”€â”€ packages.py          # Package management
-â”‚   â”‚   â”œâ”€â”€ recipients.py        # Recipient management
-â”‚   â”‚   â”œâ”€â”€ admin.py             # Admin endpoints
-â”‚   â”‚   â””â”€â”€ dashboard.py         # Dashboard & reports
-â”‚   â”œâ”€â”€ services/                # Business logic layer
-â”‚   â”‚   â”œâ”€â”€ auth_service.py      # Authentication & password hashing
-â”‚   â”‚   â”œâ”€â”€ rbac_service.py      # Role-based access control
-â”‚   â”‚   â”œâ”€â”€ user_service.py      # User management
-â”‚   â”‚   â”œâ”€â”€ package_service.py   # Package operations
-â”‚   â”‚   â”œâ”€â”€ recipient_service.py # Recipient operations
-â”‚   â”‚   â”œâ”€â”€ file_service.py      # File upload handling
-â”‚   â”‚   â”œâ”€â”€ audit_service.py     # Audit logging
-â”‚   â”‚   â””â”€â”€ dashboard_service.py # Dashboard statistics
-â”‚   â”œâ”€â”€ utils/                   # Utility functions
-â”‚   â”‚   â”œâ”€â”€ validators.py        # Input validation
-â”‚   â”‚   â””â”€â”€ helpers.py           # Helper functions
-â”‚   â”œâ”€â”€ config.py                # Configuration management
-â”‚   â”œâ”€â”€ main.py                  # FastAPI application entry point
-â”‚   â””â”€â”€ __init__.py
-â”œâ”€â”€ static/                      # Static assets
-â”‚   â”œâ”€â”€ css/
-â”‚   â”‚   â”œâ”€â”€ input.css            # TailwindCSS source
-â”‚   â”‚   â””â”€â”€ output.css           # Compiled CSS (generated)
-â”‚   â””â”€â”€ js/
-â”‚       â””â”€â”€ app.js               # Frontend JavaScript
-â”œâ”€â”€ templates/                   # Jinja2 HTML templates
-â”‚   â”œâ”€â”€ admin/                   # Admin pages
-â”‚   â”œâ”€â”€ components/              # Reusable components
-â”‚   â”œâ”€â”€ dashboard/               # Dashboard pages
-â”‚   â”œâ”€â”€ packages/                # Package pages
-â”‚   â”œâ”€â”€ user/                    # User management pages
-â”‚   â””â”€â”€ base.html                # Base template
-â”œâ”€â”€ tests/                       # Test suite
-â”‚   â”œâ”€â”€ unit/                    # Unit tests
-â”‚   â”œâ”€â”€ integration/             # Integration tests
-â”‚   â”œâ”€â”€ e2e/                     # End-to-end tests
-â”‚   â”œâ”€â”€ conftest.py              # Pytest fixtures
-â”‚   â””â”€â”€ __init__.py
-â”œâ”€â”€ scripts/                     # Deployment scripts (PowerShell)
-â”‚   â”œâ”€â”€ init_database.ps1        # Database initialization
-â”‚   â”œâ”€â”€ install_service.ps1      # Windows Service installation
-â”‚   â”œâ”€â”€ backup.ps1               # Backup script
-â”‚   â”œâ”€â”€ cleanup_backups.ps1      # Backup cleanup
-â”‚   â””â”€â”€ README.md                # Scripts documentation
-â”œâ”€â”€ docs/                        # Documentation
-â”‚   â”œâ”€â”€ API_DOCUMENTATION.md     # API reference
-â”‚   â”œâ”€â”€ DATABASE_SCHEMA.md       # Database schema
-â”‚   â”œâ”€â”€ DEPLOYMENT.md            # Deployment guide
-â”‚   â”œâ”€â”€ CONFIGURATION.md         # Configuration reference
-â”‚   â”œâ”€â”€ USER_GUIDE_*.md          # User guides by role
-â”‚   â””â”€â”€ SECURITY_IMPLEMENTATION.md
-â”œâ”€â”€ data/                        # Database files (created at runtime)
-â”‚   â””â”€â”€ mailroom.sqlite3          # SQLite database
-â”œâ”€â”€ uploads/                     # Uploaded package photos (created at runtime)
-â”œâ”€â”€ logs/                        # Application logs (created at runtime)
-â”‚   â””â”€â”€ mailroom.log
-â”œâ”€â”€ .env.example                 # Example environment configuration
-â”œâ”€â”€ .env                         # Environment configuration (create from .env.example)
-â”œâ”€â”€ .gitignore
-â”œâ”€â”€ pyproject.toml               # Python project configuration
-â”œâ”€â”€ package.json                 # Node.js configuration
-â”œâ”€â”€ tailwind.config.js           # TailwindCSS configuration
-â”œâ”€â”€ Caddyfile                    # Caddy reverse proxy config
-â””â”€â”€ README.md                    # This file
+|-- app/                    # Application source code
+|   |-- database/           # SQLite schema, connections, migrations
+|   |-- decorators/         # Authentication and RBAC decorators
+|   |-- middleware/         # Auth, CSRF, and rate limiting
+|   |-- models/             # Pydantic models
+|   |-- routes/             # FastAPI route handlers
+|   |-- services/           # Business logic
+|   |-- utils/              # Validators and helpers
+|   |-- config.py           # Settings management
+|   `-- main.py             # FastAPI entry point
+|-- docs/                   # Deployment, schema, security, and user docs
+|-- scripts/                # Windows-oriented admin and migration scripts
+|-- static/                 # CSS and JavaScript assets
+|-- templates/              # Jinja2 templates
+|-- tests/                  # Unit, integration, and E2E tests
+|-- data/                   # Runtime database files
+|-- uploads/                # Runtime file uploads
+|-- logs/                   # Runtime logs
+|-- .env.example            # Example environment configuration
+|-- pyproject.toml          # Python dependencies and tool config
+|-- package.json            # Frontend build dependencies
+|-- Caddyfile               # Reverse proxy configuration
+`-- README.md               # This file
 ```
 
 ## Dependencies
@@ -291,7 +234,7 @@ For complete configuration reference, see [docs/CONFIGURATION.md](docs/CONFIGURA
 
 ### QR Code Base URL Setting
 
-- Managed inside the application under **Admin â†’ System Settings** (Super Admin only).
+- Managed inside the application under **Admin -> System Settings** (Super Admin only).
 - Enter the production hostname that operators use when scanning stickers (for example, `https://mailroom.company.local`).
 - The value must start with `http://` or `https://` and is stored in the `system_settings` table; every QR sticker uses this host when constructing the package detail URL.
 
@@ -299,37 +242,38 @@ For complete configuration reference, see [docs/CONFIGURATION.md](docs/CONFIGURA
 
 ### Run All Tests
 
-```bash
-pytest
+```powershell
+$env:PATH='C:\Python313;C:\Python313\Scripts;C:\Windows\System32;C:\Windows;C:\Windows\System32\Wbem'
+$env:SECRET_KEY='test-secret-key'
+$env:APP_ENV='testing'
+C:\Python313\python.exe -m pytest -v
 ```
 
 ### Run Specific Test Categories
 
-```bash
+```powershell
 # Unit tests only
-pytest tests/unit/
+C:\Python313\python.exe -m pytest tests\unit -v
 
 # Integration tests only
-pytest tests/integration/
+C:\Python313\python.exe -m pytest tests\integration -v
 
 # End-to-end tests only
-pytest tests/e2e/
+C:\Python313\python.exe -m pytest tests\e2e -v
 
 # Run with coverage report
-pytest --cov=app --cov-report=html
+C:\Python313\python.exe -m pytest tests --cov=app --cov-report=html
 ```
 
 ### Run Specific Test File
 
-```bash
-pytest tests/unit/test_auth_service.py
+```powershell
+C:\Python313\python.exe -m pytest tests\unit\test_auth_service.py -v
 ```
 
 ### Run Tests with Verbose Output
 
-```bash
-pytest -v
-```
+Use the full PowerShell command above so the test environment is reproducible on Windows.
 
 ## Production Deployment
 
@@ -474,20 +418,20 @@ For complete maintenance procedures, see [scripts/README.md](scripts/README.md).
 
 1. Go to "Packages" and find the package row/card.
 2. Click or tap the "QR Actions" dropdown.
-3. Choose "Download QR Code" to save `qr_code_{package_id}.png`, or choose "Print QR Code" to open the 2â€¯cm Ã—â€¯2â€¯cm sticker view in a new tab.
+3. Choose "Download QR Code" to save `qr_code_{package_id}.png`, or choose "Print QR Code" to open the 2 cm x 2 cm sticker view in a new tab.
 4. Use the browser's print dialog to send the sticker to a label printer, then affix it to the physical package.
 5. When a teammate scans the sticker, they'll be redirected through login (if needed) and land on that package's detail page for quick updates.
 
 #### Import Recipients (Admin)
 
-1. Navigate to "Recipients" â†’ "Import CSV"
+1. Navigate to "Recipients" -> "Import CSV"
 2. Upload CSV file with columns: employee_id, name, email, department
 3. Review validation report
 4. Confirm import
 
 #### Create User Account (Admin)
 
-1. Navigate to "Users" â†’ "Add User"
+1. Navigate to "Users" -> "Add User"
 2. Enter username, full name, and role
 3. Set initial password
 4. User must change password on first login
