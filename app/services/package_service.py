@@ -216,23 +216,21 @@ class PackageService:
             old_status,
             status_update.status,
             write_queue.queue.qsize(),
-            True,
+            False,
         )
         try:
-            result = await write_queue.execute(
+            await write_queue.execute(
                 """
                 UPDATE packages
                 SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-                RETURNING id, tracking_no, carrier, recipient_id, status, notes,
-                          created_by, created_at, updated_at
                 """,
                 [
                     status_update.status,
                     status_update.notes,
                     str(package_id),
                 ],
-                return_result=True,
+                return_result=False,
             )
         except Exception as e:
             logger.exception(
@@ -244,21 +242,9 @@ class PackageService:
             )
             raise ValueError(f"Failed to update package status: {str(e)}")
         
-        if not result:
+        updated_package = await self.get_package_by_id(package_id)
+        if not updated_package:
             raise ValueError("Package not found after status update")
-
-        row = result[0]
-        updated_package = Package(
-            id=row[0],
-            tracking_no=row[1],
-            carrier=row[2],
-            recipient_id=row[3],
-            status=row[4],
-            notes=row[5],
-            created_by=row[6],
-            created_at=row[7],
-            updated_at=row[8],
-        )
         
         # Create package event
         await self._create_package_event(
