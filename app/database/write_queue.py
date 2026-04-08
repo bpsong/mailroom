@@ -21,9 +21,11 @@ class WriteOperation:
     
     query: str
     params: QueryParams
+    connection_callable: Optional[Callable[[duckdb.DuckDBPyConnection], Any]] = None
     callback: Optional[Callable[[Any], None]] = None
     error_callback: Optional[Callable[[Exception], None]] = None
-    result_future: Optional[asyncio.Future] = None
+    completion_future: Optional[asyncio.Future] = None
+    expects_result: bool = False
     expired: bool = False
     execution_started: bool = False
 
@@ -64,7 +66,7 @@ class WriteQueue:
         self.is_running = False
         self.transaction_count = 0
         self.last_checkpoint = datetime.now()
-        # Maximum seconds callers wait for return_result=True operations.
+        # Maximum seconds callers wait for queued write operations.
         # Prevents request handlers from hanging forever if worker fails.
         self.result_timeout_seconds = float(
             getattr(settings, "write_queue_result_timeout", 30.0)
@@ -129,8 +131,8 @@ class WriteQueue:
 
         Raises:
             TimeoutError: Raised only for the *caller wait window* when
-                `return_result=True` and the result future is not resolved
-                within `self.result_timeout_seconds`.
+                the queued operation future is not resolved within
+                `self.result_timeout_seconds`.
 
         Notes:
             Timeout uses best-effort cancellation semantics. If the worker has
@@ -150,32 +152,81 @@ class WriteQueue:
             )
             await self.start()
 
-        if return_result:
-            future = asyncio.get_running_loop().create_future()
-            operation = WriteOperation(
-                query=query,
-                params=params,
-                result_future=future
+        completion_future = asyncio.get_running_loop().create_future()
+        operation = WriteOperation(
+            query=query,
+            params=params,
+            completion_future=completion_future,
+            expects_result=return_result,
+        )
+        await self.queue.put(operation)
+        try:
+            completion_value = await asyncio.wait_for(
+                completion_future,
+                timeout=self.result_timeout_seconds,
             )
-            await self.queue.put(operation)
-            try:
-                return await asyncio.wait_for(future, timeout=self.result_timeout_seconds)
-            except asyncio.TimeoutError as exc:
-                operation.mark_expired()
-                if not future.done():
-                    future.cancel()
-                logger.error(
-                    "WriteQueue timed out waiting for result after %ss; query=%s; best_effort_cancel=True",
-                    self.result_timeout_seconds,
-                    " ".join(query.split())[:140],
-                )
-                raise TimeoutError(
-                    f"Timed out waiting for write queue result after {self.result_timeout_seconds}s"
-                ) from exc
-        else:
-            operation = WriteOperation(query=query, params=params)
-            await self.queue.put(operation)
+            if return_result:
+                return completion_value
             return None
+        except asyncio.TimeoutError as exc:
+            operation.mark_expired()
+            if not completion_future.done():
+                completion_future.cancel()
+            logger.error(
+                "WriteQueue timed out waiting for completion after %ss; query=%s; best_effort_cancel=True",
+                self.result_timeout_seconds,
+                " ".join(query.split())[:140],
+            )
+            raise TimeoutError(
+                f"Timed out waiting for write queue completion after {self.result_timeout_seconds}s"
+            ) from exc
+
+    async def execute_with_connection(
+        self,
+        description: str,
+        operation_callable: Callable[[duckdb.DuckDBPyConnection], Any],
+        return_result: bool = False,
+    ) -> Any:
+        """Execute a custom write operation against the worker connection."""
+        self._ensure_queue_for_current_loop()
+
+        if (not self.is_running) or (self.worker_task and self.worker_task.done()):
+            logger.warning(
+                "Write queue worker not running (is_running=%s done=%s); restarting",
+                self.is_running,
+                self.worker_task.done() if self.worker_task else None,
+            )
+            await self.start()
+
+        completion_future = asyncio.get_running_loop().create_future()
+        queue_operation = WriteOperation(
+            query=description,
+            params=None,
+            connection_callable=operation_callable,
+            completion_future=completion_future,
+            expects_result=return_result,
+        )
+        await self.queue.put(queue_operation)
+        try:
+            completion_value = await asyncio.wait_for(
+                completion_future,
+                timeout=self.result_timeout_seconds,
+            )
+            if return_result:
+                return completion_value
+            return None
+        except asyncio.TimeoutError as exc:
+            queue_operation.mark_expired()
+            if not completion_future.done():
+                completion_future.cancel()
+            logger.error(
+                "WriteQueue timed out waiting for completion after %ss; query=%s; best_effort_cancel=True",
+                self.result_timeout_seconds,
+                " ".join(description.split())[:140],
+            )
+            raise TimeoutError(
+                f"Timed out waiting for write queue completion after {self.result_timeout_seconds}s"
+            ) from exc
 
     def _ensure_queue_for_current_loop(self) -> None:
         """Ensure the internal queue is bound to the active event loop."""
@@ -234,8 +285,7 @@ class WriteQueue:
             params_list: List of parameter sets
         """
         for params in params_list:
-            operation = WriteOperation(query=query, params=params)
-            await self.queue.put(operation)
+            await self.execute(query=query, params=params, return_result=False)
     
     async def _worker(self) -> None:
         """Worker task that processes write operations."""
@@ -271,12 +321,19 @@ class WriteQueue:
                                 op_fingerprint,
                                 normalized_query[:140],
                             )
+                            if operation.completion_future:
+                                self._resolve_future_error(
+                                    operation.completion_future,
+                                    TimeoutError("Write operation expired before execution started"),
+                                )
                             continue
 
                         operation.mark_execution_started()
 
                         # Execute the operation
-                        if operation.params:
+                        if operation.connection_callable is not None:
+                            result = operation.connection_callable(conn)
+                        elif operation.params:
                             result = conn.execute(operation.query, operation.params)
                         else:
                             result = conn.execute(operation.query)
@@ -287,14 +344,19 @@ class WriteQueue:
                         # Increment transaction counter
                         self.transaction_count += 1
                         
-                        # Return result if requested
-                        if operation.result_future:
+                        completion_value = None
+                        if operation.expects_result:
                             try:
                                 # Fetch result before setting future
                                 fetched_result = result.fetchall() if result else None
-                                self._resolve_future_success(operation.result_future, fetched_result)
+                                completion_value = fetched_result
                             except Exception as e:
-                                self._resolve_future_error(operation.result_future, e)
+                                if operation.completion_future:
+                                    self._resolve_future_error(operation.completion_future, e)
+                                raise
+
+                        if operation.completion_future:
+                            self._resolve_future_success(operation.completion_future, completion_value)
                         
                         # Call success callback if provided
                         if operation.callback:
@@ -324,8 +386,8 @@ class WriteQueue:
                             )
                         
                         # Set exception on future if provided
-                        if operation.result_future:
-                            self._resolve_future_error(operation.result_future, e)
+                        if operation.completion_future:
+                            self._resolve_future_error(operation.completion_future, e)
                         
                         # Call error callback if provided
                         if operation.error_callback:

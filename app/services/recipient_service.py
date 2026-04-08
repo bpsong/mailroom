@@ -269,41 +269,56 @@ class RecipientService:
             )
         except Exception as exc:
             # DuckDB can raise a duplicate primary-key error on UPDATE for tables with
-            # multiple UNIQUE constraints. Retry with MERGE to avoid UPDATE rewrite edge
-            # cases while keeping the operation scoped to the same recipient row.
-            if not self._is_duplicate_id_update_error(exc):
+            # multiple UNIQUE constraints and can also reject parent-row updates when
+            # referenced by foreign keys. Retry via delete+insert within one transaction.
+            if not (
+                self._is_duplicate_id_update_error(exc)
+                or self._is_referenced_parent_update_error(exc)
+            ):
                 raise
 
             logger.warning(
-                "Retrying recipient update with MERGE due to DuckDB UPDATE constraint error "
+                "Retrying recipient update with transactional delete+insert due to DuckDB UPDATE constraint error "
                 "recipient_id=%s error=%s",
                 recipient_id,
                 exc,
             )
-            merge_query = """
-                MERGE INTO recipients AS recipients_target
-                USING (
-                    SELECT
-                        ? AS name,
-                        ? AS email,
-                        ? AS department,
-                        ? AS phone,
-                        ? AS location,
-                        ?::UUID AS id
-                ) AS recipients_source
-                ON recipients_target.id = recipients_source.id
-                WHEN MATCHED THEN
-                    UPDATE SET
-                        name = recipients_source.name,
-                        email = recipients_source.email,
-                        department = recipients_source.department,
-                        phone = recipients_source.phone,
-                        location = recipients_source.location,
-                        updated_at = CURRENT_TIMESTAMP
-            """
-            await write_queue.execute(
-                merge_query,
-                update_params,
+            def replace_recipient(conn):
+                deleted_row = conn.execute(
+                    """
+                    DELETE FROM recipients
+                    WHERE id = ?
+                    RETURNING id, employee_id, name, email, department, phone, location,
+                              is_active, created_at
+                    """,
+                    [str(recipient_id)],
+                ).fetchone()
+                if not deleted_row:
+                    raise ValueError("Recipient not found during fallback update")
+
+                conn.execute(
+                    """
+                    INSERT INTO recipients (
+                        id, employee_id, name, email, department, phone, location,
+                        is_active, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    [
+                        deleted_row[0],
+                        deleted_row[1],
+                        replacement_name,
+                        replacement_email,
+                        replacement_department,
+                        replacement_phone,
+                        replacement_location,
+                        deleted_row[7],
+                        deleted_row[8],
+                    ],
+                )
+
+            await write_queue.execute_with_connection(
+                description="RECIPIENT_FK_SAFE_REPLACE recipients(id)",
+                operation_callable=replace_recipient,
                 return_result=False,
             )
 
@@ -318,6 +333,12 @@ class RecipientService:
         """Return True when DuckDB fails UPDATE with a duplicate id constraint error."""
         error_message = str(error).lower()
         return "duplicate key" in error_message and "id:" in error_message
+
+    @staticmethod
+    def _is_referenced_parent_update_error(error: Exception) -> bool:
+        """Return True when DuckDB blocks updating a referenced parent row."""
+        error_message = str(error).lower()
+        return "violates foreign key constraint" in error_message and "recipient_id:" in error_message
     
     async def deactivate_recipient(
         self,

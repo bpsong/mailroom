@@ -237,7 +237,58 @@ class UserService:
         """
         
         write_queue = await get_write_queue()
-        result = await write_queue.execute(query, params, return_result=True)
+        try:
+            result = await write_queue.execute(query, params, return_result=True)
+        except Exception as exc:
+            if not self._is_referenced_parent_update_error(exc):
+                raise
+
+            def replace_user(conn):
+                deleted_row = conn.execute(
+                    """
+                    DELETE FROM users
+                    WHERE id = ?
+                    RETURNING id, username, password_hash, full_name, role, is_active,
+                              must_change_password, password_history, failed_login_count,
+                              locked_until, created_at
+                    """,
+                    [str(user_id)],
+                ).fetchone()
+                if not deleted_row:
+                    raise ValueError("User not found during fallback update")
+
+                inserted = conn.execute(
+                    """
+                    INSERT INTO users (
+                        id, username, password_hash, full_name, role, is_active,
+                        must_change_password, password_history, failed_login_count,
+                        locked_until, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    RETURNING id, username, password_hash, full_name, role, is_active,
+                              must_change_password, password_history, failed_login_count,
+                              locked_until, created_at, updated_at
+                    """,
+                    [
+                        deleted_row[0],
+                        deleted_row[1],
+                        deleted_row[2],
+                        full_name if full_name is not None else deleted_row[3],
+                        role if role is not None else deleted_row[4],
+                        deleted_row[5],
+                        deleted_row[6],
+                        deleted_row[7],
+                        deleted_row[8],
+                        deleted_row[9],
+                        deleted_row[10],
+                    ],
+                ).fetchall()
+                return inserted
+
+            result = await write_queue.execute_with_connection(
+                description="USER_FK_SAFE_REPLACE users(id)",
+                operation_callable=replace_user,
+                return_result=True,
+            )
         
         row = result[0]
         updated_user = User(
@@ -269,6 +320,12 @@ class UserService:
             )
         
         return updated_user
+
+    @staticmethod
+    def _is_referenced_parent_update_error(error: Exception) -> bool:
+        """Return True when DuckDB blocks updating a referenced user row."""
+        error_message = str(error).lower()
+        return "violates foreign key constraint" in error_message and "user_id:" in error_message
     
     async def deactivate_user(
         self,
@@ -497,7 +554,7 @@ class UserService:
                 f"SELECT COUNT(*) FROM users WHERE {where_sql}",
                 params,
             ).fetchone()
-            total_count = count_result[0]
+            total_count = count_result[0] if count_result is not None else 0
             
             # Get users
             result = conn.execute(
@@ -544,7 +601,7 @@ class UserService:
                 "SELECT COUNT(*) FROM users WHERE username = ?",
                 [username],
             ).fetchone()
-            return result[0] > 0
+            return (result[0] if result is not None else 0) > 0
 
 
 # Global user service instance
