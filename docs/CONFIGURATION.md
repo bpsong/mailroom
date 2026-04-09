@@ -12,13 +12,13 @@ The Mailroom Tracking System is configured through environment variables defined
 ## Quick Start
 
 1. Copy the example configuration:
-   ```bash
-   cp .env.example .env
+   ```powershell
+   Copy-Item .env.example .env
    ```
 
 2. Edit the `.env` file with your settings:
-   ```bash
-   notepad .env  # Windows
+   ```powershell
+   notepad .env
    ```
 
 3. Restart the application to apply changes:
