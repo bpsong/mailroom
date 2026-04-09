@@ -35,6 +35,37 @@ Installs the application as a Windows Service using NSSM (Non-Sucking Service Ma
 
 ---
 
+### database_admin.ps1
+Runs SQLite database administration commands (init/bootstrap/verify/reset) through the Python migration CLI.
+
+**Usage:**
+```powershell
+.\database_admin.ps1 [options]
+```
+
+**Key Features:**
+- Unified entrypoint for SQLite schema setup and verification
+- Super admin bootstrap support
+- Safe reset flow with explicit confirmation
+- Optional verbose migration logging
+
+**Common Commands:**
+```powershell
+# Initialize schema + super admin
+.\database_admin.ps1 -Command init
+
+# Verify schema integrity
+.\database_admin.ps1 -Command verify
+
+# Reset database (destructive)
+.\database_admin.ps1 -Command reset -ConfirmReset
+
+# Create super admin in existing DB
+.\database_admin.ps1 -Command bootstrap -Username "superadmin"
+```
+
+---
+
 ### init_database.ps1
 Initializes the database schema and creates the super admin account.
 
@@ -146,7 +177,7 @@ Removes old backups based on retention policy (default: 30 days).
 2. **Install Python dependencies:** `pip install -e .`
 3. **Create .env file:** `Copy-Item .env.example .env`
 4. **Configure .env** with production settings
-5. **Initialize database:** `.\scripts\init_database.ps1`
+5. **Initialize database:** `.\scripts\database_admin.ps1 -Command init`
 6. **Install service:** `.\scripts\install_service.ps1`
 7. **Start service:** `Start-Service MailroomTracking`
 

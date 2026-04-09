@@ -105,7 +105,7 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    
    Windows:
    ```powershell
-   .\scripts\init_database.ps1
+   .\scripts\database_admin.ps1 -Command init
    ```
    
    Or manually with Python:
@@ -314,7 +314,7 @@ The application is designed for deployment on Windows Server as a Windows Servic
 
 5. **Initialize database**
    ```powershell
-   .\scripts\init_database.ps1
+   .\scripts\database_admin.ps1 -Command init
    ```
 
 6. **Install as Windows Service**
@@ -347,16 +347,6 @@ Backups include:
 - SQLite database (including WAL files)
 - Uploaded package photos
 - Configuration files
-
-### Migrating Existing DuckDB Data
-
-If you're upgrading an existing installation that still has `data/mailroom.duckdb`, run:
-
-```powershell
-C:\Python313\python.exe .\scripts\migrate_duckdb_to_sqlite.py --force
-```
-
-This exports recipients to `data/recipient_export.csv` and imports all application tables into `data/mailroom.sqlite3`.
 
 #### Cleanup Old Backups
 

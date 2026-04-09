@@ -40,4 +40,3 @@ DATABASE_CHECKPOINT_INTERVAL=300
 - SQLite is embedded; no external database server is required.
 - The application still uses a write queue to keep concurrent writes predictable.
 - Foreign keys are enabled across the schema.
-- Legacy DuckDB data can be migrated with `scripts/migrate_duckdb_to_sqlite.py`.
