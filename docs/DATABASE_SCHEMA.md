@@ -7,7 +7,6 @@ Mailroom Tracking uses SQLite as an embedded application database.
 - Default path: `./data/mailroom.sqlite3`
 - Schema source: `app/database/schema.py`
 - Bootstrap entrypoint: `app/database/migrations.py`
-- Legacy DuckDB migration tool: `scripts/migrate_duckdb_to_sqlite.py`
 
 ## Runtime Model
 
@@ -118,12 +117,6 @@ The schema creates indexes for the main lookup and reporting paths:
 - packages: tracking number, recipient_id, status, created_at, created_by
 - package events: package_id, actor_id, created_at
 - attachments: package_id, uploaded_by
-
-## Migration Notes
-
-- `scripts/migrate_duckdb_to_sqlite.py` exports recipients to `data/recipient_export.csv`.
-- The same script imports all application tables into `data/mailroom.sqlite3`.
-- Current production migration was verified with matching row counts for all tables.
 
 ## Maintenance
 
