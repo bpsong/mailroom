@@ -111,14 +111,14 @@ Reports how long the application has been running.
 
 ## Usage Examples
 
-### cURL
-```bash
-curl http://localhost:8000/health
-```
-
-### PowerShell
+### PowerShell (recommended)
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:8000/health" -Method Get
+```
+
+### curl.exe (Windows)
+```powershell
+curl.exe http://localhost:8000/health
 ```
 
 ### Python
@@ -151,25 +151,22 @@ if ($response.status -ne "healthy") {
 }
 ```
 
-### Nagios/Icinga
-```bash
-#!/bin/bash
-# check_mailroom_health.sh
+### Windows Service Monitor Script
+```powershell
+# check_mailroom_health.ps1
+$response = Invoke-RestMethod -Uri "http://localhost:8000/health" -Method Get
 
-RESPONSE=$(curl -s http://localhost:8000/health)
-STATUS=$(echo $RESPONSE | jq -r '.status')
-
-if [ "$STATUS" = "healthy" ]; then
-    echo "OK - Mailroom system is healthy"
+if ($response.status -eq "healthy") {
+    Write-Output "OK - Mailroom system is healthy"
     exit 0
-else
-    echo "CRITICAL - Mailroom system is $STATUS"
-    exit 2
-fi
+}
+
+Write-Output "CRITICAL - Mailroom system is $($response.status)"
+exit 2
 ```
 
 ### Prometheus
-The endpoint can be scraped by Prometheus with a custom exporter or using the JSON exporter.
+The endpoint can be scraped by Prometheus with a Windows-compatible exporter or the JSON exporter.
 
 ## Troubleshooting
 

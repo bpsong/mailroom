@@ -1,221 +1,76 @@
-# Caddy Configuration Files
+# Caddy Configuration Files (Windows)
 
-This directory contains Caddy reverse proxy configuration files for the Mailroom Tracking System.
+This repository is documented for **Windows deployments** of the Mailroom Tracking System. Use the Windows Caddy configuration and PowerShell commands below.
 
 ## Files
 
-### Caddyfile
-Generic Caddyfile for Linux/Unix systems with standard paths.
+### `Caddyfile.windows` (recommended)
+Windows-first Caddy reverse proxy config with:
+- HTTPS reverse proxy to FastAPI on `localhost:8000`
+- TLS 1.2/1.3 with certificate path env vars
+- Security headers (HSTS, CSP, X-Frame-Options, etc.)
+- JSON access/error logging to `C:\MailroomApp\logs\`
 
-**Features:**
-- HTTPS reverse proxy to FastAPI (port 8000)
-- TLS 1.2/1.3 support with custom certificates
-- Comprehensive security headers (HSTS, CSP, X-Frame-Options, etc.)
-- Access and error logging in JSON format
-- Gzip/Zstd compression
-- Health checks every 30 seconds
-- Graceful error handling
+### `Caddyfile`
+Legacy non-Windows-optimized variant kept for compatibility. For Windows Server, prefer `Caddyfile.windows`.
 
-**Paths:**
-- Logs: `/var/log/caddy/`
-- Certificates: `./certs/`
+## Quick Start (Windows)
 
-### Caddyfile.windows
-Windows-specific Caddyfile with Windows paths.
-
-**Features:**
-- Same features as generic Caddyfile
-- Windows-compatible paths (C:\MailroomApp\)
-- Optimized for Windows Server deployment
-
-**Paths:**
-- Logs: `C:\MailroomApp\logs\`
-- Certificates: `C:\MailroomApp\certs\`
-
-## Quick Start
-
-### Windows
-
-1. **Install Caddy:**
+1. Install Caddy:
    ```powershell
    choco install caddy
    ```
 
-2. **Run installation script:**
+2. Use the Windows Caddyfile:
    ```powershell
-   cd scripts
-   .\install_caddy.ps1
+   Copy-Item .\Caddyfile.windows .\Caddyfile -Force
    ```
 
-3. **Access application:**
-   ```
-   https://mailroom.company.local
-   ```
-
-### Linux/Unix
-
-1. **Install Caddy:**
-   ```bash
-   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-   sudo apt update
-   sudo apt install caddy
+3. Configure environment variables for TLS and host:
+   ```powershell
+   $env:DOMAIN='mailroom.company.local'
+   $env:TLS_CERT_PATH='C:\MailroomApp\certs\cert.pem'
+   $env:TLS_KEY_PATH='C:\MailroomApp\certs\key.pem'
    ```
 
-2. **Copy Caddyfile:**
-   ```bash
-   sudo cp Caddyfile /etc/caddy/Caddyfile
+4. Validate and run:
+   ```powershell
+   caddy validate --config Caddyfile --adapter caddyfile
+   caddy run --config Caddyfile --adapter caddyfile
    ```
 
-3. **Set environment variables:**
-   ```bash
-   export DOMAIN=mailroom.company.local
-   export TLS_CERT_PATH=/etc/caddy/certs/cert.pem
-   export TLS_KEY_PATH=/etc/caddy/certs/key.pem
+5. Verify backend connectivity:
+   ```powershell
+   Invoke-WebRequest -Uri "http://localhost:8000/health" -UseBasicParsing
    ```
 
-4. **Start Caddy:**
-   ```bash
-   sudo systemctl start caddy
-   sudo systemctl enable caddy
-   ```
-
-## Configuration
-
-### Environment Variables
+## Environment Variables
 
 | Variable | Default | Description |
-|----------|---------|-------------|
-| `DOMAIN` | `mailroom.company.local` | Domain name for HTTPS |
-| `TLS_CERT_PATH` | Platform-specific | Path to TLS certificate |
-| `TLS_KEY_PATH` | Platform-specific | Path to TLS private key |
+|---|---|---|
+| `DOMAIN` | `mailroom.company.local` | HTTPS host name |
+| `TLS_CERT_PATH` | `C:\MailroomApp\certs\cert.pem` | TLS certificate path |
+| `TLS_KEY_PATH` | `C:\MailroomApp\certs\key.pem` | TLS private key path |
 
-### Security Headers
+## Troubleshooting (Windows)
 
-The Caddyfile includes these security headers:
-
-- **X-Frame-Options**: Prevents clickjacking
-- **X-Content-Type-Options**: Prevents MIME sniffing
-- **X-XSS-Protection**: Enables XSS filter
-- **Strict-Transport-Security**: Forces HTTPS (HSTS)
-- **Content-Security-Policy**: Restricts resource loading
-- **Referrer-Policy**: Controls referrer information
-- **Permissions-Policy**: Disables unnecessary browser features
-
-### TLS Configuration
-
-- **Protocols**: TLS 1.2 and TLS 1.3
-- **Certificates**: Custom certificates (internal CA or self-signed)
-- **OCSP Stapling**: Disabled (for internal certificates)
-
-## Customization
-
-### Change Domain
-
-Edit environment variable or Caddyfile:
-```caddyfile
-your-domain.com {
-    # ... configuration
-}
+### Port 443 already in use
+```powershell
+netstat -ano | findstr :443
 ```
 
-### Use Let's Encrypt
-
-For public domains, enable automatic HTTPS:
-
-1. Comment out custom TLS line
-2. Add email for Let's Encrypt notifications
-3. Enable auto_https in global options
-
-```caddyfile
-{$DOMAIN} {
-    # tls {$TLS_CERT_PATH} {$TLS_KEY_PATH}  # Comment this out
-    tls admin@company.com  # Add this
-    
-    # ... rest of configuration
-}
-
-{
-    email admin@company.com
-    auto_https on  # Change from off
-}
-```
-
-### Adjust Logging
-
-Change log level or format:
-```caddyfile
-log {
-    level WARN  # Change from INFO
-    format console  # Change from json
-}
-```
-
-### Add Custom Headers
-
-Add to the header block:
-```caddyfile
-header {
-    # Existing headers...
-    
-    # Add custom header
-    X-Custom-Header "value"
-}
-```
-
-## Troubleshooting
-
-### Validate Configuration
-
-```bash
-# Linux/Unix
+### Caddy config check fails
+```powershell
 caddy validate --config Caddyfile --adapter caddyfile
-
-# Windows
-caddy validate --config Caddyfile.windows --adapter caddyfile
 ```
 
-### Test Configuration
-
-```bash
-# Linux/Unix
-caddy run --config Caddyfile --adapter caddyfile
-
-# Windows
-caddy run --config Caddyfile.windows --adapter caddyfile
+### Backend unreachable
+```powershell
+Invoke-WebRequest -Uri "http://localhost:8000" -UseBasicParsing
 ```
 
-### Common Issues
+## Related Docs
 
-**Port 443 already in use:**
-```bash
-# Check what's using port 443
-netstat -tulpn | grep :443  # Linux
-netstat -ano | findstr :443  # Windows
-```
-
-**Certificate errors:**
-- Verify certificate paths are correct
-- Check file permissions
-- Ensure certificate matches domain
-
-**Backend connection failed:**
-- Verify FastAPI is running on port 8000
-- Check firewall rules
-- Test: `curl http://localhost:8000`
-
-## Documentation
-
-For detailed setup and configuration instructions, see:
-- [Caddy Setup Guide](docs/CADDY_SETUP.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Configuration Guide](docs/CONFIGURATION.md)
-
-## Resources
-
-- [Caddy Documentation](https://caddyserver.com/docs/)
-- [Caddyfile Syntax](https://caddyserver.com/docs/caddyfile)
-- [Reverse Proxy Directive](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
-- [TLS Directive](https://caddyserver.com/docs/caddyfile/directives/tls)
-- [Security Headers Guide](https://securityheaders.com/)
-
+- [docs/CADDY_SETUP.md](docs/CADDY_SETUP.md)
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- [docs/CONFIGURATION.md](docs/CONFIGURATION.md)

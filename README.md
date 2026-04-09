@@ -58,11 +58,6 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    venv\Scripts\activate.bat
    ```
    
-   Linux/Mac:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
 
 3. **Install Python dependencies**
    ```bash
@@ -91,10 +86,6 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    copy .env.example .env
    ```
    
-   Linux/Mac:
-   ```bash
-   cp .env.example .env
-   ```
    
    **IMPORTANT**: Edit `.env` and set a secure `SECRET_KEY`:
    ```bash
@@ -542,8 +533,8 @@ For detailed user guides, see:
    ```
 
 4. **Health Check**
-   ```bash
-   curl http://localhost:8000/health
+   ```powershell
+   Invoke-RestMethod -Uri "http://localhost:8000/health" -Method Get
    ```
 
 ### Debug Mode
@@ -604,7 +595,7 @@ This is an internal application. For changes or improvements:
 
 1. Create a feature branch
 2. Make changes with tests
-3. Run test suite: `pytest`
+3. Run test suite (Windows PowerShell with explicit interpreter): `C:\Python313\python.exe -m pytest -v`
 4. Format code: `black app/ tests/`
 5. Lint code: `ruff check app/ tests/`
 6. Submit for review
