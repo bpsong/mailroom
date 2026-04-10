@@ -39,7 +39,7 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
 ### Development Setup
 
 1. **Clone or download the repository**
-   ```bash
+   ```powershell
    git clone <repository-url>
    cd mailroom-tracking
    ```
@@ -60,22 +60,22 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    
 
 3. **Install Python dependencies**
-   ```bash
+   ```powershell
    pip install -e .
    ```
    
    For development with testing tools:
-   ```bash
+   ```powershell
    pip install -e ".[dev]"
    ```
 
 4. **Install Node.js dependencies**
-   ```bash
+   ```powershell
    npm install
    ```
 
 5. **Build TailwindCSS**
-   ```bash
+   ```powershell
    npm run build:css
    ```
 
@@ -88,7 +88,7 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    
    
    **IMPORTANT**: Edit `.env` and set a secure `SECRET_KEY`:
-   ```bash
+   ```powershell
    python -c "import secrets; print(secrets.token_hex(32))"
    ```
 
@@ -100,7 +100,7 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    ```
    
    Or manually with Python:
-   ```bash
+   ```powershell
    python -c "from app.database.migrations import run_initial_migration; run_initial_migration()"
    ```
    
@@ -109,17 +109,17 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
 8. **Start the development server**
    
    Terminal 1 - TailwindCSS watcher (auto-rebuild CSS on changes):
-   ```bash
+   ```powershell
    npm run watch:css
    ```
    
    Terminal 2 - FastAPI application:
-   ```bash
+   ```powershell
    python -m app.main
    ```
    
    Or with uvicorn directly:
-   ```bash
+   ```powershell
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 

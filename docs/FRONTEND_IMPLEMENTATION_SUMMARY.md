@@ -149,7 +149,7 @@ This document summarizes the implementation of the frontend styling and responsi
 - **HTMX**: 1.9.10 (CDN)
 
 ### Build Process
-```bash
+```powershell
 npm install                    # Install dependencies
 npm run build:css             # Build production CSS
 npm run watch:css             # Watch mode for development
