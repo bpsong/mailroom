@@ -31,6 +31,7 @@ async def list_packages(
     department: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    date_field: str = Query("created_at"),
     page: int = Query(1, ge=1),
     limit: int = Query(25, ge=1, le=100),
 ):
@@ -75,6 +76,7 @@ async def list_packages(
         department=department,
         date_from=date_from_dt,
         date_to=date_to_dt,
+        date_field=date_field,
     )
     
     # Calculate pagination
@@ -99,6 +101,7 @@ async def list_packages(
                 "department": department,
                 "date_from": date_from,
                 "date_to": date_to,
+                "date_field": date_field,
             },
             "pagination": {
                 "page": page,

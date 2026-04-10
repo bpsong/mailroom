@@ -15,6 +15,7 @@
     <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
             <form method="GET" action="/packages" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <input type="hidden" name="date_field" value="{{ filters.date_field or 'created_at' }}" />
                 <!-- Search Query -->
                 <div class="form-control">
                     <label class="label">
@@ -24,7 +25,7 @@
                         placeholder="Tracking # or recipient name" class="input input-bordered w-full" maxlength="100"
                         hx-get="/packages" hx-trigger="keyup changed delay:500ms" hx-target="#package-list"
                         hx-select="#package-list"
-                        hx-include="[name='status'], [name='department'], [name='date_from'], [name='date_to']" />
+                        hx-include="[name='status'], [name='department'], [name='date_from'], [name='date_to'], [name='date_field']" />
                 </div>
 
                 <!-- Status Filter -->
@@ -34,7 +35,7 @@
                     </label>
                     <select name="status" class="select select-bordered w-full" hx-get="/packages" hx-trigger="change"
                         hx-target="#package-list" hx-select="#package-list"
-                        hx-include="[name='query'], [name='department'], [name='date_from'], [name='date_to']">
+                        hx-include="[name='query'], [name='department'], [name='date_from'], [name='date_to'], [name='date_field']">
                         <option value="">All Statuses</option>
                         <option value="registered" {% if filters.status=='registered' %}selected{% endif %}>Registered
                         </option>
@@ -116,7 +117,7 @@
                         <td>{{ package.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>
                             <div class="flex items-center gap-2 justify-end">
-                                <a href="/packages/{{ package.id }}" class="btn btn-sm btn-ghost">
+                                <a href="/packages/{{ package.id }}" class="btn btn-sm btn-ghost border border-base-300">
                                     View
                                 </a>
                                 {% set flip_dropdown = loop.last or (loop.revindex == 2 and loop.length >= 3) %}
@@ -238,7 +239,7 @@
         <div class="flex justify-center mt-6">
             <div class="join">
                 {% if pagination.page > 1 %}
-                <a href="?page={{ pagination.page - 1 }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+                <a href="?page={{ pagination.page - 1 }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.department %}&department={{ filters.department }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.date_field %}&date_field={{ filters.date_field }}{% endif %}"
                     class="join-item btn">«</a>
                 {% endif %}
 
@@ -247,7 +248,7 @@
                 <button class="join-item btn btn-active">{{ p }}</button>
                 {% elif p == 1 or p == pagination.total_pages or (p >= pagination.page - 2 and p <= pagination.page + 2)
                     %} <a
-                    href="?page={{ p }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+                    href="?page={{ p }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.department %}&department={{ filters.department }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.date_field %}&date_field={{ filters.date_field }}{% endif %}"
                     class="join-item btn">{{ p }}</a>
                     {% elif p == pagination.page - 3 or p == pagination.page + 3 %}
                     <button class="join-item btn btn-disabled">...</button>
@@ -255,7 +256,7 @@
                     {% endfor %}
 
                     {% if pagination.page < pagination.total_pages %} <a
-                        href="?page={{ pagination.page + 1 }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+                        href="?page={{ pagination.page + 1 }}&limit={{ pagination.limit }}{% if filters.query %}&query={{ filters.query }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.department %}&department={{ filters.department }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}{% if filters.date_field %}&date_field={{ filters.date_field }}{% endif %}"
                         class="join-item btn">»</a>
                         {% endif %}
             </div>

@@ -117,6 +117,7 @@ class PackageFilters(BaseModel):
     department: Optional[str] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
+    date_field: str = "created_at"
     recipient_id: Optional[UUID] = None
     created_by: Optional[UUID] = None
 

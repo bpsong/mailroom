@@ -284,6 +284,7 @@ class PackageService:
         # Build WHERE clause
         where_clauses = []
         params = []
+        date_column = "p.updated_at" if filters.date_field == "updated_at" else "p.created_at"
         
         if filters.query:
             where_clauses.append(
@@ -301,11 +302,11 @@ class PackageService:
             params.append(filters.department)
         
         if filters.date_from:
-            where_clauses.append("p.created_at >= ?")
+            where_clauses.append(f"{date_column} >= ?")
             params.append(filters.date_from)
         
         if filters.date_to:
-            where_clauses.append("p.created_at <= ?")
+            where_clauses.append(f"{date_column} <= ?")
             params.append(filters.date_to)
         
         if filters.recipient_id:
