@@ -146,6 +146,17 @@ CREATE INDEX IF NOT EXISTS idx_package_events_created_at ON package_events(creat
 
 CREATE INDEX IF NOT EXISTS idx_attachments_package_id ON attachments(package_id);
 CREATE INDEX IF NOT EXISTS idx_attachments_uploaded_by ON attachments(uploaded_by);
+
+CREATE TABLE IF NOT EXISTS carriers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_carriers_is_active ON carriers(is_active);
+CREATE INDEX IF NOT EXISTS idx_carriers_name ON carriers(name);
 """
 
 

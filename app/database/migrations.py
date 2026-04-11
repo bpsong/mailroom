@@ -40,6 +40,7 @@ class MigrationManager:
             raise RuntimeError(f"Schema verification failed for database: {self.db_path}")
 
         self._enforce_recipient_department_requirement()
+        self._seed_default_carriers()
 
     def bootstrap_super_admin(
         self,
@@ -111,6 +112,29 @@ class MigrationManager:
             )
         except Exception as exc:
             logger.error("Failed to enforce recipient department requirement: %s", exc)
+        finally:
+            conn.close()
+
+    def _seed_default_carriers(self) -> None:
+        """Seed the carriers table with default entries when it is empty."""
+        conn = create_connection(self.db_path)
+        try:
+            result = conn.execute("SELECT COUNT(*) FROM carriers").fetchone()
+            carrier_count = result[0] if result else 0
+
+            if carrier_count > 0:
+                logger.info("Carriers already exist, skipping default carrier seeding")
+                return
+
+            default_carriers = ["UPS", "FedEx", "USPS", "DHL", "Amazon Logistics"]
+            for name in default_carriers:
+                conn.execute(
+                    "INSERT INTO carriers (name, is_active) VALUES (?, 1)",
+                    (name,),
+                )
+            logger.info("Seeded %d default carriers", len(default_carriers))
+        except Exception as exc:
+            logger.error("Failed to seed default carriers: %s", exc)
         finally:
             conn.close()
 
