@@ -66,6 +66,7 @@ static/css/output.css
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+.hypothesis/
 
 # Certificates
 certs/
