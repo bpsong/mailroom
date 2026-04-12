@@ -27,7 +27,7 @@
                 <div class="stat-desc">Registered today</div>
                 <div class="stat-actions mt-2">
                     <a href="/packages?date_from={{ today }}" 
-                       class="btn btn-sm btn-ghost">
+                       class="btn btn-sm btn-outline">
                         View All
                     </a>
                 </div>
@@ -47,7 +47,7 @@
                 <div class="stat-desc">Ready for collection</div>
                 <div class="stat-actions mt-2">
                     <a href="/packages?status=awaiting_pickup" 
-                       class="btn btn-sm btn-ghost">
+                       class="btn btn-sm btn-outline">
                         View All
                     </a>
                 </div>
@@ -67,7 +67,7 @@
                 <div class="stat-desc">Completed deliveries</div>
                 <div class="stat-actions mt-2">
                     <a href="/packages?status=delivered&date_from={{ today }}&date_field=updated_at" 
-                       class="btn btn-sm btn-ghost">
+                       class="btn btn-sm btn-outline">
                         View All
                     </a>
                 </div>
@@ -87,7 +87,7 @@
                 <div class="stat-desc">All time</div>
                 <div class="stat-actions mt-2">
                     <a href="/packages" 
-                       class="btn btn-sm btn-ghost">
+                       class="btn btn-sm btn-outline">
                         View All
                     </a>
                 </div>
@@ -106,12 +106,14 @@
                     class="input input-bordered w-full"
                     placeholder="Search by tracking number or recipient name..."
                     maxlength="100"
+                    data-counter="false"
                     hx-get="/packages"
                     hx-trigger="keyup changed delay:300ms"
                     hx-target="#main-content"
                     hx-select="#main-content"
                     hx-push-url="true"
                     hx-include="[name='q']">
+                <p class="text-sm text-base-content/60 mt-1">Results will appear on the Packages page</p>
             </div>
         </div>
     </div>
@@ -140,8 +142,11 @@
                         <div class="flex items-center gap-3">
                             <span class="text-2xl font-bold">{{ item.count }}</span>
                             <a href="/packages?status={{ item.status }}" 
-                               class="btn btn-sm btn-ghost btn-circle">
-                                →
+                               class="btn btn-sm btn-ghost btn-circle"
+                               aria-label="View all {{ item.status | replace('_', ' ') }} packages">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
                             </a>
                         </div>
                     </div>

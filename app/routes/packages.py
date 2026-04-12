@@ -17,6 +17,7 @@ from app.models import (
 )
 from app.services.package_service import package_service
 from app.services.qrcode_service import qrcode_service
+from app.services.carrier_service import carrier_service
 
 
 router = APIRouter(prefix="/packages", tags=["packages"])
@@ -128,12 +129,14 @@ async def show_register_form(request: Request):
         HTML page with registration form
     """
     user = get_current_user(request)
-    
+    carriers = await carrier_service.get_active_carriers()
+
     return templates.TemplateResponse(
         "packages/register.html",
         {
             "request": request,
             "user": user,
+            "carriers": carriers,
         },
     )
 
@@ -250,6 +253,36 @@ async def get_package_details(request: Request, package_id: str):
         raise HTTPException(status_code=400, detail="Invalid package ID")
 
 
+@router.get("/{package_id}/detail-partial", response_class=HTMLResponse)
+@require_auth
+async def get_detail_partial(request: Request, package_id: str):
+    """
+    Return the status badge + timeline partial for HTMX swap.
+
+    Accessible by: all authenticated users (operator, admin, super_admin)
+    """
+    user = get_current_user(request)
+
+    try:
+        package_uuid = UUID(package_id)
+        package_detail = await package_service.get_package_detail(package_uuid)
+
+        if not package_detail:
+            raise HTTPException(status_code=404, detail="Package not found")
+
+        return templates.TemplateResponse(
+            "packages/detail_status_partial.html",
+            {
+                "request": request,
+                "user": user,
+                "package": package_detail,
+            },
+        )
+
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid package ID")
+
+
 @router.post("/{package_id}/status")
 @require_auth
 async def update_package_status(
@@ -271,7 +304,7 @@ async def update_package_status(
         notes: Optional notes
         
     Returns:
-        Updated package information (HTMX partial)
+        detail_status_partial.html for HTMX targeted swap into #package-detail-partial
     """
     user = get_current_user(request)
     
@@ -290,20 +323,35 @@ async def update_package_status(
         )
         
         package = await package_service.update_status(package_uuid, status_update, user)
-        
-        # Return updated package card (HTMX will swap it)
+        package_detail = await package_service.get_package_detail(package_uuid)
+
         return templates.TemplateResponse(
-            "packages/status_updated.html",
+            "packages/detail_status_partial.html",
             {
                 "request": request,
                 "user": user,
-                "package": package,
-                "message": f"Status updated to {new_status}",
+                "package": package_detail,
             },
         )
     
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Re-fetch current package state to render partial with inline error
+        try:
+            package_uuid = UUID(package_id)
+            package_detail = await package_service.get_package_detail(package_uuid)
+        except Exception:
+            package_detail = None
+
+        return templates.TemplateResponse(
+            "packages/detail_status_partial.html",
+            {
+                "request": request,
+                "user": user,
+                "package": package_detail,
+                "error": str(e),
+            },
+            status_code=422,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating status: {str(e)}")
 

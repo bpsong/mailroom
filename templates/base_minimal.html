@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mailroom Package Tracking System">
+    <meta name="csrf-token" content="{{ csrf_token_value() }}">
+    <title>{% block title %}Mailroom Tracking{% endblock %}</title>
+
+    <!-- TailwindCSS + daisyUI -->
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/output.css') }}">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Theme initialization script -->
+    <script>
+        // Set theme based on user preference or system preference
+        const theme = localStorage.getItem('theme') ||
+                     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+    </script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex items-center justify-center bg-base-200">
+    <!-- Skip to main content link for keyboard users -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 btn btn-primary">
+        Skip to main content
+    </a>
+
+    <main id="main-content" role="main" aria-label="Main content" class="w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- HTMX Configuration and Event Handlers -->
+    <script>
+        function injectCsrfInputs(rootElement) {
+            const metaToken = document.querySelector('meta[name="csrf-token"]');
+            if (!metaToken) {
+                return;
+            }
+            const token = metaToken.content;
+            const scope = rootElement || document;
+            const forms = scope.querySelectorAll('form');
+            forms.forEach((form) => {
+                const method = (form.getAttribute('method') || 'GET').toUpperCase();
+                if (method === 'GET' || method === 'DIALOG' || form.dataset.csrfExempt === 'true') {
+                    return;
+                }
+                let csrfField = form.querySelector('input[name="csrf_token"]');
+                if (!csrfField) {
+                    csrfField = document.createElement('input');
+                    csrfField.type = 'hidden';
+                    csrfField.name = 'csrf_token';
+                    form.prepend(csrfField);
+                }
+                csrfField.value = token;
+            });
+        }
+
+        function ensureAlertRoles(scope) {
+            const root = scope && typeof scope.querySelectorAll === 'function' ? scope : document;
+            root.querySelectorAll('.alert:not([role])').forEach((alertEl) => {
+                alertEl.setAttribute('role', 'alert');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            injectCsrfInputs(document);
+            ensureAlertRoles(document);
+        });
+
+        document.body.addEventListener('htmx:configRequest', function(event) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                event.detail.headers['X-CSRF-Token'] = csrfToken.content;
+            }
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            injectCsrfInputs(event.target);
+            ensureAlertRoles(event.target);
+        });
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

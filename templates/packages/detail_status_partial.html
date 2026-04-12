@@ -1,0 +1,49 @@
+<div id="package-detail-partial">
+    {% if error %}
+    <div role="alert" class="alert alert-error mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Status Timeline -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h3 class="card-title">📋 Status History</h3>
+
+            <ul id="package-timeline" class="steps steps-vertical w-full mt-4">
+                {% for event in package.timeline %}
+                <li class="step {% if loop.last %}step-primary{% else %}step-neutral{% endif %}">
+                    <div class="text-left w-full">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-semibold">
+                                    {% if event.new_status == 'registered' %}
+                                    📦 Registered
+                                    {% elif event.new_status == 'awaiting_pickup' %}
+                                    ⏳ Awaiting Pickup
+                                    {% elif event.new_status == 'out_for_delivery' %}
+                                    🚚 Out for Delivery
+                                    {% elif event.new_status == 'delivered' %}
+                                    ✅ Delivered
+                                    {% elif event.new_status == 'returned' %}
+                                    ↩️ Returned
+                                    {% endif %}
+                                </p>
+                                {% if event.notes %}
+                                <p class="text-sm text-base-content/70 mt-1">{{ event.notes }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="text-right text-sm text-base-content/70">
+                                {{ event.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,11 @@
+{% if package.status == 'registered' %}
+<span class="badge badge-neutral">Registered</span>
+{% elif package.status == 'awaiting_pickup' %}
+<span class="badge badge-warning">Awaiting Pickup</span>
+{% elif package.status == 'out_for_delivery' %}
+<span class="badge badge-info">Out for Delivery</span>
+{% elif package.status == 'delivered' %}
+<span class="badge badge-success">Delivered</span>
+{% elif package.status == 'returned' %}
+<span class="badge badge-error">Returned</span>
+{% endif %}

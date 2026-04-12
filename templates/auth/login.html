@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_minimal.html" %}
 
 {% block title %}Login - Mailroom Tracking System{% endblock %}
 
@@ -46,6 +46,7 @@
                     autofocus
                     autocomplete="username"
                     maxlength="50"
+                    data-counter="false"
                 />
                 </div>
 
@@ -62,6 +63,7 @@
                         class="input input-bordered w-full" 
                         required
                         autocomplete="current-password"
+                        data-counter="false"
                     />
                 </div>
 

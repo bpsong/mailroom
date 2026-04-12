@@ -92,6 +92,24 @@ class SystemSettingsService:
             }
         )
     
+    async def get_company_name(self) -> str:
+        """
+        Get configured company name for display in the footer.
+
+        Returns the configured value, or "Your Company" if not set.
+        """
+        db = get_db()
+        with db.get_read_connection() as conn:
+            try:
+                result = conn.execute(
+                    "SELECT value FROM system_settings WHERE key = 'company_name'",
+                ).fetchone()
+            except Exception as exc:
+                logger.debug("System settings table unavailable when reading company_name: %s", exc)
+                return "Your Company"
+
+            return result[0] if result else "Your Company"
+
     def validate_base_url(self, url: str) -> bool:
         """
         Validate URL format.

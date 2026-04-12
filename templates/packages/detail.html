@@ -15,17 +15,19 @@
         <div class="card-body">
             <div class="flex justify-between items-start">
                 <h2 class="card-title text-2xl">📦 {{ package.tracking_no }}</h2>
-                {% if package.status == 'registered' %}
-                <span class="badge badge-neutral badge-lg">Registered</span>
-                {% elif package.status == 'awaiting_pickup' %}
-                <span class="badge badge-warning badge-lg">Awaiting Pickup</span>
-                {% elif package.status == 'out_for_delivery' %}
-                <span class="badge badge-info badge-lg">Out for Delivery</span>
-                {% elif package.status == 'delivered' %}
-                <span class="badge badge-success badge-lg">Delivered</span>
-                {% elif package.status == 'returned' %}
-                <span class="badge badge-error badge-lg">Returned</span>
-                {% endif %}
+                <span id="package-status-badge">
+                    {% if package.status == 'registered' %}
+                    <span class="badge badge-neutral badge-lg">Registered</span>
+                    {% elif package.status == 'awaiting_pickup' %}
+                    <span class="badge badge-warning badge-lg">Awaiting Pickup</span>
+                    {% elif package.status == 'out_for_delivery' %}
+                    <span class="badge badge-info badge-lg">Out for Delivery</span>
+                    {% elif package.status == 'delivered' %}
+                    <span class="badge badge-success badge-lg">Delivered</span>
+                    {% elif package.status == 'returned' %}
+                    <span class="badge badge-error badge-lg">Returned</span>
+                    {% endif %}
+                </span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -105,51 +107,54 @@
         </div>
     </div>
 
-    <!-- Status Timeline -->
-    <div class="card bg-base-100 shadow-xl mb-6">
-        <div class="card-body">
-            <h3 class="card-title">📋 Status History</h3>
-            
-            <ul class="steps steps-vertical w-full mt-4">
-                {% for event in package.timeline %}
-                <li class="step step-primary">
-                    <div class="text-left w-full">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-semibold">
-                                    {% if event.new_status == 'registered' %}
-                                    📦 Registered
-                                    {% elif event.new_status == 'awaiting_pickup' %}
-                                    ⏳ Awaiting Pickup
-                                    {% elif event.new_status == 'out_for_delivery' %}
-                                    🚚 Out for Delivery
-                                    {% elif event.new_status == 'delivered' %}
-                                    ✅ Delivered
-                                    {% elif event.new_status == 'returned' %}
-                                    ↩️ Returned
+    <!-- Status Timeline + Status Badge partial wrapper -->
+    <div id="package-detail-partial">
+        <!-- Status Timeline -->
+        <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+                <h3 class="card-title">📋 Status History</h3>
+                
+                <ul id="package-timeline" class="steps steps-vertical w-full mt-4">
+                    {% for event in package.timeline %}
+                    <li class="step {% if loop.last %}step-primary{% else %}step-neutral{% endif %}">
+                        <div class="text-left w-full">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-semibold">
+                                        {% if event.new_status == 'registered' %}
+                                        📦 Registered
+                                        {% elif event.new_status == 'awaiting_pickup' %}
+                                        ⏳ Awaiting Pickup
+                                        {% elif event.new_status == 'out_for_delivery' %}
+                                        🚚 Out for Delivery
+                                        {% elif event.new_status == 'delivered' %}
+                                        ✅ Delivered
+                                        {% elif event.new_status == 'returned' %}
+                                        ↩️ Returned
+                                        {% endif %}
+                                    </p>
+                                    {% if event.notes %}
+                                    <p class="text-sm text-base-content/70 mt-1">{{ event.notes }}</p>
                                     {% endif %}
-                                </p>
-                                {% if event.notes %}
-                                <p class="text-sm text-base-content/70 mt-1">{{ event.notes }}</p>
-                                {% endif %}
-                            </div>
-                            <div class="text-right text-sm text-base-content/70">
-                                {{ event.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                                <div class="text-right text-sm text-base-content/70">
+                                    {{ event.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
     </div>
 
-    <!-- Attachments -->
-    {% if attachments %}
+    <!-- Photos (always visible) -->
     <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
             <h3 class="card-title">📷 Photos</h3>
             
+            {% if attachments %}
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
                 {% for attachment in attachments %}
                 <div class="card bg-base-200">
@@ -168,8 +173,11 @@
                 </div>
                 {% endfor %}
             </div>
+            {% else %}
+            <p class="text-sm text-base-content/60 mt-2">No photos uploaded yet.</p>
+            {% endif %}
 
-            <!-- Add Photo Button -->
+            <!-- Add Photo Button (always visible) -->
             <div class="card-actions justify-end mt-4">
                 <button 
                     class="btn btn-outline btn-sm"
@@ -180,7 +188,6 @@
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
 
 <!-- Status Update Modal -->
@@ -191,7 +198,8 @@
             method="POST" 
             action="/packages/{{ package.id }}/status"
             hx-post="/packages/{{ package.id }}/status"
-            hx-target="#status-result"
+            hx-target="#package-detail-partial"
+            hx-swap="outerHTML"
             class="mt-4"
         >
             {{ csrf_input()|safe }}
@@ -292,14 +300,8 @@
 
 {% block extra_scripts %}
 <script>
-    // Close modal and reload page on successful status update
+    // Close photo modal and reload page on successful photo upload
     document.addEventListener('htmx:afterSwap', function(event) {
-        if (event.detail.target.id === 'status-result' && event.detail.successful) {
-            setTimeout(() => {
-                status_modal.close();
-                window.location.reload();
-            }, 1500);
-        }
         if (event.detail.target.id === 'photo-result' && event.detail.successful) {
             setTimeout(() => {
                 photo_modal.close();

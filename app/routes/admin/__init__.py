@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request
 
 from app.decorators import get_current_user, require_role
 
+from .carriers import router as carriers_router
 from .recipients import router as recipients_router
 from .reports import router as reports_router
 from .settings import router as settings_router
@@ -32,6 +33,7 @@ async def admin_dashboard(request: Request):
     }
 
 
+router.include_router(carriers_router)
 router.include_router(users_router)
 router.include_router(recipients_router)
 router.include_router(settings_router)

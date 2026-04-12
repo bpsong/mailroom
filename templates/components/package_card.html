@@ -4,17 +4,7 @@
         <!-- Header with tracking number and status -->
         <div class="flex justify-between items-start gap-2 mb-3">
             <h3 class="card-title text-base font-mono">{{ package.tracking_no }}</h3>
-            {% if package.status == 'registered' %}
-            <span class="badge badge-neutral badge-sm">Registered</span>
-            {% elif package.status == 'awaiting_pickup' %}
-            <span class="badge badge-warning badge-sm">Awaiting</span>
-            {% elif package.status == 'out_for_delivery' %}
-            <span class="badge badge-info badge-sm">Delivery</span>
-            {% elif package.status == 'delivered' %}
-            <span class="badge badge-success badge-sm">Delivered</span>
-            {% elif package.status == 'returned' %}
-            <span class="badge badge-error badge-sm">Returned</span>
-            {% endif %}
+            {% include "components/package_card_badge.html" %}
         </div>
         
         <!-- Package details -->

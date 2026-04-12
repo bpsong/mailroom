@@ -14,7 +14,7 @@
     <!-- Search and Filters -->
     <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
-            <form method="GET" action="/packages" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <form method="GET" action="/packages" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <input type="hidden" name="date_field" value="{{ filters.date_field or 'created_at' }}" />
                 <!-- Search Query -->
                 <div class="form-control">
@@ -23,6 +23,7 @@
                     </label>
                     <input type="search" name="query" value="{{ filters.query or '' }}"
                         placeholder="Tracking # or recipient name" class="input input-bordered w-full" maxlength="100"
+                        data-counter="false"
                         hx-get="/packages" hx-trigger="keyup changed delay:500ms" hx-target="#package-list"
                         hx-select="#package-list"
                         hx-include="[name='status'], [name='department'], [name='date_from'], [name='date_to'], [name='date_field']" />
@@ -56,7 +57,7 @@
                         <span class="label-text">Department</span>
                     </label>
                     <input type="text" name="department" value="{{ filters.department or '' }}" placeholder="Department"
-                        class="input input-bordered w-full" maxlength="100" />
+                        class="input input-bordered w-full" maxlength="100" data-counter="false" />
                 </div>
 
                 <!-- Date Range -->
@@ -68,7 +69,15 @@
                         class="input input-bordered w-full" />
                 </div>
 
-                <div class="form-control lg:col-span-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Date To</span>
+                    </label>
+                    <input type="date" name="date_to" value="{{ filters.date_to or '' }}"
+                        class="input input-bordered w-full" />
+                </div>
+
+                <div class="form-control lg:col-span-5">
                     <button type="submit" class="btn btn-primary">
                         🔍 Search
                     </button>
@@ -176,17 +185,7 @@
                 <div class="card-body">
                     <div class="flex justify-between items-start">
                         <h2 class="card-title text-lg">{{ package.tracking_no }}</h2>
-                        {% if package.status == 'registered' %}
-                        <span class="badge badge-neutral">Registered</span>
-                        {% elif package.status == 'awaiting_pickup' %}
-                        <span class="badge badge-warning">Awaiting Pickup</span>
-                        {% elif package.status == 'out_for_delivery' %}
-                        <span class="badge badge-info">Out for Delivery</span>
-                        {% elif package.status == 'delivered' %}
-                        <span class="badge badge-success">Delivered</span>
-                        {% elif package.status == 'returned' %}
-                        <span class="badge badge-error">Returned</span>
-                        {% endif %}
+                        {% include "components/package_card_badge.html" %}
                     </div>
                     <div class="space-y-2 text-sm">
                         <p><strong>Carrier:</strong> {{ package.carrier }}</p>
