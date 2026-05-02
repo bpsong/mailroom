@@ -21,9 +21,11 @@ router = APIRouter()
 async def show_settings(request: Request):
     """Display system settings page."""
     from app.services.system_settings_service import system_settings_service
+    from app.services.carrier_service import carrier_service
 
     user = get_current_user(request)
     qr_base_url = await system_settings_service.get_qr_base_url()
+    carriers = await carrier_service.get_all_carriers()
 
     return templates.TemplateResponse(
         "admin/settings.html",
@@ -31,6 +33,7 @@ async def show_settings(request: Request):
             "request": request,
             "user": user,
             "qr_base_url": qr_base_url or "",
+            "carriers": carriers,
         },
     )
 
@@ -62,22 +65,30 @@ async def update_qr_base_url(
             ip_address=client_ip,
         )
 
+        from app.services.carrier_service import carrier_service
+        carriers = await carrier_service.get_all_carriers()
+
         return templates.TemplateResponse(
             "admin/settings.html",
             {
                 "request": request,
                 "user": user,
                 "qr_base_url": qr_base_url,
+                "carriers": carriers,
                 "success": "QR code base URL updated successfully",
             },
         )
     except ValueError as e:
+        from app.services.carrier_service import carrier_service
+        carriers = await carrier_service.get_all_carriers()
+
         return templates.TemplateResponse(
             "admin/settings.html",
             {
                 "request": request,
                 "user": user,
                 "qr_base_url": qr_base_url,
+                "carriers": carriers,
                 "error": str(e),
             },
             status_code=status.HTTP_400_BAD_REQUEST,

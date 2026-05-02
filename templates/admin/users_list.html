@@ -113,7 +113,7 @@
                                 {% set can_manage = user.role == 'super_admin' or (user.role == 'admin' and user_item.role == 'operator') %}
                                 {% if can_manage %}
                                 <div class="dropdown dropdown-end">
-                                    <label tabindex="0" class="btn btn-ghost btn-sm">
+                                    <label tabindex="0" class="btn btn-ghost btn-sm" aria-label="Actions for {{ user_item.username }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                         </svg>
@@ -294,7 +294,7 @@ document.getElementById('modal-reset-password')?.addEventListener('input', funct
     
     bars.forEach((bar, index) => {
         bar.className = 'h-1 flex-1 rounded ';
-        if (index < strength - 1) {
+        if (index < strength) {
             if (strength <= 2) bar.className += 'bg-error';
             else if (strength <= 3) bar.className += 'bg-warning';
             else if (strength <= 4) bar.className += 'bg-info';
