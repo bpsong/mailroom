@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings
-from app.database.migrations import run_initial_migration
+from app.database.migrations import MigrationManager, run_initial_migration
 from app.database.write_queue import get_write_queue, close_write_queue
 
 
@@ -38,7 +38,16 @@ async def lifespan(app: FastAPI):
     
     # Initialize database
     try:
-        run_initial_migration(create_super_admin=True)
+        run_initial_migration(create_super_admin=False)
+        migration_manager = MigrationManager(settings.database_path)
+        if migration_manager.user_count() == 0:
+            message = (
+                "No user accounts exist. Run scripts/bootstrap_super_admin.py "
+                "to create the first super admin account."
+            )
+            if settings.is_production:
+                raise RuntimeError(message)
+            logger.warning(message)
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")

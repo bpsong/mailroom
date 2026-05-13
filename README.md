@@ -101,10 +101,13 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    
    Or manually with Python:
    ```powershell
-   python -c "from app.database.migrations import run_initial_migration; run_initial_migration()"
+   python .\scripts\bootstrap_super_admin.py
    ```
    
-   This creates the database schema and a super admin account. **Save the credentials securely!**
+   This creates the database schema and the first `super_admin` account. If you do not pass
+   `--password`, the command generates a temporary password and prints it once. **Save it
+   securely; it cannot be recovered later.** See
+   [`docs/INITIAL_SUPER_ADMIN_BOOTSTRAP.md`](docs/INITIAL_SUPER_ADMIN_BOOTSTRAP.md) for details.
 
 8. **Start the development server**
    
@@ -127,7 +130,8 @@ The Mailroom Tracking System streamlines package management for mailroom staff w
    
    Open your browser to: `http://localhost:8000`
    
-   Login with the super admin credentials created in step 7.
+   Login with the super admin credentials created in step 7. The account is forced to change
+   its password on first login.
 
 ## Project Structure
 
@@ -163,16 +167,17 @@ mailroom-tracking/
 ### Python Dependencies (pyproject.toml)
 
 **Core Dependencies:**
-- `fastapi>=0.104.0` - Modern web framework
-- `uvicorn[standard]>=0.24.0` - ASGI server
+- `fastapi>=0.122.0,<1.0.0` - Modern web framework
+- `starlette>=0.49.1,<1.0.0` - ASGI toolkit used by FastAPI
+- `uvicorn[standard]>=0.34.0,<1.0.0` - ASGI server
 - `sqlite3` - Embedded SQL database from the Python standard library
-- `jinja2>=3.1.0` - Template engine
-- `argon2-cffi>=23.1.0` - Password hashing
-- `python-multipart>=0.0.6` - File upload support
-- `pydantic>=2.5.0` - Data validation
-- `pydantic-settings>=2.1.0` - Settings management
-- `python-dotenv>=1.0.0` - Environment variable loading
-- `python-magic>=0.4.27` - File type detection
+- `jinja2>=3.1.6,<4.0.0` - Template engine
+- `argon2-cffi>=23.1.0,<26.0.0` - Password hashing
+- `python-multipart>=0.0.20,<1.0.0` - File upload support
+- `pydantic>=2.12.0,<3.0.0` - Data validation
+- `pydantic-settings>=2.1.0,<3.0.0` - Settings management
+- `python-dotenv>=1.0.0,<2.0.0` - Environment variable loading
+- `python-magic>=0.4.27,<1.0.0` - File type detection
 
 **Note**: Session management uses random tokens stored in SQLite, not itsdangerous.
 

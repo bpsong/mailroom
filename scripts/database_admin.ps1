@@ -7,7 +7,7 @@ param(
     [string]$InstallPath = 'C:\MailroomApp',
     [string]$PythonPath = 'C:\Python313\python.exe',
     [string]$Username = 'admin',
-    [string]$Password = 'ChangeMe123!',
+    [string]$Password,
     [string]$FullName = 'System Administrator',
     [switch]$NoSuperAdmin,
     [switch]$ConfirmReset,
@@ -27,7 +27,7 @@ Options:
     -InstallPath <path>                     Installation directory (default: C:\MailroomApp)
     -PythonPath <path>                      Path to Python executable (default: C:\Python313\python.exe)
     -Username <name>                        Admin username for init/bootstrap (default: admin)
-    -Password <pass>                        Admin password for init/bootstrap (default: ChangeMe123!)
+    -Password <pass>                        Optional temporary password (generated if omitted)
     -FullName <name>                        Admin full name for init/bootstrap (default: System Administrator)
     -NoSuperAdmin                           For init only: skip creating the super admin account
     -ConfirmReset                           Required when Command=reset
@@ -79,7 +79,10 @@ try {
             if ($NoSuperAdmin) {
                 $cmdArgs += '--no-super-admin'
             } else {
-                $cmdArgs += @('--username', $Username, '--password', $Password, '--full-name', $FullName)
+                $cmdArgs += @('--username', $Username, '--full-name', $FullName)
+                if ($Password) {
+                    $cmdArgs += @('--password', $Password)
+                }
             }
             $cmdArgs += $commonArgs
             & $PythonPath @cmdArgs
@@ -91,9 +94,11 @@ try {
                 $migrateScript,
                 'bootstrap',
                 '--username', $Username,
-                '--password', $Password,
                 '--full-name', $FullName
             )
+            if ($Password) {
+                $cmdArgs += @('--password', $Password)
+            }
             $cmdArgs += $commonArgs
             & $PythonPath @cmdArgs
             exit $LASTEXITCODE

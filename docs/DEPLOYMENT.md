@@ -109,6 +109,7 @@ cd C:\MailroomApp\scripts
 - `-InstallPath`: Installation directory (default: C:\MailroomApp)
 - `-PythonPath`: Path to Python executable (default: C:\Python312\python.exe)
 - `-SuperAdminUsername`: Super admin username (default: admin)
+- `-SuperAdminPassword`: Optional temporary password (generated and shown once if omitted)
 - `-SuperAdminFullName`: Super admin full name
 - `-ResetDatabase`: Delete existing database and recreate (WARNING: deletes all data)
 
@@ -128,7 +129,9 @@ The script will:
 - Create super admin account
 - Prompt for secure password
 
-**Save the super admin credentials securely!**
+**Save the temporary password securely.** If `-SuperAdminPassword` is omitted, setup generates
+one and prints it once. The password is not recoverable after the command exits, and the
+super admin must change it on first login.
 
 ### Step 4: Install Windows Service
 
@@ -257,7 +260,7 @@ Initializes the database and creates the super admin account.
 - `-InstallPath <path>`: Installation directory
 - `-PythonPath <path>`: Path to Python executable
 - `-SuperAdminUsername <name>`: Super admin username
-- `-SuperAdminPassword <pass>`: Super admin password (will prompt if not provided)
+- `-SuperAdminPassword <pass>`: Optional temporary password (generated if not provided)
 - `-SuperAdminFullName <name>`: Super admin full name
 - `-ResetDatabase`: Delete existing database and recreate
 - `-Help`: Display help message
@@ -265,9 +268,9 @@ Initializes the database and creates the super admin account.
 **Features:**
 - Validates Python and application installation
 - Creates database schema
-- Creates super admin account with secure password
-- Prompts for password if not provided
-- Validates password strength (min 12 characters)
+- Creates the first super admin account only when the users table is empty
+- Generates and prints a one-time temporary password if none is provided
+- Requires the first super admin to change password on first login
 
 ### backup.ps1
 

@@ -206,9 +206,9 @@ Internet/Intranet
    .\scripts\init_database.ps1
    ```
 
-2. Follow prompts to create super admin account:
+2. Record the initial super admin credentials printed by the script:
    - Username: `admin` (or custom)
-   - Password: (minimum 12 characters, mixed case, symbols)
+   - Temporary password: generated and shown once unless `-SuperAdminPassword` was supplied
    - Full Name: `System Administrator`
 
 3. Verify database creation:
@@ -217,7 +217,9 @@ Internet/Intranet
    # Should return: True
    ```
 
-4. **IMPORTANT**: Save super admin credentials securely!
+4. **IMPORTANT**: Save the temporary password securely. It is not logged, stored in plaintext,
+   or recoverable after the setup command exits. The account must change password on first login.
+   See `docs/INITIAL_SUPER_ADMIN_BOOTSTRAP.md` for the full bootstrap behavior.
 
 ### Step 7: Install Application as Windows Service
 
@@ -412,7 +414,7 @@ Internet/Intranet
 
 3. **Test Login**:
    - Open browser: `https://mailroom.company.local`
-   - Login with super admin credentials
+   - Login with the generated super admin credentials and change the password immediately
    - Verify dashboard loads
 
 4. **Check Logs**:
@@ -894,7 +896,8 @@ nssm dump MailroomTracking
 
 ### Documentation
 
-- API Documentation: `https://mailroom.company.local/docs`
+- API Documentation: disabled by default in production. Set `ENABLE_API_DOCS=true` only for
+  trusted administrative environments.
 - User Guides: `C:\MailroomApp\docs\`
 - Database Schema: `C:\MailroomApp\docs\DATABASE_SCHEMA.md`
 - Configuration Reference: `C:\MailroomApp\docs\CONFIGURATION.md`

@@ -25,7 +25,8 @@ This module provides the Mailroom Tracking database layer on top of SQLite.
 ### `migrations.py`
 
 - Initializes the SQLite schema.
-- Bootstraps the first super admin account.
+- Bootstraps the first super admin account only through explicit setup commands.
+- Generates a one-time temporary password when setup does not provide one.
 - Resets the database by deleting the SQLite file set and recreating it.
 
 ## Configuration
@@ -40,3 +41,6 @@ DATABASE_CHECKPOINT_INTERVAL=300
 - SQLite is embedded; no external database server is required.
 - The application still uses a write queue to keep concurrent writes predictable.
 - Foreign keys are enabled across the schema.
+- Normal application startup does not create default credentials. Run
+  `python scripts/bootstrap_super_admin.py` after configuring `.env` to create the first
+  super admin on a fresh deployment.

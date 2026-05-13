@@ -23,13 +23,13 @@ Options:
     -InstallPath <path>           Installation directory (default: C:\MailroomApp)
     -PythonPath <path>            Path to Python executable (default: C:\Python313\python.exe)
     -SuperAdminUsername <name>    Super admin username (default: admin)
-    -SuperAdminPassword <pass>    Super admin password (will prompt if not provided)
+    -SuperAdminPassword <pass>    Optional temporary password (generated if not provided)
     -SuperAdminFullName <name>    Super admin full name (default: System Administrator)
     -ResetDatabase                Delete existing database and recreate
     -Help                         Display this help message
 
 Examples:
-    # Initialize database with defaults (will prompt for password)
+    # Initialize database and generate a temporary password
     .\init_database.ps1
 
     # Initialize with custom super admin
@@ -133,37 +133,11 @@ if ($dbExists) {
     }
 }
 
-# Prompt for super admin password if not provided
+Write-Host "`nSuper Admin Account Setup" -ForegroundColor Cyan
+Write-Host "Username: $SuperAdminUsername" -ForegroundColor White
+Write-Host "Full Name: $SuperAdminFullName" -ForegroundColor White
 if (-not $SuperAdminPassword) {
-    Write-Host "`nSuper Admin Account Setup" -ForegroundColor Cyan
-    Write-Host "Username: $SuperAdminUsername" -ForegroundColor White
-    Write-Host "Full Name: $SuperAdminFullName" -ForegroundColor White
-    Write-Host ""
-    
-    $securePassword = Read-Host "Enter super admin password (min 12 chars)" -AsSecureString
-    $confirmPassword = Read-Host "Confirm password" -AsSecureString
-    
-    # Convert secure strings to plain text for comparison
-    $BSTR1 = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
-    $BSTR2 = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($confirmPassword)
-    $password1 = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR1)
-    $password2 = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR2)
-    
-    if ($password1 -ne $password2) {
-        Write-Host "ERROR: Passwords do not match" -ForegroundColor Red
-        exit 1
-    }
-    
-    if ($password1.Length -lt 12) {
-        Write-Host "ERROR: Password must be at least 12 characters" -ForegroundColor Red
-        exit 1
-    }
-    
-    $SuperAdminPassword = $password1
-    
-    # Clear sensitive data
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR1)
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR2)
+    Write-Host "Temporary password: will be generated and shown once" -ForegroundColor White
 }
 
 # Create Python script to initialize database
@@ -173,6 +147,7 @@ import os
 
 # Add application directory to path
 sys.path.insert(0, r'$InstallPath')
+os.chdir(r'$InstallPath')
 
 # Set environment variable to load .env
 os.environ['DOTENV_PATH'] = r'$envPath'
@@ -181,13 +156,17 @@ from app.database.migrations import run_initial_migration
 
 # Run migration with super admin creation
 try:
-    run_initial_migration(
+    password = os.environ.get('BOOTSTRAP_SUPER_ADMIN_PASSWORD') or None
+    result = run_initial_migration(
         create_super_admin=True,
         super_admin_username='$SuperAdminUsername',
-        super_admin_password='$SuperAdminPassword',
+        super_admin_password=password,
         super_admin_full_name='$SuperAdminFullName'
     )
     print('SUCCESS: Database initialized successfully')
+    if result and result.created:
+        print(f'BOOTSTRAP_USERNAME::{result.username}')
+        print(f'BOOTSTRAP_PASSWORD::{result.password}')
 except Exception as e:
     print(f'ERROR: {str(e)}')
     sys.exit(1)
@@ -200,15 +179,30 @@ $initScript | Out-File -FilePath $tempScript -Encoding UTF8
 Write-Host "`nInitializing database..." -ForegroundColor Yellow
 
 try {
+    if ($SuperAdminPassword) {
+        $env:BOOTSTRAP_SUPER_ADMIN_PASSWORD = $SuperAdminPassword
+    } else {
+        Remove-Item Env:\BOOTSTRAP_SUPER_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+    }
     $output = & $PythonPath $tempScript 2>&1
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "`nDatabase initialized successfully!" -ForegroundColor Green
+        $bootstrapUsername = ($output | Where-Object { $_ -like 'BOOTSTRAP_USERNAME::*' } | Select-Object -First 1) -replace '^BOOTSTRAP_USERNAME::', ''
+        $bootstrapPassword = ($output | Where-Object { $_ -like 'BOOTSTRAP_PASSWORD::*' } | Select-Object -First 1) -replace '^BOOTSTRAP_PASSWORD::', ''
+        if (-not $bootstrapUsername) {
+            $bootstrapUsername = $SuperAdminUsername
+        }
         Write-Host "`nSuper Admin Account:" -ForegroundColor Cyan
-        Write-Host "  Username: $SuperAdminUsername" -ForegroundColor White
+        Write-Host "  Username: $bootstrapUsername" -ForegroundColor White
+        if ($bootstrapPassword) {
+            Write-Host "  Temporary Password: $bootstrapPassword" -ForegroundColor White
+        } else {
+            Write-Host "  Temporary Password: not shown because the users table was not empty" -ForegroundColor Yellow
+        }
         Write-Host "  Full Name: $SuperAdminFullName" -ForegroundColor White
         Write-Host "  Role: super_admin" -ForegroundColor White
-        Write-Host "`nIMPORTANT: Save these credentials securely!" -ForegroundColor Yellow
+        Write-Host "`nIMPORTANT: This password is shown once. Save it securely!" -ForegroundColor Yellow
         
         # Check database file was created
         if (Test-Path $dbPath) {
@@ -234,6 +228,7 @@ try {
     if (Test-Path $tempScript) {
         Remove-Item $tempScript -Force
     }
+    Remove-Item Env:\BOOTSTRAP_SUPER_ADMIN_PASSWORD -ErrorAction SilentlyContinue
 }
 
 Write-Host "`nInitialization complete!" -ForegroundColor Green

@@ -67,7 +67,7 @@ Runs SQLite database administration commands (init/bootstrap/verify/reset) throu
 ---
 
 ### init_database.ps1
-Initializes the database schema and creates the super admin account.
+Initializes the database schema and creates the first super admin account.
 
 **Usage:**
 ```powershell
@@ -76,13 +76,14 @@ Initializes the database schema and creates the super admin account.
 
 **Key Features:**
 - Creates database schema with all tables
-- Creates super admin account with secure password
-- Validates password strength (min 12 characters)
+- Creates the first super admin only when the users table is empty
+- Generates a one-time temporary password if none is provided
+- Forces the first super admin to change password on first login
 - Supports database reset (WARNING: deletes all data)
 
 **Common Commands:**
 ```powershell
-# Initialize with defaults (prompts for password)
+# Initialize and generate a temporary password
 .\init_database.ps1
 
 # Initialize with custom super admin
@@ -95,7 +96,8 @@ Initializes the database schema and creates the super admin account.
 .\init_database.ps1 -Help
 ```
 
-**IMPORTANT:** Save the super admin credentials securely after initialization!
+**IMPORTANT:** Save the temporary password securely after initialization. It is shown once and
+cannot be recovered later.
 
 ---
 
