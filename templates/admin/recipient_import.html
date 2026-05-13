@@ -176,34 +176,15 @@ document.getElementById('csv-file').addEventListener('change', async function(e)
         
         if (data.success) {
             // Show success validation
-            resultsDiv.innerHTML = `
-                <div role="alert" class="alert alert-success">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <div>
-                        <h3 class="font-bold">Validation Passed</h3>
-                        <p class="text-sm">Found ${data.valid_count} valid recipients (${data.result.total_rows} total rows)</p>
-                    </div>
-                </div>
-            `;
+            showValidationPassed(resultsDiv, data.valid_count, data.result?.total_rows);
             validatedFile = file;
             document.getElementById('import-actions').classList.remove('hidden');
         } else {
-            // Show validation errors
-            let errorsHtml = '<div role="alert" class="alert alert-error"><div><h3 class="font-bold">Validation Errors</h3><ul class="text-sm mt-2 list-disc list-inside">';
-            data.result.errors.forEach(error => {
-                errorsHtml += `<li>Row ${error.row}, ${error.field}: ${error.message}</li>`;
-            });
-            errorsHtml += '</ul></div></div>';
-            resultsDiv.innerHTML = errorsHtml;
+            showValidationErrors(resultsDiv, data.result?.errors || []);
             document.getElementById('import-actions').classList.add('hidden');
         }
     } catch (error) {
-        resultsDiv.innerHTML = `
-            <div role="alert" class="alert alert-error">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>Error validating file: ${error.message}</span>
-            </div>
-        `;
+        showImportError(resultsDiv, `Error validating file: ${error.message}`);
         document.getElementById('import-actions').classList.add('hidden');
     }
 });
@@ -235,13 +216,7 @@ async function confirmImport() {
         
         if (data.success) {
             // Show success modal
-            document.getElementById('success-message').innerHTML = `
-                <div>
-                    <p>Created: ${data.result.created_count} recipients</p>
-                    <p>Updated: ${data.result.updated_count} recipients</p>
-                    <p>Total: ${data.result.total_rows} rows processed</p>
-                </div>
-            `;
+            showImportSuccess(data.result);
             document.getElementById('success-modal').showModal();
         } else {
             alert('Import failed. Please try again.');
@@ -259,6 +234,105 @@ function resetImport() {
     document.getElementById('validation-results').classList.add('hidden');
     document.getElementById('import-actions').classList.add('hidden');
     validatedFile = null;
+}
+
+function showValidationErrors(container, errors) {
+    container.textContent = '';
+
+    const alert = document.createElement('div');
+    alert.setAttribute('role', 'alert');
+    alert.className = 'alert alert-error';
+
+    const content = document.createElement('div');
+    const heading = document.createElement('h3');
+    heading.className = 'font-bold';
+    heading.textContent = 'Validation Errors';
+
+    const list = document.createElement('ul');
+    list.className = 'text-sm mt-2 list-disc list-inside';
+
+    errors.forEach(error => {
+        const item = document.createElement('li');
+        item.textContent = `Row ${error.row}, ${error.field}: ${error.message}`;
+        list.appendChild(item);
+    });
+
+    content.appendChild(heading);
+    content.appendChild(list);
+    alert.appendChild(content);
+    container.appendChild(alert);
+}
+
+function appendAlertIcon(alert, pathData) {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.className = 'stroke-current shrink-0 h-6 w-6';
+    icon.setAttribute('fill', 'none');
+    icon.setAttribute('viewBox', '0 0 24 24');
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('d', pathData);
+
+    icon.appendChild(path);
+    alert.appendChild(icon);
+}
+
+function showValidationPassed(container, validCount, totalRows) {
+    container.textContent = '';
+
+    const alert = document.createElement('div');
+    alert.setAttribute('role', 'alert');
+    alert.className = 'alert alert-success';
+    appendAlertIcon(alert, 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+
+    const content = document.createElement('div');
+    const heading = document.createElement('h3');
+    heading.className = 'font-bold';
+    heading.textContent = 'Validation Passed';
+    const summary = document.createElement('p');
+    summary.className = 'text-sm';
+    summary.textContent = `Found ${validCount} valid recipients (${totalRows} total rows)`;
+
+    content.appendChild(heading);
+    content.appendChild(summary);
+    alert.appendChild(content);
+    container.appendChild(alert);
+}
+
+function showImportError(container, message) {
+    container.textContent = '';
+
+    const alert = document.createElement('div');
+    alert.setAttribute('role', 'alert');
+    alert.className = 'alert alert-error';
+    appendAlertIcon(alert, 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z');
+
+    const text = document.createElement('span');
+    text.textContent = message;
+    alert.appendChild(text);
+    container.appendChild(alert);
+}
+
+function showImportSuccess(result) {
+    const container = document.getElementById('success-message');
+    container.textContent = '';
+
+    const content = document.createElement('div');
+    const fields = [
+        `Created: ${result.created_count} recipients`,
+        `Updated: ${result.updated_count} recipients`,
+        `Total: ${result.total_rows} rows processed`,
+    ];
+
+    fields.forEach(text => {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = text;
+        content.appendChild(paragraph);
+    });
+
+    container.appendChild(content);
 }
 </script>
 {% endblock %}

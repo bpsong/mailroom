@@ -11,19 +11,12 @@ from app.templates import templates
 from app.services.auth_service import auth_service, AuthenticationError
 from app.middleware.csrf import validate_csrf_token
 from app.config import settings
+from app.utils.request_security import get_client_ip, safe_redirect_path
 
 logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-
-def get_client_ip(request: Request) -> Optional[str]:
-    """Extract client IP address from request."""
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else None
 
 
 def get_user_agent(request: Request) -> Optional[str]:
@@ -51,7 +44,7 @@ async def login_page(request: Request, next: Optional[str] = None):
         session_data = await auth_service.validate_session(session_token)
         if session_data:
             # User is authenticated, redirect to next URL or dashboard
-            redirect_url = next if next else "/dashboard"
+            redirect_url = safe_redirect_path(next)
             logger.debug("Authenticated session detected on login page; redirecting to %s", redirect_url)
             return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
     
@@ -146,11 +139,7 @@ async def login(
     )
     
     # Determine redirect URL
-    # Ignore next parameter if it points to login endpoints to avoid redirect loops/404s
-    if next in {"/login", "/auth/login"}:
-        redirect_url = "/dashboard"
-    else:
-        redirect_url = next if next else "/dashboard"
+    redirect_url = safe_redirect_path(next)
     logger.debug(
         "Resolved post-login redirect for user '%s': next=%s -> redirect_url=%s",
         username,

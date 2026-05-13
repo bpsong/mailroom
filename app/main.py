@@ -3,8 +3,9 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings
 from app.database.migrations import run_initial_migration
@@ -78,6 +79,9 @@ app = FastAPI(
     description="Internal package tracking application",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs" if settings.show_api_docs else None,
+    redoc_url="/redoc" if settings.show_api_docs else None,
+    openapi_url="/openapi.json" if settings.show_api_docs else None,
 )
 
 # Add middleware (order matters - last added is executed first)
@@ -87,6 +91,8 @@ from app.middleware import (
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
 )
+if settings.allowed_hosts_list:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 app.add_middleware(AuthenticationMiddleware)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(RateLimitMiddleware)
@@ -122,7 +128,7 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
+async def health_check(request: Request):
     """
     Health check endpoint for monitoring.
     
@@ -136,11 +142,18 @@ async def health_check():
     health_service = get_health_service()
     health_status = await health_service.get_full_health_status()
     
+    if settings.is_production and not settings.expose_detailed_health:
+        return {
+            "status": health_status["status"],
+            "timestamp": health_status["timestamp"],
+            "version": health_status["version"],
+        }
+
     return health_status
 
 
 # Custom error handlers
-from fastapi import Request, status
+from fastapi import status
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.exceptions import HTTPException
 

@@ -417,11 +417,13 @@
             
             const toast = document.createElement('div');
             toast.className = 'toast toast-top toast-center z-50';
-            toast.innerHTML = `
-                <div role="alert" class="alert alert-${type} shadow-lg">
-                    <span>${message}</span>
-                </div>
-            `;
+            const alert = document.createElement('div');
+            alert.setAttribute('role', 'alert');
+            alert.className = `alert alert-${type} shadow-lg`;
+            const text = document.createElement('span');
+            text.textContent = message;
+            alert.appendChild(text);
+            toast.appendChild(alert);
             container.appendChild(toast);
             ensureAlertRoles(toast);
             

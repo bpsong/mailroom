@@ -7,6 +7,7 @@ from io import BytesIO
 import base64
 from uuid import UUID
 
+from app.config import settings
 from app.services.system_settings_service import system_settings_service
 
 
@@ -32,7 +33,13 @@ class QRCodeService:
             Base URL to use for QR code generation
         """
         configured_url = await system_settings_service.get_qr_base_url()
-        return configured_url if configured_url else fallback_url.rstrip('/')
+        if configured_url:
+            return configured_url
+
+        if settings.is_production and settings.domain and settings.domain != "mailroom.company.local":
+            return f"https://{settings.domain}"
+
+        return fallback_url.rstrip('/')
     
     def create_tracking_url(self, package_id: UUID, base_url: str) -> str:
         """

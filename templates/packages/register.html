@@ -216,24 +216,58 @@
             document.getElementById('recipient-results').innerHTML = '';
             
             // Show selected recipient
-            document.getElementById('selected-recipient').innerHTML = `
-                <div role="alert" class="alert alert-success">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <div>
-                        <strong>${recipientName}</strong><br>
-                        <span class="text-sm">${recipientEmail}</span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-ghost" onclick="clearRecipient()">✕</button>
-                </div>
-            `;
+            showSelectedRecipient(recipientName, recipientEmail);
         }
     });
 
+    function showSelectedRecipient(recipientName, recipientEmail) {
+        const container = document.getElementById('selected-recipient');
+        container.textContent = '';
+
+        const alert = document.createElement('div');
+        alert.setAttribute('role', 'alert');
+        alert.className = 'alert alert-success';
+
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        icon.setAttribute('fill', 'none');
+        icon.setAttribute('viewBox', '0 0 24 24');
+        icon.className = 'stroke-current shrink-0 w-6 h-6';
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+        icon.appendChild(path);
+
+        const details = document.createElement('div');
+        const name = document.createElement('strong');
+        name.textContent = recipientName || '';
+        const lineBreak = document.createElement('br');
+        const email = document.createElement('span');
+        email.className = 'text-sm';
+        email.textContent = recipientEmail || '';
+
+        details.appendChild(name);
+        details.appendChild(lineBreak);
+        details.appendChild(email);
+
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'btn btn-sm btn-ghost';
+        clearButton.setAttribute('aria-label', 'Clear selected recipient');
+        clearButton.textContent = 'x';
+        clearButton.addEventListener('click', clearRecipient);
+
+        alert.appendChild(icon);
+        alert.appendChild(details);
+        alert.appendChild(clearButton);
+        container.appendChild(alert);
+    }
+
     function clearRecipient() {
         document.getElementById('recipient-id').value = '';
-        document.getElementById('selected-recipient').innerHTML = '';
+        document.getElementById('selected-recipient').textContent = '';
     }
 
     // File size validation

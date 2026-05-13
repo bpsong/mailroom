@@ -133,11 +133,11 @@
     function showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `alert alert-${type} shadow-lg`;
-        toast.innerHTML = `
-            <div>
-                <span>${message}</span>
-            </div>
-        `;
+        const content = document.createElement('div');
+        const text = document.createElement('span');
+        text.textContent = message;
+        content.appendChild(text);
+        toast.appendChild(content);
         
         const container = document.getElementById('toast-container');
         container.appendChild(toast);

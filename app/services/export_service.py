@@ -9,6 +9,18 @@ from uuid import UUID
 from app.database.connection import get_db
 
 
+def neutralize_csv_formula(value):
+    """Prevent spreadsheet apps from interpreting exported text as formulas."""
+    if not isinstance(value, str):
+        return value
+
+    stripped = value.lstrip()
+    if stripped and stripped[0] in ("=", "+", "-", "@"):
+        return f"'{value}"
+
+    return value
+
+
 class ExportService:
     """Service for exporting data to CSV format."""
     
@@ -120,14 +132,14 @@ class ExportService:
         # Write data rows
         for row in result:
             writer.writerow([
-                row[0],  # tracking_no
-                row[1],  # carrier
-                row[2],  # recipient_name
-                row[3],  # recipient_email
-                row[4] or "",  # recipient_department
-                row[5],  # status
-                row[6] or "",  # notes
-                row[7],  # created_by_name
+                neutralize_csv_formula(row[0]),  # tracking_no
+                neutralize_csv_formula(row[1]),  # carrier
+                neutralize_csv_formula(row[2]),  # recipient_name
+                neutralize_csv_formula(row[3]),  # recipient_email
+                neutralize_csv_formula(row[4] or ""),  # recipient_department
+                neutralize_csv_formula(row[5]),  # status
+                neutralize_csv_formula(row[6] or ""),  # notes
+                neutralize_csv_formula(row[7]),  # created_by_name
                 row[8],  # created_at
                 row[9],  # updated_at
             ])

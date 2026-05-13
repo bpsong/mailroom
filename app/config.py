@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     account_lockout_duration: int = 1800  # 30 minutes
     password_min_length: int = 12
     password_history_count: int = 3
+    trusted_proxy_ips: str = "127.0.0.1,::1"
+    allowed_hosts: str = ""
+    enable_api_docs: bool = False
+    expose_detailed_health: bool = False
 
     # Argon2
     argon2_time_cost: int = 3
@@ -85,6 +89,27 @@ class Settings(BaseSettings):
     def is_testing(self) -> bool:
         """Check if running in testing mode."""
         return self.app_env == "testing"
+
+    @property
+    def trusted_proxy_ips_list(self) -> list[str]:
+        """Get trusted reverse proxy IPs as a list."""
+        proxies = [ip.strip() for ip in self.trusted_proxy_ips.split(",") if ip.strip()]
+        if self.is_testing and "testclient" not in proxies:
+            proxies.append("testclient")
+        return proxies
+
+    @property
+    def allowed_hosts_list(self) -> list[str]:
+        """Get allowed Host header values for production."""
+        hosts = [host.strip() for host in self.allowed_hosts.split(",") if host.strip()]
+        if self.is_production and self.domain and self.domain != "mailroom.company.local":
+            hosts.append(self.domain)
+        return sorted(set(hosts))
+
+    @property
+    def show_api_docs(self) -> bool:
+        """Expose interactive API docs outside production, or when explicitly enabled."""
+        return not self.is_production or self.enable_api_docs
     
     @field_validator("secret_key")
     @classmethod

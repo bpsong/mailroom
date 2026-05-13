@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
+from urllib.parse import urlsplit
 
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
@@ -54,7 +55,7 @@ class SystemSettingsService:
             ValueError: If URL format is invalid
         """
         if not self.validate_base_url(url):
-            raise ValueError("Invalid URL format. Must start with http:// or https://")
+            raise ValueError("Invalid URL format. Must be an http(s) URL with a host")
         
         # Get old value for audit log
         old_value = await self.get_qr_base_url()
@@ -122,7 +123,22 @@ class SystemSettingsService:
         """
         if not url:
             return False
-        return url.startswith('http://') or url.startswith('https://')
+
+        try:
+            parsed = urlsplit(url)
+        except ValueError:
+            return False
+
+        if parsed.scheme not in {"http", "https"}:
+            return False
+
+        if not parsed.netloc or not parsed.hostname:
+            return False
+
+        if parsed.username or parsed.password:
+            return False
+
+        return True
 
 
 # Global instance
