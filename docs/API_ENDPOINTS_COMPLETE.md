@@ -7,7 +7,8 @@ This application is primarily an HTML + HTMX web app (not a pure JSON REST API).
 - Base URL: `https://mailroom.company.local`
 - Auth: Session cookie (`session_token`)
 - CSRF: Required for state-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`)
-- Public routes: `/auth/login`, `/auth/logout`, `/me/force-password-change`, `/health`, `/docs`, `/redoc`, `/openapi.json`
+- Public routes: `/auth/login`, `/auth/logout`, `/me/force-password-change`, `/health`
+- Documentation routes: `/docs`, `/redoc`, and `/openapi.json` are available outside production, or in production only when `ENABLE_API_DOCS=true`
 
 ## Endpoint Summary
 

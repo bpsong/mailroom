@@ -382,6 +382,81 @@ PASSWORD_HISTORY_COUNT=3
 
 ---
 
+#### TRUSTED_PROXY_IPS
+
+**Description**: Comma-separated proxy IPs whose `X-Forwarded-For` headers are trusted  
+**Type**: String (comma-separated IP addresses)  
+**Default**: `127.0.0.1,::1`  
+**Required**: No
+
+**Example**:
+```env
+TRUSTED_PROXY_IPS=127.0.0.1,::1,10.0.0.10
+```
+
+**Notes**:
+- Only include reverse proxies you control.
+- Forwarded client IP headers from other sources are ignored.
+- Include the Caddy or load balancer IP when the app runs behind a proxy.
+
+---
+
+#### ALLOWED_HOSTS
+
+**Description**: Comma-separated allowed HTTP Host header values  
+**Type**: String (comma-separated host names)  
+**Default**: empty  
+**Required**: No
+
+**Example**:
+```env
+ALLOWED_HOSTS=mailroom.company.local,mailroom.internal
+```
+
+**Notes**:
+- When set, requests with other Host values are rejected.
+- In production, `DOMAIN` is also included when it is changed from the sample value.
+- Leave empty for local development unless host validation is being tested.
+
+---
+
+#### ENABLE_API_DOCS
+
+**Description**: Enables FastAPI documentation endpoints  
+**Type**: Boolean  
+**Default**: `false`  
+**Required**: No
+
+**Example**:
+```env
+ENABLE_API_DOCS=false
+```
+
+**Notes**:
+- `/docs`, `/redoc`, and `/openapi.json` are available by default outside production.
+- In production, these endpoints are disabled unless this is set to `true`.
+- Enable only in trusted administrative environments.
+
+---
+
+#### EXPOSE_DETAILED_HEALTH
+
+**Description**: Controls whether production `/health` responses include component details  
+**Type**: Boolean  
+**Default**: `false`  
+**Required**: No
+
+**Example**:
+```env
+EXPOSE_DETAILED_HEALTH=false
+```
+
+**Notes**:
+- Production returns only status, timestamp, and version by default.
+- Set to `true` only when detailed health output is not externally exposed.
+
+---
+
 ### Argon2 Password Hashing Settings
 
 #### ARGON2_TIME_COST
@@ -694,6 +769,10 @@ MAX_FAILED_LOGINS=5
 ACCOUNT_LOCKOUT_DURATION=1800
 PASSWORD_MIN_LENGTH=12
 PASSWORD_HISTORY_COUNT=3
+TRUSTED_PROXY_IPS=127.0.0.1,::1
+ALLOWED_HOSTS=mailroom.company.local
+ENABLE_API_DOCS=false
+EXPOSE_DETAILED_HEALTH=false
 
 # Argon2
 ARGON2_TIME_COST=3

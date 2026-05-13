@@ -232,6 +232,7 @@ LOG_RETENTION_DAYS=365
 
 - `GET https://<host>/health`
 - Returns JSON with `{"status": "healthy"}` when the app, database, and background tasks are operational.
+- Production hides component-level health details by default unless `EXPOSE_DETAILED_HEALTH=true`.
 
 ---
 

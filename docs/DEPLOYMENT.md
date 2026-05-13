@@ -127,7 +127,7 @@ The script will:
 - Check .env configuration
 - Create database schema
 - Create super admin account
-- Prompt for secure password
+- Generate and print a temporary password when `-SuperAdminPassword` is omitted
 
 **Save the temporary password securely.** If `-SuperAdminPassword` is omitted, setup generates
 one and prints it once. The password is not recoverable after the command exits, and the

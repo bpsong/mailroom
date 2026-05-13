@@ -8,14 +8,17 @@ Mailroom Tracking is an HTMX + server-rendered FastAPI app. Most endpoints rende
 - API version: `1.0.0`
 - Auth model: session cookie (`session_token`)
 - CSRF: enforced for state-changing methods (`POST`, `PUT`, `PATCH`, `DELETE`)
-- OpenAPI source of truth: `/docs`, `/redoc`, `/openapi.json`
+- OpenAPI source of truth: `/docs`, `/redoc`, `/openapi.json` when API docs are enabled
 
 Public endpoints:
 - `/auth/login`
 - `/auth/logout`
 - `/me/force-password-change`
 - `/health`
-- `/docs`, `/redoc`, `/openapi.json`
+
+Documentation endpoints:
+- `/docs`, `/redoc`, and `/openapi.json` are available outside production.
+- In production, they are disabled unless `ENABLE_API_DOCS=true`.
 
 ## Authentication Flow
 
@@ -249,7 +252,8 @@ Current middleware limits:
 - All other non-exempt routes: `RATE_LIMIT_API` per minute (default 100)
 
 Exempt routes:
-- `/health`, `/docs`, `/redoc`, `/openapi.json`, `/static/*`, `/uploads/*`
+- `/health`, `/static/*`, `/uploads/*`
+- `/docs`, `/redoc`, `/openapi.json` when API docs are enabled
 
 ## Error Shape
 
@@ -269,4 +273,3 @@ Some middleware responses use:
   }
 }
 ```
-

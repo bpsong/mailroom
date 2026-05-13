@@ -11,6 +11,18 @@ from app.database.write_queue import get_write_queue
 logger = logging.getLogger(__name__)
 
 
+def _validate_carrier_name(raw_name: str) -> str:
+    """Validate a raw carrier name and return the normalized value."""
+    if len(raw_name) > 100:
+        raise ValueError("Carrier name must not exceed 100 characters")
+
+    name = raw_name.strip()
+    if not name:
+        raise ValueError("Carrier name cannot be empty")
+
+    return name
+
+
 class CarrierService:
     """Service for carrier management operations."""
 
@@ -92,13 +104,7 @@ class CarrierService:
         Raises:
             ValueError: If name is empty, too long, or already exists (case-insensitive).
         """
-        name = data.name.strip()
-
-        if not name:
-            raise ValueError("Carrier name cannot be empty")
-
-        if len(name) > 100:
-            raise ValueError("Carrier name must not exceed 100 characters")
+        name = _validate_carrier_name(data.name)
 
         # Case-insensitive uniqueness check
         db = get_db()
@@ -143,13 +149,7 @@ class CarrierService:
         if not carrier:
             raise ValueError("Carrier not found")
 
-        name = data.name.strip()
-
-        if not name:
-            raise ValueError("Carrier name cannot be empty")
-
-        if len(name) > 100:
-            raise ValueError("Carrier name must not exceed 100 characters")
+        name = _validate_carrier_name(data.name)
 
         # Case-insensitive uniqueness check (exclude current carrier)
         db = get_db()

@@ -14,7 +14,8 @@ Source: `app/middleware/csrf.py`
 
 ### Exempt routes
 - Exact: `/health`
-- Prefixes: `/static/`, `/uploads/`, `/docs`, `/redoc`, `/openapi.json`
+- Prefixes: `/static/`, `/uploads/`
+- API documentation routes (`/docs`, `/redoc`, `/openapi.json`) only exist when API docs are enabled. They are available outside production by default and in production only with `ENABLE_API_DOCS=true`.
 
 ### Validation model
 - Cookie `csrf_token` is required.

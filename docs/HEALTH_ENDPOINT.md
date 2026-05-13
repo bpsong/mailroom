@@ -14,7 +14,7 @@ GET /health
 
 ## Response Format
 
-The endpoint returns a JSON object with the following structure:
+Outside production, or in production when `EXPOSE_DETAILED_HEALTH=true`, the endpoint returns a JSON object with the following structure:
 
 ```json
 {
@@ -51,6 +51,16 @@ The endpoint returns a JSON object with the following structure:
       "uptime_formatted": "0d 0h 0m 0s"
     }
   }
+}
+```
+
+In production with the default `EXPOSE_DETAILED_HEALTH=false`, the response is intentionally reduced:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-12T13:51:31.256574",
+  "version": "1.0.0"
 }
 ```
 

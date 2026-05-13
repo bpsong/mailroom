@@ -49,7 +49,8 @@ Important behavior note:
 
 - Protected methods: `POST`, `PUT`, `PATCH`, `DELETE`
 - Exempt exact routes: `/health`
-- Exempt prefixes: `/static/`, `/uploads/`, `/docs`, `/redoc`, `/openapi.json`
+- Exempt prefixes: `/static/`, `/uploads/`
+- API documentation endpoints (`/docs`, `/redoc`, `/openapi.json`) are available outside production, or in production only when `ENABLE_API_DOCS=true`
 
 ### Validation model
 
@@ -63,7 +64,8 @@ Important behavior note:
 - Login route limit: `RATE_LIMIT_LOGIN` per minute (`/auth/login`)
 - Default non-exempt route limit: `RATE_LIMIT_API` per minute
 - Exempt routes:
-  - `/health`, `/docs`, `/redoc`, `/openapi.json`
+  - `/health`
+  - `/docs`, `/redoc`, `/openapi.json` when API docs are enabled
   - `/static/*`, `/uploads/*`
 
 On exceed, middleware returns `429` JSON with `Retry-After: 60`.
@@ -111,5 +113,7 @@ Starlette executes middleware in reverse-add order for request handling.
 
 - Run with `APP_ENV=production` behind HTTPS reverse proxy.
 - Keep `SECRET_KEY` strong and unique per deployment.
+- Set `ALLOWED_HOSTS` and `TRUSTED_PROXY_IPS` for production reverse-proxy deployments.
+- Keep `ENABLE_API_DOCS=false` and `EXPOSE_DETAILED_HEALTH=false` unless the endpoints are limited to trusted administrators.
 - Monitor failed login and rate-limit patterns in logs.
 - Review audit logs regularly for privileged/admin actions.
