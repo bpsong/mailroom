@@ -1,300 +1,314 @@
 # Operator User Guide
 
-## Introduction
+## Who This Guide Is For
 
-Welcome to the Mailroom Tracking System! This guide will help you learn how to register packages, update their status, and search for packages in the system.
+This guide is for mailroom staff who receive, sort, store, and deliver mail or packages inside the organisation. It explains the daily tasks you need in the Mailroom Tracking System, using plain workplace terms.
 
-As an **Operator**, you are responsible for:
-- Registering incoming packages
-- Updating package status as they move through the delivery workflow
-- Searching for packages to check their status
-- Viewing package details and history
+As an **Operator**, you can:
+- Register incoming packages.
+- Add photos or notes when useful.
+- Find packages for recipients.
+- Update package status as the package moves through the mailroom.
+- Use QR stickers to open the package record quickly.
 
-## Getting Started
+## Basic Terms
 
-### Logging In
+- **Package**: Any parcel, mail item, envelope, box, or delivery item that needs to be tracked.
+- **Recipient**: The staff member or department receiving the item.
+- **Tracking number**: The number shown on the courier label, if available.
+- **Carrier**: The courier or delivery company, such as DHL, FedEx, UPS, USPS, or Other.
+- **Status**: Where the package is in the mailroom process.
 
-1. Open your web browser and navigate to the Mailroom Tracking System URL
-2. Enter your **username** and **password**
-3. Click the **Login** button
+## Logging In and Out
 
-**Important Security Notes:**
-- Your session will automatically expire after 30 minutes of inactivity
-- After 5 failed login attempts, your account will be locked for 30 minutes
-- If you forget your password, contact your administrator
+### Log In
 
-### Changing Your Password
+1. Open the Mailroom Tracking System in your web browser.
+2. Enter your username and password.
+3. Click **Login**.
 
-You can change your password at any time:
+If you cannot log in, check that your username and password are typed correctly. If the problem continues, contact your mailroom administrator.
 
-1. Click on your profile icon in the top-right corner
-2. Select **Change Password** from the dropdown menu
-3. Enter your current password
-4. Enter your new password (must be at least 12 characters with uppercase, lowercase, numbers, and symbols)
-5. Confirm your new password
-6. Click **Update Password**
+### Change Your Password
 
-### Logging Out
+1. Click your profile icon in the top-right corner.
+2. Select **Change Password**.
+3. Enter your current password.
+4. Enter your new password.
+5. Confirm the new password.
+6. Click **Update Password**.
 
-Always log out when you're finished:
+Use a password you do not use for other systems. Do not share your password with anyone.
 
-1. Click on your profile icon in the top-right corner
-2. Select **Logout** from the dropdown menu
+### Log Out
 
-## Dashboard Overview
+Always log out when you finish using a shared computer or tablet.
 
-When you log in, you'll see the dashboard with:
+1. Click your profile icon in the top-right corner.
+2. Select **Logout**.
 
-- **Packages Today**: Total packages registered today
-- **Awaiting Pickup**: Packages ready for recipient pickup
-- **Delivered Today**: Packages delivered today
-- **Quick Search**: Search bar to find packages quickly
+## Dashboard
 
-Click on any metric card to filter the package list by that status.
+The dashboard shows your daily mailroom workload:
 
-## Registering a New Package
+- **Packages Today**: Packages registered today.
+- **Awaiting Pickup**: Packages ready for the recipient to collect.
+- **Delivered Today**: Packages marked as delivered today.
+- **Quick Search**: Search for a package by tracking number, recipient, or department.
 
-### Step-by-Step Process
+Click a dashboard card to open the matching package list.
 
-1. Click **Register Package** in the sidebar or navigation menu
-2. Fill in the package information:
-   - **Tracking Number**: Enter the carrier's tracking number (required)
-   - **Carrier**: Select the shipping carrier (UPS, FedEx, USPS, DHL, Other)
-   - **Recipient**: Start typing the recipient's name and select from the autocomplete list (required)
-   - **Notes**: Add any additional information (optional, max 500 characters)
-3. **Add Photo** (optional but recommended):
-   - Click the **Choose File** button or drag and drop an image
-   - On mobile devices, you can use the camera to take a photo directly
-   - Supported formats: JPEG, PNG, WebP (max 5MB)
-4. Click **Register Package**
-5. You'll see a success message and the package will appear in the package list
+## Register a New Package
 
-### Tips for Package Registration
+Register packages as soon as they arrive, so the mailroom has an accurate record.
 
-- **Use the camera on mobile**: When registering packages on a tablet or phone, tap the camera icon to take a photo directly
-- **Recipient autocomplete**: Start typing just a few letters of the recipient's name, and the system will show matching results
-- **Multiple photos**: You can add additional photos after registration by viewing the package details
-- **Tracking numbers**: The same tracking number can be used for multiple packages if needed
+1. Click **Register Package**.
+2. Enter the package details:
+   - **Tracking Number**: Enter the number on the courier label. If there is no tracking number, follow your local mailroom procedure.
+   - **Carrier**: Choose the courier or select **Other**.
+   - **Recipient**: Start typing the recipient's name and choose the correct person from the list.
+   - **Notes**: Add helpful details, such as "Large box", "Fragile", "Signature required", or "No tracking label".
+3. Add a photo if needed:
+   - Take a photo on a phone or tablet, or upload an image from the computer.
+   - Use a clear photo of the package label or item.
+4. Click **Register Package**.
+5. Confirm that the package appears in the package list.
 
-## Updating Package Status
+### Good Registration Habits
 
-Packages move through different statuses in their lifecycle:
+- Check that the recipient name is correct before saving.
+- Use the department or location shown in the recipient record to help sort packages.
+- Add a short note when the package needs special handling.
+- Take a photo when the label is unclear, the item is damaged, or proof of condition is useful.
 
-1. **Registered** - Package has been logged into the system
-2. **Awaiting Pickup** - Package is ready for the recipient to collect
-3. **Out for Delivery** - Package is being delivered to the recipient
-4. **Delivered** - Package has been successfully delivered
-5. **Returned** - Package was returned to sender
+## Package Statuses
 
-### How to Update Status
+Use statuses to show where each package is in the mailroom process.
 
-**Method 1: From Package List**
-1. Go to **Packages** in the sidebar
-2. Find the package you want to update
-3. Click the **Status** dropdown next to the package
-4. Select the new status
-5. Add notes if needed (optional)
-6. Click **Update**
+| Status | Meaning |
+|--------|---------|
+| Registered | The package has been entered in the system. |
+| Awaiting Pickup | The package is ready for the recipient to collect from the mailroom or pickup point. |
+| Out for Delivery | Mailroom staff are delivering the package to the recipient's office, desk, floor, or department. |
+| Delivered | The package has reached the recipient or approved receiving point. |
+| Returned | The package could not be delivered and is being returned or handled as an exception. |
 
-**Method 2: From Package Details**
-1. Click on a package to view its details
-2. Click the **Update Status** button
-3. Select the new status from the dropdown
-4. Add notes to explain the status change (optional)
-5. Click **Confirm**
+## Update a Package Status
 
-### Status Change Guidelines
+Update the status as soon as the package moves to the next step.
 
-- **Registered → Awaiting Pickup**: When you've sorted the package and it's ready for pickup
-- **Awaiting Pickup → Delivered**: When the recipient picks up the package directly
-- **Awaiting Pickup → Out for Delivery**: When you're delivering the package to the recipient's location
-- **Out for Delivery → Delivered**: When you've successfully delivered the package
-- **Out for Delivery → Returned**: When delivery failed and the package is being returned
+### From the Package List
 
-### Adding Notes
+1. Click **Packages**.
+2. Find the package.
+3. Open the **Status** menu.
+4. Choose the new status.
+5. Add a note if helpful.
+6. Click **Update**.
 
-When updating status, you can add notes to provide context:
-- "Recipient notified via email"
-- "Left at front desk"
-- "Signature required - recipient unavailable"
-- "Damaged package - recipient refused"
+### From the Package Details Page
 
-Notes help maintain a clear audit trail and are visible in the package timeline.
+1. Open the package record.
+2. Click **Update Status**.
+3. Choose the new status.
+4. Add a note if helpful.
+5. Click **Confirm**.
 
-## Searching for Packages
+### When to Use Each Status
+
+- Use **Registered** when the item has only been logged.
+- Change to **Awaiting Pickup** when the item has been sorted and is ready for collection.
+- Change to **Out for Delivery** when someone is taking the item to the recipient's location.
+- Change to **Delivered** when the recipient, assistant, reception desk, department desk, or approved receiving point has accepted the item.
+- Change to **Returned** when the item cannot be delivered, the recipient is unknown, the recipient has left, or local mailroom rules say it must be returned.
+
+## Notes
+
+Notes help the next person understand what happened. Keep notes short, factual, and professional.
+
+Good examples:
+- "Recipient notified by phone."
+- "Left with department receptionist."
+- "Recipient unavailable; returning to mailroom."
+- "Damaged outer packaging noted on arrival."
+- "Moved to secure storage cabinet."
+
+Do not include unnecessary personal comments.
+
+## Search for Packages
 
 ### Quick Search
 
-Use the search bar on the dashboard or package list page:
+Use the search bar on the dashboard or package list.
 
-1. Type any of the following:
-   - Tracking number
-   - Recipient name
-   - Department name
-2. Results appear as you type
-3. Click on a package to view details
+You can search by:
+- Tracking number.
+- Recipient name.
+- Department.
 
-### Advanced Filtering
+Click a result to open the package record.
 
-On the **Packages** page, you can filter by:
+### Filters
 
-- **Status**: Select one or more statuses to filter
-- **Date Range**: Choose start and end dates
-- **Department**: Filter by recipient department
-- **Carrier**: Filter by shipping carrier
+On the **Packages** page, you can narrow the list by:
+- Status.
+- Date range.
+- Department.
+- Carrier.
 
-Click **Apply Filters** to update the results.
+Use filters when planning deliveries, checking old items, or finding packages waiting too long.
 
-### Viewing Package Details
+## View Package Details
 
-Click on any package to see:
+Open a package record to see:
+- Tracking number and carrier.
+- Recipient name, department, and location.
+- Current status.
+- Photos.
+- Notes.
+- Status history showing who updated the package and when.
 
-- Full package information (tracking number, carrier, recipient)
-- Current status
-- All photos attached to the package
-- Complete status history timeline showing:
-  - What status changed
-  - When it changed
-  - Who made the change
-  - Any notes added
+Use the history to answer questions such as "Who received this?", "When was it delivered?", or "Why is this still in the mailroom?"
 
-#### QR Code Actions
+## QR Stickers
 
-Each package detail page includes a **QR Code** card so you can generate or reprint stickers without leaving the page:
+Some mailrooms use QR stickers so staff can open the package record by scanning the code.
 
-1. Scroll to the QR panel on the detail page.
-2. Select **Download PNG** to save `qr_code_{package_id}.png` for use in other design tools or to email the code.
-3. Select **Print Sticker** to open the minimalist 2 cm × 2 cm print view in a new tab, then press your browser's print button to send it to a label printer.
-4. Place the sticker on the package before it leaves the mailroom so future scans pull up the correct record.
+### Print or Reprint a QR Sticker
 
-When another operator scans a sticker, they'll be asked to log in (if they are not already authenticated). After login, the system automatically forwards them back to that package's detail page so they can update the status from their phone.
+1. Open the package record.
+2. Find the **QR Code** section.
+3. Choose **Print Sticker**.
+4. Print the sticker using the label printer.
+5. Place the sticker where it can be scanned easily.
 
-## Mobile Usage
+### Download a QR Code
 
-The Mailroom Tracking System is optimized for mobile devices:
+1. Open the package record.
+2. Find the **QR Code** section.
+3. Choose **Download PNG**.
 
-### Navigation on Mobile
+Use this only when your mailroom process requires a saved QR image.
 
-- Tap the **☰ menu icon** in the top-left to open the navigation sidebar
-- Tap outside the sidebar or the X to close it
+### Scan a QR Sticker
 
-### Registering Packages on Mobile
+1. Scan the sticker with a phone, tablet, or scanner.
+2. Log in if asked.
+3. The package record opens automatically.
+4. Update the status if you are collecting, delivering, or closing the item.
 
-1. The form is optimized for touch input
-2. Use the **camera button** to take photos directly
-3. All buttons are sized for easy tapping
-4. The keyboard will automatically show the correct type (text, number, etc.)
-5. QR options are mobile-friendly: tap **QR Actions** on the package card, then choose **Download** (saves to your device) or **Print** (opens the print view for AirPrint / default printer).
+## Using a Phone or Tablet
 
-### Best Practices for Mobile
+The system can be used on mobile devices.
 
-- Use landscape mode for viewing package lists
-- Use portrait mode for registering packages
-- Take photos in good lighting for better quality
-- The system works offline within your corporate network
+- Tap the menu icon to open navigation.
+- Use the camera to take package photos.
+- Scan QR stickers to open package records quickly.
+- Check that you are using the organisation's approved network or connection.
 
-## Common Tasks
+For long package lists, a desktop or tablet may be easier than a phone.
 
-### Finding a Package for a Recipient
+## Common Daily Tasks
 
-1. Go to **Packages** in the sidebar
-2. Use the search bar and type the recipient's name
-3. Or use filters to narrow down by department
-4. Click on the package to see details
+### Find a Package for a Recipient
 
-### Checking What Needs Pickup
+1. Click **Packages**.
+2. Search for the recipient's name.
+3. Open the matching package.
+4. Check the status and notes.
 
-1. From the dashboard, click the **Awaiting Pickup** card
-2. You'll see all packages ready for pickup
-3. Sort by recipient or department to organize your work
+### Check What Needs Pickup
 
-### Viewing Your Activity
+1. On the dashboard, click **Awaiting Pickup**.
+2. Review the list.
+3. Sort or filter by department or location if needed.
+4. Follow your local process for notifying recipients.
 
-All your actions are logged in the system:
-- Package registrations show your name as "Created by"
-- Status updates show your name in the timeline
-- Your administrator can view detailed audit logs
+### Prepare a Delivery Round
+
+1. Filter packages by **Awaiting Pickup** or **Out for Delivery**, depending on your process.
+2. Group items by building, floor, department, or route.
+3. Scan or open each package record as you deliver.
+4. Mark each item **Delivered** after it is handed over or accepted.
+
+### Handle an Unknown Recipient
+
+1. Search again using different spelling, employee ID, or department if available.
+2. Check the package label for more details.
+3. Ask your administrator to confirm or add the recipient.
+4. Add a note to the package record if delivery is delayed.
+
+### Handle a Damaged Package
+
+1. Take a clear photo before moving the package further.
+2. Add a note describing what you can see.
+3. Follow your organisation's damaged-item process.
+4. Do not mark it delivered until it has been accepted or resolved.
 
 ## Troubleshooting
 
-### "Recipient not found"
+### Recipient Not Found
 
-If you can't find a recipient in the autocomplete:
-- Check the spelling
-- Try searching by employee ID or email
-- Contact your administrator to add the recipient
+- Check the spelling.
+- Search by department or email if available.
+- Ask your administrator to add or update the recipient record.
 
-### "Session expired"
+### Cannot Upload a Photo
 
-If you see this message:
-- Your session timed out after 30 minutes of inactivity
-- Simply log in again to continue
+- Check that the file is an image.
+- Try taking a smaller or clearer photo.
+- If it still fails, continue registering the package and tell your administrator.
 
-### "File too large"
+### Session Expired
 
-If you can't upload a photo:
-- The maximum file size is 5MB
-- Try taking a new photo with lower resolution
-- Or compress the image before uploading
+Your login may time out after a period of inactivity. Log in again and continue.
 
-### "Account locked"
+### Account Locked
 
-If you can't log in:
-- You may have exceeded 5 failed login attempts
-- Wait 30 minutes and try again
-- Or contact your administrator to unlock your account
+Too many failed login attempts can lock the account temporarily. Wait and try again, or contact your administrator.
 
-### Page not loading or errors
+### Page Not Loading
 
-- Refresh the page (F5 or Ctrl+R)
-- Clear your browser cache
-- Try a different browser (Chrome, Firefox, Edge)
-- Contact your administrator if the problem persists
+- Refresh the page.
+- Check your network connection.
+- Try another approved browser.
+- Contact your administrator if the issue continues.
 
-## Tips for Efficient Operation
+## Good Mailroom Practice
 
-1. **Register packages as they arrive**: Don't let them pile up
-2. **Take photos immediately**: It's easier than going back later
-3. **Use meaningful notes**: Help your team understand what happened
-4. **Update status promptly**: Keep recipients informed
-5. **Use mobile devices**: Register packages right at the mailroom counter
-6. **Check "Awaiting Pickup" daily**: Follow up on packages waiting too long
-
-## Getting Help
-
-If you need assistance:
-
-- **Technical issues**: Contact your IT administrator
-- **System access**: Contact your mailroom administrator
-- **Training**: Ask your supervisor for additional training
-- **Feature requests**: Provide feedback to your administrator
+- Register packages promptly.
+- Keep package locations organised and easy to check.
+- Update statuses as soon as work is completed.
+- Use clear notes for exceptions.
+- Keep photos professional and relevant.
+- Protect recipient information. Do not leave package lists or records visible to unauthorised people.
+- Follow your organisation's process for secure, confidential, damaged, or high-value items.
 
 ## Quick Reference
 
-### Keyboard Shortcuts
+### Common Status Path
 
-- **Tab**: Move between form fields
-- **Enter**: Submit forms
-- **Esc**: Close modals and dialogs
-- **Ctrl+F**: Focus search bar (on some browsers)
-
-### Status Colors
-
-- **Gray**: Registered
-- **Yellow**: Awaiting Pickup
-- **Blue**: Out for Delivery
-- **Green**: Delivered
-- **Red**: Returned
+```text
+Registered -> Awaiting Pickup -> Out for Delivery -> Delivered
+                         \-> Delivered
+                         \-> Returned
+```
 
 ### Required Fields
 
-Fields marked with an asterisk (*) are required:
-- Tracking Number *
-- Carrier *
-- Recipient *
+- Tracking Number.
+- Carrier.
+- Recipient.
+
+### Who to Contact
+
+- **Password or access issue**: Mailroom administrator.
+- **Recipient record issue**: Mailroom administrator.
+- **System not working**: Administrator or IT support.
+- **Process question**: Supervisor or mailroom lead.
 
 ---
 
-**Version**: 1.0  
-**Last Updated**: November 2025  
-**For Support**: Contact your system administrator
+**Version**: 1.1
+**Last Updated**: November 2025
+**For Support**: Contact your mailroom administrator

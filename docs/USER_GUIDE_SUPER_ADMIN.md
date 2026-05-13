@@ -1,345 +1,355 @@
-﻿# Super Administrator User Guide
+# Super Administrator User Guide
 
-## Introduction
+## Who This Guide Is For
 
-The Super Administrator owns the Mailroom Tracking System. Use this guide to install the application, configure QR features, manage users, and keep the platform secure and healthy.
+This guide is for the person or team that owns the Mailroom Tracking System for the organisation. In many mailrooms, this may be a mailroom manager, facilities manager, operations lead, or authorised senior administrator.
 
-## Responsibilities
+The guide is written for non-technical staff. It focuses on decisions, checks, and handoffs. If a task requires server access, database work, certificates, networking, or backups, coordinate with IT or your approved technical support team.
 
-- **Initial setup** - Install services, bootstrap the database, set baseline configuration.
-- **Account governance** - Create and manage Super Admin, Admin, and Operator accounts.
-- **Security** - Review audit logs, enforce password policies, and respond to incidents.
-- **Configuration** - Maintain `.env` values plus in-app settings such as the QR code base URL.
-- **Data protection** - Schedule backups, perform restore drills, and document results.
-- **Operations** - Monitor logs, run database maintenance, and verify scheduled jobs.
-- **Support** - Provide Tier 2 help for admins/operators and coordinate with IT.
+As a **Super Administrator**, you can:
+- Manage all user roles, including Administrators and Operators.
+- Maintain system settings available inside the application.
+- Review audit logs and important activity.
+- Oversee recipient data quality and reporting.
+- Coordinate with IT for backups, system availability, and technical incidents.
+- Set the operating rules for how the mailroom uses the system.
 
----
+## Role Overview
 
-## Initial System Setup
+| Role | Main Responsibility |
+|------|---------------------|
+| Operator | Registers packages, updates statuses, scans QR stickers, and delivers or releases items. |
+| Administrator | Manages operators, recipients, imports, and reports for daily mailroom operations. |
+| Super Administrator | Owns system access, settings, audit oversight, escalation, and governance. |
 
-### First-Time Installation
+Super Administrator access should be limited to a small number of trusted people.
 
-1. Install Python dependencies (`pip install -r requirements.txt` or `uv pip install .`).
-2. Place the project under `C:\MailroomApp` (or another controlled directory).
-3. Configure the process supervisor (NSSM, systemd, etc.) to run `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
-4. Configure the reverse proxy (Caddy) for HTTPS termination.
-5. Copy `.env.example` to `.env` and update the values shown in the Configuration section.
+## First-Time Setup Checklist
 
-### Default Credentials
+Use this checklist when the system is first launched or handed over to a new mailroom owner.
 
-- Username: `admin`
-- Password: Defined during installation (environment variable or bootstrap script).
+1. **Confirm the system address**
+   - Confirm the web address staff will use.
+   - Confirm the address works from mailroom computers, tablets, and approved mobile devices.
 
-Change this password immediately after the first login and store the new value in a password manager.
+2. **Change the initial Super Administrator password**
+   - Log in with the initial account.
+   - Change the password immediately.
+   - Store emergency access details according to your organisation's policy.
 
-### Initial Checklist
+3. **Create at least one backup Super Administrator**
+   - Create a second trusted Super Administrator account.
+   - Keep the number of Super Administrators small.
+   - Make sure each person uses their own account.
 
-1. **Log in with the bootstrap account.**
-2. **Change the Super Admin password.**
-   - Click your profile avatar -> Change Password.
-   - Enter the old password once and a strong replacement twice.
-   - Log out and back in to verify.
-3. **Create a backup Super Admin.**
-   - Go to Admin -> Users -> New User.
-   - Assign the `super_admin` role and enable "Force password change".
-4. **Review `.env` and restart the service.**
-   - Confirm host/port, log paths, SQLite file, and rate limits.
-5. **Configure the QR Code Base URL (new).**
-   - Open Admin -> System Settings.
-   - Enter the production host that operators will use when scanning stickers (for example, `https://mailroom.company.local`).
-   - Click Save. The value must start with `http://` or `https://`. Every QR sticker uses this base URL when generating the package detail link.
-6. **Set up automated backups.**
-   - Use the scripts in `scripts/` or Task Scheduler.
-   - Store backups on a different drive or secure network share.
-   - Test at least one restore before launch.
-7. **Import recipients.**
-   - Prepare a CSV with columns `employee_id,name,email,department`.
-   - Navigate to Recipients -> Import CSV and follow the wizard.
-8. **Create operator accounts.**
-   - Go to Admin -> Users -> New User.
-   - Assign the `operator` role, provide a temporary password, and require a forced change.
-9. **Perform a smoke test.**
-   - Register a package, upload a photo, print the QR sticker, scan it on a mobile device, and walk the package through one full lifecycle.
+4. **Set up Administrators and Operators**
+   - Create Administrator accounts for mailroom supervisors or leads.
+   - Create Operator accounts for daily mailroom staff.
+   - Require users to change temporary passwords on first login.
 
----
+5. **Confirm recipient data**
+   - Import or review the staff recipient list.
+   - Spot-check departments, locations, and email addresses.
+   - Agree who will keep the list current.
 
-## User Management
+6. **Confirm QR code settings**
+   - Open **System Settings**.
+   - Confirm the QR code base URL is the address staff should reach when scanning stickers.
+   - Ask IT for help if you are unsure which address to use.
 
-### Roles
+7. **Run an end-to-end mailroom test**
+   - Register a test package.
+   - Add a photo.
+   - Print or scan the QR sticker if used.
+   - Move the package through the normal statuses.
+   - Confirm reports show the activity correctly.
 
-| Role        | Capabilities                                                                           |
-|-------------|----------------------------------------------------------------------------------------|
-| Super Admin | Manage configuration, users, audit logs, backups, QR settings, and system maintenance. |
-| Admin       | Manage operators and recipients, register packages, run reports.                       |
-| Operator    | Register packages, update statuses, capture photos, use QR code actions.               |
+8. **Confirm support and escalation**
+   - Identify who handles user questions.
+   - Identify who handles technical outages.
+   - Identify who handles missing package or security incidents.
 
-### Creating Users
+## Managing Roles and Access
 
-1. Go to **Admin -> Users -> New User**.
-2. Provide username, full name, and optional contact details.
-3. Select the appropriate role.
-4. Enter a temporary password and keep **Force password change** enabled.
-5. Click **Create User** and deliver the credentials securely.
+### Create a User
 
-### Editing and Deactivating
+1. Go to **Users**.
+2. Click **Add New User**.
+3. Enter the username and full name.
+4. Choose the correct role:
+   - **Operator** for daily package handling.
+   - **Administrator** for supervisors who manage users, recipients, and reports.
+   - **Super Administrator** only for authorised system owners.
+5. Enter a temporary password.
+6. Keep the first-login password change option enabled.
+7. Click **Create User**.
+8. Share credentials using an approved secure method.
 
-- **Edit:** Find the user, click **Edit**, adjust fields, and save.
-- **Deactivate:** Open the user profile, click **Deactivate User**, provide a reason, and confirm. The account loses access immediately and active sessions are revoked.
+### Edit a User
+
+1. Go to **Users**.
+2. Find the user.
+3. Click **Edit**.
+4. Update allowed details.
+5. Click **Save Changes**.
+
+Avoid changing someone's role unless the business reason is clear.
+
+### Deactivate a User
+
+Deactivate access when a person leaves, changes role, or no longer needs the system.
+
+1. Go to **Users**.
+2. Find the user.
+3. Click **Deactivate**.
+4. Confirm the action.
+
+Past package activity remains in the system for reporting and audit history.
 
 ### Password Resets
 
-1. Open the user record.
+1. Open the user's record.
 2. Click **Reset Password**.
-3. Provide a temporary password and keep **Force password change** checked.
-4. Communicate the temporary password out-of-band.
+3. Enter a temporary password.
+4. Require the user to change it at next login.
+5. Share the temporary password securely.
 
-### Audit Logs
+If an account may have been misused, reset the password and review audit activity.
 
-- Navigate to **Admin -> Audit Log**.
-- Filter by user, action, or date.
-- QR-related events appear as `system_settings_change` with details such as `qr_base_url_created` or `qr_base_url_updated`.
+## System Settings
 
----
+System settings affect how the application behaves for the mailroom team. Change them carefully and document important changes.
 
-## QR Code Operations
+### QR Code Base URL
 
-### Generation
+The QR code base URL controls where QR stickers send users when scanned.
 
-- `QRCodeService` encodes the package detail URL using the configured base URL (or the request host if no value is set).
-- Output is 2 cm by 2 cm at 300 DPI with high error correction (`ERROR_CORRECT_H`).
+Use the organisation-approved Mailroom Tracking System address, such as:
 
-### Download Workflow
-
-1. From the package list or detail page, open the **QR Actions** dropdown.
-2. Click **Download QR Code** to fetch `qr_code_{package_id}.png`.
-3. Use the file for offline archiving or bulk label sheets.
-
-### Print Workflow
-
-1. Choose **QR Actions -> Print QR Code**.
-2. A new tab loads `templates/packages/qrcode_print.html`.
-3. Confirm the preview shows only the QR image and tracking number.
-4. Click **Print QR Code** (calls `window.print()`) and send to the label printer.
-
-### Mobile Scanning Flow
-
-1. Operators attach the sticker to the package.
-2. When someone scans the QR code, the browser loads `/packages/{id}` on the configured host.
-3. Unauthenticated users are redirected to `/auth/login?next=...`.
-4. After login, the user lands directly on the package detail page and can update the status immediately.
-
-### Troubleshooting
-
-| Problem                                  | Resolution                                                                 |
-|------------------------------------------|---------------------------------------------------------------------------|
-| QR sticker points to localhost           | Update the QR base URL in **Admin -> System Settings** and reprint.       |
-| Sticker prints at the wrong size         | Disable "Fit to page" in the print dialog; confirm printer DPI settings.  |
-| Browser shows blank print page           | Verify the package exists and check browser console for CSP violations.   |
-| Scanner cannot reach the host            | Confirm DNS/SSL for the configured base URL and verify the device VPN.    |
-
----
-
-## System Configuration
-
-### Environment Variables
-
-`C:\MailroomApp\.env`
-
-```env
-# Application
-APP_ENV=production
-APP_HOST=0.0.0.0
-APP_PORT=8000
-SECRET_KEY=<generate a random 32 byte string>
-
-# Database
-DATABASE_PATH=./data/mailroom.sqlite3
-DATABASE_CHECKPOINT_INTERVAL=300
-
-# Security
-SESSION_TIMEOUT=1800
-MAX_FAILED_LOGINS=5
-ACCOUNT_LOCKOUT_DURATION=1800
-PASSWORD_MIN_LENGTH=12
-PASSWORD_HISTORY_COUNT=3
-
-# File uploads
-UPLOAD_DIR=./uploads
-MAX_UPLOAD_SIZE=5242880
-ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/webp
-
-# Logging
-LOG_LEVEL=INFO
-LOG_FILE=./logs/mailroom.log
-LOG_RETENTION_DAYS=365
+```text
+https://mailroom.company.local
 ```
 
-### QR Code Base URL Setting
+To update it:
 
-- Stored in the `system_settings` table with key `qr_base_url`.
-- Configured through **Admin -> System Settings** (Super Admin only).
-- Validation: must start with `http://` or `https://`. Trailing slashes are removed.
-- Every QR sticker uses this value to build `https://host/packages/{package_id}`.
-- If not set, the backend falls back to `request.base_url`, which is acceptable for development but risky for production.
+1. Open **System Settings**.
+2. Find **QR Code Base URL**.
+3. Enter the correct system address.
+4. Save the setting.
+5. Print and scan a test QR sticker.
 
-### Safe Configuration Changes
+If QR stickers open the wrong page, show a security warning, or point to a local test address, contact IT and update this setting before printing more stickers.
 
-1. Backup the current `.env`.
-2. Stop the service.
-3. Apply edits.
-4. Start the service and monitor `logs/mailroom.log`.
-5. Verify the change in the UI or via `/health`.
+### Change Control
 
----
+For important settings:
+- Record what changed.
+- Record who approved it.
+- Record when it changed.
+- Test the system after the change.
 
-## Monitoring and Maintenance
+## Audit Logs
+
+Audit logs show important activity in the system, such as user changes, login events, and system setting changes.
+
+### Review Audit Logs
+
+1. Open **Audit Log**.
+2. Filter by user, action, or date.
+3. Review unusual or important events.
+
+Look for:
+- Repeated failed login attempts.
+- Unexpected password resets.
+- New administrator or Super Administrator accounts.
+- Deactivated accounts.
+- System setting changes.
+- Unusual activity around a missing or disputed package.
+
+Audit logs should be used to understand what happened, not to guess. If the issue is serious, involve IT, Security, HR, or management according to your organisation's process.
+
+## Recipient Data Oversight
+
+Accurate recipient information is essential in an enterprise mailroom.
+
+As Super Administrator, make sure there is a clear owner for recipient updates. This may be:
+- HR.
+- Facilities.
+- Department coordinators.
+- Mailroom administration.
+
+### Good Recipient Data Standards
+
+Each active recipient should have:
+- Correct full name.
+- Employee or staff ID.
+- Work email address.
+- Department.
+- Delivery location, such as building, floor, office, desk area, or mail stop.
+- Phone or extension if used by the mailroom.
+
+Set a regular schedule for updates, such as weekly or monthly, depending on staff movement.
+
+## Reports and Operational Oversight
+
+Use reports to monitor service levels and identify problems early.
+
+Common checks:
+- Packages still awaiting pickup from previous days.
+- Packages out for delivery but not marked delivered.
+- High-volume departments.
+- Operators with unusually low or high activity.
+- Recipients or locations with repeated delivery issues.
+- Returned or exception items.
+
+Reports may contain personal or business information. Store exports only in approved locations and share them only with people who need them.
+
+## Daily, Weekly, and Monthly Checks
 
 ### Daily
 
-- Check the dashboard for abnormal package counts.
-- Review the audit log for failed logins or configuration changes.
-- Confirm the latest backup job succeeded.
+- Check dashboard totals for unusual changes.
+- Review old **Awaiting Pickup** items.
+- Confirm critical mailroom staff can log in.
+- Watch for repeated failed logins or access issues.
 
 ### Weekly
 
-- Run SQLite maintenance:
-  ```powershell
-  python -c "import sqlite3; conn = sqlite3.connect('C:/MailroomApp/data/mailroom.sqlite3'); conn.execute('VACUUM'); conn.execute('ANALYZE'); conn.close()"
-  ```
-- Archive or rotate `logs/mailroom.log` if it exceeds expected size.
-- Validate that QR codes still resolve correctly by scanning a random sticker.
+- Review recent audit activity.
+- Check whether any users should be deactivated.
+- Confirm recipient updates have been received or imported.
+- Spot-check QR stickers by scanning one or two current packages.
 
 ### Monthly
 
-- Restore a backup to a staging environment as a disaster recovery rehearsal.
-- Review certificates and DNS entries for expiration.
-- Audit user accounts for leavers and deactivate stale accounts.
-
-### Log Management
-
-- **Path:** `C:\MailroomApp\logs\mailroom.log`
-- Tail logs:
-  ```powershell
-  Get-Content C:\MailroomApp\logs\mailroom.log -Tail 100
-  ```
-- Search for errors:
-  ```powershell
-  Select-String -Path C:\MailroomApp\logs\mailroom.log -Pattern "ERROR"
-  ```
-
-### Health Endpoint
-
-- `GET https://<host>/health`
-- Returns JSON with `{"status": "healthy"}` when the app, database, and background tasks are operational.
-- Production hides component-level health details by default unless `EXPOSE_DETAILED_HEALTH=true`.
-
----
+- Review all Administrator and Super Administrator accounts.
+- Confirm backup completion with IT or technical support.
+- Export required mailroom activity reports.
+- Review recurring delivery delays with the mailroom team.
+- Confirm the support and escalation contact list is current.
 
 ## Backups and Recovery
 
-### Backup Strategy
+Backups are usually handled by IT or technical support, but the Super Administrator should confirm that they are happening and that restore procedures are understood.
 
-- Frequency: nightly full backup of `data/` and `uploads/`.
-- Storage: secondary disk or secure network share with restricted access.
-- Automation: Task Scheduler running the scripts in `scripts/`.
+Ask IT or your technical support team to confirm:
+- What is backed up.
+- How often backups run.
+- Where backups are stored.
+- Who can restore the system.
+- How long a restore usually takes.
+- When the last restore test was completed.
 
-### Restore Checklist
+At least periodically, ask for evidence that a backup can be restored. A backup that has never been tested may not be reliable during an emergency.
 
-1. Stop the Mailroom service.
-2. Copy the backup SQLite file and uploads directory into place.
-3. Start the service.
-4. Log in and confirm recent packages exist.
+## Security and Privacy
 
-### Disaster Scenarios
+Super Administrators are responsible for strong access control.
 
-| Scenario            | Action                                                                 |
-|---------------------|------------------------------------------------------------------------|
-| Hardware failure    | Restore to new hardware or VM, update DNS, and confirm QR base URL.    |
-| Database corruption | Restore the most recent good backup, investigate root cause.          |
-| Security breach     | Disable affected accounts, rotate credentials, restore clean backup.  |
+- Use named accounts. Do not share accounts.
+- Keep Super Administrator access limited.
+- Deactivate leavers promptly.
+- Review administrator access regularly.
+- Require temporary passwords to be changed at first login.
+- Do not export reports to personal devices or unapproved locations.
+- Escalate suspected misuse, missing packages, or unauthorised access.
+- Follow your organisation's rules for confidential, legal, medical, financial, or high-value mail.
+
+## Incident Handling
+
+### System Unavailable
+
+1. Confirm whether the issue affects one user or everyone.
+2. Ask another user to try from another approved device.
+3. Contact IT or technical support.
+4. Inform the mailroom team of the temporary process to use while the system is unavailable.
+5. When the system is restored, enter any packages that were handled manually.
+
+### Missing or Disputed Package
+
+1. Search by tracking number, recipient, department, and date.
+2. Open the package record and review status history, notes, and photos.
+3. Check whether a QR scan or status update was recorded.
+4. Speak with the operator or recipient if needed.
+5. Follow the organisation's incident process for unresolved or sensitive items.
+
+### Suspected Account Misuse
+
+1. Deactivate or reset the affected account if appropriate.
+2. Review audit logs for recent activity.
+3. Notify IT, Security, or management according to policy.
+4. Document the action taken.
+
+### QR Codes Open the Wrong Address
+
+1. Stop printing new QR stickers.
+2. Open **System Settings** and check the QR code base URL.
+3. Ask IT to confirm the correct address.
+4. Update the setting.
+5. Print and scan a test sticker.
+6. Reprint affected stickers if needed.
+
+## Working with IT or Technical Support
+
+Contact IT or technical support for:
+- System outage.
+- Browser certificate or security warning.
+- Network or VPN issue.
+- Backup or restore work.
+- Server, database, storage, or log investigation.
+- Failed uploads affecting many users.
+- QR codes that cannot be reached from approved devices.
+
+When raising a support request, provide:
+- What happened.
+- When it started.
+- Who is affected.
+- Screenshots if allowed.
+- Package ID or tracking number if relevant.
+- Any recent setting or user changes.
+
+## Handover Checklist
+
+Use this when another person takes over Super Administrator duties.
+
+- Confirm all current Super Administrators.
+- Review Administrator accounts.
+- Explain the recipient import process and data source.
+- Review QR code settings.
+- Review the audit log location and common filters.
+- Confirm backup and restore contacts.
+- Confirm support escalation contacts.
+- Review recent incidents or unresolved mailroom issues.
+
+## Quick Reference
+
+### Super Administrator Can Do
+
+- Manage all user roles.
+- Review audit logs.
+- Maintain system settings available in the application.
+- Oversee recipient data quality.
+- Coordinate backups, recovery, and incidents with IT.
+- Set mailroom operating rules for system use.
+
+### Use IT or Technical Support For
+
+- Server setup or restart.
+- Database access.
+- Backup restore.
+- Network, VPN, or certificate problems.
+- Storage, log, or performance investigation.
+- Application upgrades.
+
+### Who to Contact
+
+- **Daily mailroom process**: Mailroom manager or operations lead.
+- **Technical outage**: IT support.
+- **Security concern**: Security team, IT, or management.
+- **Recipient source data**: HR, Facilities, or department coordinator.
 
 ---
 
-## Security and Compliance
-
-- Enforce least privilege: operators should not receive admin rights.
-- Require password changes for new accounts and lock accounts after 5 failures.
-- Review `auth_events` and `system_settings_change` logs weekly.
-- Document every emergency change (date, reason, approver).
-- Keep the OS, Python runtime, and dependencies patched.
-
----
-
-## Troubleshooting
-
-### Users Cannot Log In
-
-1. Confirm the Mailroom process is running.
-2. Check for lockout entries in the audit log.
-3. Reset the password and ensure the user receives the new value securely.
-4. Verify reverse proxy/HTTPS configuration if all users fail.
-
-### QR Codes Redirect to Wrong Host
-
-1. Open **Admin -> System Settings**.
-2. Update the QR base URL and save.
-3. Reprint affected stickers.
-
-### QR Print Page Blank
-
-1. Ensure the package exists and the user has permission.
-2. Check browser console for CSP violations.
-3. Inspect `logs/mailroom.log` for QR generation errors.
-
-### Database Locked
-
-1. Make sure no SQLite CLI sessions are open.
-2. Confirm the async write queue worker is running.
-3. Restart the service if locks persist.
-
-### File Upload Fails
-
-1. Verify `uploads/` directory permissions.
-2. Confirm the file meets size/type rules.
-3. Check disk space.
-
----
-
-## Emergency Procedures
-
-### System Down
-
-1. Check Windows services (Mailroom, Caddy).
-2. Review `mailroom.log`.
-3. Restart the service.
-4. If unresolved, restore from backup and escalate to IT.
-
-### Data Loss
-
-1. Stop writes immediately.
-2. Restore the latest verified backup.
-3. Notify stakeholders and document the incident.
-
-### Security Breach
-
-1. Disable compromised accounts and rotate Super Admin passwords.
-2. Review audit logs for scope.
-3. Engage the security team and follow the incident response plan.
-
----
-
-## Support and Resources
-
-- Technical docs: `docs/` (API, database schema, deployment, security).
-- Requirements/design: `.kiro/specs/mailroom-tracking-mvp/`.
-- Escalation: follow your internal on-call or IT contact list.
-
----
-
-**Version:** 2.0 (QR code update)  
-**Last Updated:** November 2025  
-**Maintained By:** System Administrator
-
-
-
+**Version**: 2.1
+**Last Updated**: November 2025
+**Maintained By**: System Owner / Super Administrator

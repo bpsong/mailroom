@@ -1,522 +1,402 @@
 # Administrator User Guide
 
-## Introduction
+## Who This Guide Is For
 
-Welcome to the Mailroom Tracking System Administrator Guide. This guide covers all administrative functions including user management, recipient management, CSV imports, and reporting.
+This guide is for mailroom supervisors, team leads, or authorised staff who manage daily mailroom records in the Mailroom Tracking System. It is written for non-technical users who support the mailroom team and keep package, recipient, and user information accurate.
 
-As an **Administrator**, you have all operator capabilities plus:
-- Managing user accounts (creating, editing, deactivating operators)
-- Managing the recipient database
-- Importing recipients via CSV
-- Generating and exporting reports
-- Viewing system statistics and analytics
+As an **Administrator**, you can do everything an Operator can do, plus:
+- Create and manage Operator accounts and, if allowed by your organisation, other Administrator accounts.
+- Keep the recipient list accurate.
+- Add or update recipients in bulk with a CSV file.
+- View reports for package volume, delivery status, and mailroom workload.
+- Help operators with common access and data issues.
 
-**Note**: Super Admins have additional privileges covered in the Super Admin Guide.
+Super Administrators have additional system ownership responsibilities, such as system settings and audit review.
 
-## Getting Started
+## Basic Terms
 
-### Logging In
+- **Operator**: A mailroom staff member who registers, searches, and updates packages.
+- **Recipient**: The staff member or department receiving the item.
+- **User account**: A login account for someone who uses the system.
+- **CSV file**: A spreadsheet-style file used to import many recipient records at once.
+- **Report**: A filtered list or export of package activity.
 
-1. Navigate to the Mailroom Tracking System URL
-2. Enter your administrator username and password
-3. Click **Login**
+## Logging In
 
-Your administrator account has access to additional menu items:
-- **Recipients** - Manage recipient database
-- **Users** - Manage operator accounts
-- **Reports** - View analytics and export data
+1. Open the Mailroom Tracking System in your web browser.
+2. Enter your administrator username and password.
+3. Click **Login**.
 
-## User Management
+Administrators usually see extra menu items such as:
+- **Recipients**.
+- **Users**.
+- **Reports**.
 
-### Viewing Users
+Log out when you finish, especially on a shared workstation.
 
-1. Click **Users** in the sidebar
-2. You'll see a list of all users with:
-   - Username
-   - Full name
-   - Role (Operator, Admin, Super Admin)
-   - Status (Active/Inactive)
-   - Created date
+## Managing Users
 
-### Creating a New User
+Use **Users** to manage access for mailroom staff.
 
-1. Click **Users** in the sidebar
-2. Click the **Add New User** button
-3. Fill in the user information:
-   - **Username**: Unique identifier for login (required)
-   - **Full Name**: User's display name (required)
-   - **Role**: Select Operator or Admin (required)
-   - **Initial Password**: Temporary password (required, min 12 characters)
-4. Click **Create User**
+### View Users
 
-**Password Requirements**:
-- Minimum 12 characters
-- At least one uppercase letter
-- At least one lowercase letter
-- At least one number
-- At least one special character (!@#$%^&*)
+1. Click **Users**.
+2. Review the user list.
 
-**Best Practices**:
-- New users are automatically required to change password on first login
-- Use a secure temporary password
-- Communicate the temporary password securely (not via email)
-- Verify the username is correct before creating
+The list usually shows:
+- Username.
+- Full name.
+- Role.
+- Status.
+- Created date.
 
-### Editing a User
+### Create a New User
 
-1. Click **Users** in the sidebar
-2. Find the user you want to edit
-3. Click the **Edit** button next to their name
-4. Update the information:
-   - Full name
-   - Role (Operator or Admin)
-5. Click **Save Changes**
+1. Click **Users**.
+2. Click **Add New User**.
+3. Enter the user's details:
+   - **Username**: The name they use to log in.
+   - **Full Name**: Their display name.
+   - **Role**: Choose **Operator** for daily mailroom staff, or **Administrator** for authorised supervisors.
+   - **Initial Password**: A temporary password.
+4. Click **Create User**.
+5. Give the login details to the user using your organisation's approved secure method.
+6. Ask the user to log in and change the temporary password.
 
-**Important Restrictions**:
-- You cannot edit Super Admin accounts
-- You cannot change usernames after creation
-- You cannot edit your own role
+Only give Administrator access to staff who genuinely need it.
 
-### Resetting a User's Password
+### Edit a User
 
-1. Click **Users** in the sidebar
-2. Find the user
-3. Click the **Reset Password** button
-4. Enter a new temporary password
-5. Keep force-change behavior enabled (default in the system)
-6. Click **Reset Password**
+1. Click **Users**.
+2. Find the user.
+3. Click **Edit**.
+4. Update the allowed details, such as full name or role.
+5. Click **Save Changes**.
 
-The user will need to change their password on next login if you checked the box.
+You may not be able to edit Super Administrator accounts or your own role.
 
-### Deactivating a User
+### Reset a Password
 
-When an employee leaves or no longer needs access:
+Use this when a user forgets their password or cannot access the system.
 
-1. Click **Users** in the sidebar
-2. Find the user
-3. Click the **Deactivate** button
-4. Confirm the action
+1. Click **Users**.
+2. Find the user.
+3. Click **Reset Password**.
+4. Enter a new temporary password.
+5. Keep the option enabled that requires the user to change the password at next login.
+6. Click **Reset Password**.
+7. Give the temporary password to the user using a secure method.
 
-**What happens when you deactivate a user**:
-- The user cannot log in
-- All active sessions are terminated immediately
-- The user's historical data remains in the system
-- Deactivation is currently treated as permanent in the admin UI workflow
+Do not send passwords in open group chats or leave them written at shared desks.
 
-**Note**: You cannot deactivate Super Admin accounts or your own account.
+### Deactivate a User
 
-### Searching for Users
+Deactivate a user when they leave the mailroom, change role, or no longer need access.
+
+1. Click **Users**.
+2. Find the user.
+3. Click **Deactivate**.
+4. Confirm the action.
+
+After deactivation:
+- The user cannot log in.
+- Their past package activity remains in the system.
+- Their name may still appear in package history and reports.
+
+You cannot deactivate your own account. If you need help with your own access, contact a Super Administrator.
+
+### Search for Users
 
 Use the search bar to find users by:
-- Username
-- Full name
-- Role
+- Username.
+- Full name.
+- Role.
+- Status.
 
-Use filters to show:
-- Active users only
-- Inactive users only
-- Specific roles (Operator, Admin, Super Admin)
+## Managing Recipients
 
-## Recipient Management
+Recipients are the people or departments that receive packages. Keeping this list accurate helps operators select the correct recipient and deliver items faster.
 
-### Viewing Recipients
+### View Recipients
 
-1. Click **Recipients** in the sidebar
-2. You'll see a list of all recipients with:
-   - Employee ID
-   - Name
-   - Email
-   - Department
-   - Phone
-   - Location
-   - Status (Active/Inactive)
+1. Click **Recipients**.
+2. Review the recipient list.
 
-### Adding a New Recipient
+The list usually shows:
+- Employee ID.
+- Name.
+- Email.
+- Department.
+- Phone.
+- Location.
+- Status.
 
-1. Click **Recipients** in the sidebar
-2. Click the **Add New Recipient** button
-3. Fill in the recipient information:
-   - **Employee ID**: Unique identifier (required)
-   - **Name**: Full name (required)
-   - **Email**: Email address (required, must be valid format)
-   - **Department**: Department name (required)
-   - **Phone**: Phone number (optional)
-   - **Location**: Office location or building (optional)
-4. Click **Create Recipient**
+### Add a New Recipient
 
-**Validation Rules**:
-- Employee ID must be unique
-- Email must be in valid format (contains @ and domain)
-- All required fields must be filled
+1. Click **Recipients**.
+2. Click **Add New Recipient**.
+3. Enter the recipient details:
+   - **Employee ID**: The organisation's employee or staff identifier.
+   - **Name**: Full name.
+   - **Email**: Work email address.
+   - **Department**: Recipient's department.
+   - **Phone**: Phone or extension, if used.
+   - **Location**: Building, floor, office, desk area, or mail stop.
+4. Click **Create Recipient**.
 
-### Editing a Recipient
+Check spelling, department, and location before saving. Operators rely on these details during sorting and delivery.
 
-1. Click **Recipients** in the sidebar
-2. Find the recipient
-3. Click the **Edit** button
-4. Update the information
-5. Click **Save Changes**
+### Edit a Recipient
 
-**Note**: You cannot change the Employee ID after creation. If you need to change it, deactivate the old record and create a new one.
+1. Click **Recipients**.
+2. Find the recipient.
+3. Click **Edit**.
+4. Update the details.
+5. Click **Save Changes**.
 
-### Deactivating a Recipient
+Update recipient records when someone changes department, building, floor, name, email, or phone extension.
 
-When an employee leaves the organization:
+### Deactivate a Recipient
 
-1. Click **Recipients** in the sidebar
-2. Find the recipient
-3. Click the **Deactivate** button
-4. Confirm the action
+Deactivate a recipient when the person has left the organisation or should no longer receive packages through the mailroom.
 
-**What happens when you deactivate a recipient**:
-- They won't appear in autocomplete searches for new packages
-- Existing packages remain linked to them
-- Historical data is preserved
-- Deactivation is currently treated as permanent in the admin UI workflow
+1. Click **Recipients**.
+2. Find the recipient.
+3. Click **Deactivate**.
+4. Confirm the action.
 
-### Searching for Recipients
+After deactivation:
+- The recipient will not appear in normal selection lists for new packages.
+- Existing package history remains unchanged.
+- Old reports and records still show the original recipient.
+
+If a recipient record was created by mistake, follow your organisation's data correction process.
+
+### Search for Recipients
 
 Use the search bar to find recipients by:
-- Employee ID
-- Name
-- Email
-- Department
+- Employee ID.
+- Name.
+- Email.
+- Department.
+- Location.
 
-The search provides autocomplete suggestions as you type.
+## Importing Recipients from a CSV File
 
-## CSV Recipient Import
+Use CSV import when you need to add or update many recipients, such as after receiving an updated staff list from HR or Facilities.
 
-The CSV import feature allows you to bulk-add or update recipients from a spreadsheet.
+### Before You Import
 
-### Preparing Your CSV File
+Prepare the file carefully. A clean file saves time and avoids wrong deliveries.
 
-Your CSV file must have these columns (in any order):
+The CSV file should include these columns:
 
-- **employee_id** - Unique employee identifier (required)
-- **name** - Full name (required)
-- **email** - Email address (required)
-- **department** - Department name (required)
-- **phone** - Phone number (optional)
-- **location** - Office location (optional)
+| Column | Required | What It Means |
+|--------|----------|---------------|
+| employee_id | Yes | Staff or employee identifier. |
+| name | Yes | Recipient's full name. |
+| email | Yes | Work email address. |
+| department | Yes | Department or business unit. |
+| phone | No | Phone number or extension. |
+| location | No | Building, floor, office, desk area, or mail stop. |
 
-**Example CSV**:
+Example:
+
 ```csv
 employee_id,name,email,department,phone,location
-E12345,John Smith,john.smith@company.com,Engineering,555-0100,Building A
-E12346,Jane Doe,jane.doe@company.com,Marketing,555-0101,Building B
-E12347,Bob Johnson,bob.johnson@company.com,Sales,555-0102,Building A
+E12345,John Smith,john.smith@company.com,Facilities,555-0100,Building A Floor 2
+E12346,Jane Doe,jane.doe@company.com,Finance,555-0101,Building B Floor 5
+E12347,Bob Johnson,bob.johnson@company.com,Sales,555-0102,Building A Floor 4
 ```
 
-**CSV File Requirements**:
-- First row must be headers
-- Maximum 1000 rows per file
-- UTF-8 encoding recommended
-- Comma-separated values
+### Import the File
 
-### Importing Recipients
+1. Click **Recipients**.
+2. Click **Import CSV**.
+3. Choose or drag in the CSV file.
+4. Click **Upload and Validate**.
+5. Review the results before confirming.
 
-1. Click **Recipients** in the sidebar
-2. Click the **Import CSV** button
-3. Click **Choose File** or drag and drop your CSV file
-4. Click **Upload and Validate**
+### Review the Validation Results
 
-### Validation Process
+The system checks the file before importing. It may show:
+- **Valid records**: Rows that can be imported.
+- **New records**: Recipients that will be added.
+- **Updates**: Existing recipients that will be updated.
+- **Errors**: Rows that must be fixed before import.
 
-The system will perform a dry-run validation and show you:
+Common errors include:
+- Missing employee ID, name, email, or department.
+- Duplicate employee IDs in the file.
+- Email addresses in the wrong format.
+- Very long values that do not fit the field.
 
-- **Valid Records**: Rows that will be imported successfully
-- **Errors**: Rows with problems that must be fixed
-- **Updates**: Existing recipients that will be updated (matched by employee_id)
-- **New Records**: New recipients that will be created
+### Confirm the Import
 
-**Common Validation Errors**:
-- Missing required fields (employee_id, name, email, department)
-- Invalid email format
-- Duplicate employee_ids within the file
-- Row exceeds maximum field lengths
+1. Read the validation summary.
+2. If errors appear, cancel the import, fix the file, and upload again.
+3. If the file is correct, click **Confirm Import**.
+4. Wait for the success message.
+5. Spot-check a few recipient records after import.
 
-### Reviewing and Confirming Import
+### CSV Import Good Practice
 
-1. Review the validation report carefully
-2. If there are errors:
-   - Click **Cancel**
-   - Fix the errors in your CSV file
-   - Upload again
-3. If validation passes:
-   - Review the summary (X new, Y updates)
-   - Click **Confirm Import**
-4. Wait for the import to complete
-5. You'll see a success message with the final count
+- Start with a small test file if this is your first import.
+- Keep department and location names consistent.
+- Remove duplicate rows before uploading.
+- Keep a copy of the file you imported.
+- Import updated recipient lists on a regular schedule agreed with HR, Facilities, or your supervisor.
 
-### Import Behavior
+## Reports
 
-- **New employee_id**: Creates a new recipient record
-- **Existing employee_id**: Updates the existing recipient with new data
-- **All changes are logged**: The audit log records who imported, when, and how many records
+Reports help supervisors understand workload, follow up on delayed items, and answer questions from departments.
 
-### Best Practices for CSV Import
+### Dashboard Metrics
 
-1. **Test with a small file first**: Import 5-10 records to verify format
-2. **Back up your data**: Export current recipients before large imports
-3. **Validate in Excel first**: Check for duplicates and missing data
-4. **Use consistent formatting**: Keep department names consistent
-5. **Import during off-hours**: Large imports may take a few minutes
+The dashboard may show:
+- Packages registered today.
+- Packages awaiting pickup.
+- Packages delivered today.
+- Package status breakdown.
+- Top recipients or departments.
 
-### Troubleshooting CSV Import
+Use these numbers as a quick health check for the day.
 
-**"Invalid CSV format"**
-- Ensure the first row contains headers
-- Check that columns are comma-separated
-- Verify the file is saved as .csv (not .xlsx)
+### View a Report
 
-**"File too large"**
-- Maximum 1000 rows per file
-- Split large files into multiple smaller files
+1. Click **Reports**.
+2. Choose filters such as:
+   - Date range.
+   - Status.
+   - Department.
+   - Operator.
+   - Carrier.
+3. Click **Apply Filters**.
+4. Review the results.
 
-**"Duplicate employee_id"**
-- Check your CSV for duplicate employee IDs
-- Remove duplicates before importing
+### Export a Report
 
-**"Invalid email format"**
-- Ensure all emails contain @ and a domain
-- Fix any typos in email addresses
+1. Open **Reports**.
+2. Apply the filters you need.
+3. Click **Export to CSV**.
+4. Open the downloaded file in Excel or your approved spreadsheet tool.
 
-## Reports and Analytics
+Exports may contain recipient names, email addresses, departments, and package details. Store and share exported files according to your organisation's data handling rules.
 
-### Dashboard Overview
+### Useful Report Checks
 
-The dashboard shows key metrics:
+**Daily open items**
+1. Filter for **Awaiting Pickup** and **Out for Delivery**.
+2. Check items that have been waiting too long.
+3. Ask operators to follow up or update statuses.
 
-- **Packages Today**: Total packages registered today
-- **Awaiting Pickup**: Packages currently waiting for pickup
-- **Delivered Today**: Packages delivered today
-- **Top Recipients**: Top 5 recipients by package count this month
-- **Status Distribution**: Breakdown of packages by status
+**Department volume**
+1. Filter by department.
+2. Choose a date range.
+3. Export if the department needs a copy.
 
-Click on any metric to filter the package list.
+**Operator activity**
+1. Filter by operator.
+2. Choose a date range.
+3. Review package registration and status updates.
 
-### Viewing Reports
+**Old awaiting pickup items**
+1. Filter by **Awaiting Pickup**.
+2. Sort by oldest first.
+3. Follow up with recipients or departments.
 
-1. Click **Reports** in the sidebar
-2. Select your filters:
-   - **Date Range**: Start and end dates
-   - **Status**: Filter by package status
-   - **Department**: Filter by recipient department
-   - **Operator**: Filter by who registered the package
-3. Click **Apply Filters**
-4. View the results in the table
+## Daily Administrator Checks
 
-### Exporting Data
+Use this short checklist to keep the mailroom data clean.
 
-To export package data to CSV:
+- Check the dashboard for unusual package volumes.
+- Review packages still awaiting pickup from previous days.
+- Confirm new employees or moved employees are reflected in the recipient list.
+- Help operators with locked accounts or password resets.
+- Deactivate accounts and recipients that are no longer valid.
 
-1. Go to **Reports**
-2. Apply your desired filters
-3. Click the **Export to CSV** button
-4. The file will download to your computer
+## Monthly Administrator Checks
 
-**CSV Export Includes**:
-- Tracking number
-- Carrier
-- Recipient name
-- Recipient email
-- Department
-- Status
-- Created date/time
-- Updated date/time
-- Created by (operator name)
-- Notes
+- Review the user list and remove access that is no longer needed.
+- Import or update the latest recipient list.
+- Export the monthly package report if required.
+- Review departments or locations with frequent delivery issues.
+- Check for repeated recipient search problems and correct the underlying data.
 
-### Common Report Scenarios
+## Security and Privacy
 
-**Monthly Package Volume**:
-1. Set date range to first and last day of the month
-2. Export to CSV
-3. Use Excel to create pivot tables and charts
+Mailroom records may contain personal and business information. Treat them carefully.
 
-**Packages by Department**:
-1. Filter by department
-2. Set date range as needed
-3. View or export results
-
-**Operator Performance**:
-1. Filter by operator
-2. Set date range (e.g., last week)
-3. View how many packages they registered
-
-**Overdue Pickups**:
-1. Filter status to "Awaiting Pickup"
-2. Sort by created date (oldest first)
-3. Follow up on packages waiting more than 3 days
-
-## System Monitoring
-
-### Checking System Health
-
-As an administrator, monitor these indicators:
-
-**Active Users**:
-- Check the user list regularly
-- Deactivate accounts for employees who have left
-- Review account status and creation records to identify stale accounts
-
-**Package Volume**:
-- Monitor daily package counts
-- Look for unusual spikes or drops
-- Ensure operators are registering packages promptly
-
-**Recipient Database**:
-- Keep recipient information up to date
-- Deactivate former employees
-- Import new employees regularly
-
-### Performance Tips
-
-**Keep the recipient list clean**:
-- Deactivate former employees
-- Update department changes
-- Fix incorrect email addresses
-
-**Regular CSV imports**:
-- Import new employees weekly or monthly
-- Keep data synchronized with HR systems
-
-**Monitor storage**:
-- Package photos consume disk space
-- Contact your Super Admin if storage is running low
-
-## Security Best Practices
-
-### Password Management
-
-- Enforce strong passwords for all users
-- New accounts are forced to change password on first login by default
-- Reset passwords immediately if an account is compromised
-- Never share your administrator password
-
-### User Account Hygiene
-
-- Deactivate accounts promptly when employees leave
-- Review user list monthly for inactive accounts
-- Use the principle of least privilege (only make users admins if needed)
-- Monitor the audit log for suspicious activity
-
-### Data Protection
-
-- Don't export sensitive data to unsecured locations
-- Be careful with CSV exports containing personal information
-- Follow your organization's data retention policies
-- Report any security concerns to your Super Admin
-
-## Common Administrative Tasks
-
-### Onboarding a New Operator
-
-1. Create their user account with role "Operator"
-2. Set a temporary password (force password change is applied automatically)
-3. Provide them with the Operator User Guide
-4. Have them log in and change their password
-5. Verify they can access the system
-
-### Offboarding an Employee
-
-1. Deactivate their user account (if they were an operator)
-2. Deactivate their recipient record
-3. Their historical data remains in the system
-
-### Monthly Maintenance
-
-1. Review user accounts and deactivate inactive users
-2. Import new employees from HR
-3. Export monthly package report for records
-4. Check for packages stuck in "Awaiting Pickup" status
-5. Review dashboard metrics for trends
-
-### Quarterly Review
-
-1. Export all package data for the quarter
-2. Analyze trends by department
-3. Identify top recipients
-4. Review operator activity
-5. Clean up inactive recipients
+- Do not share your administrator account.
+- Give users only the access they need.
+- Deactivate access promptly when someone leaves or changes role.
+- Do not leave package records visible on shared screens.
+- Store exported reports only in approved locations.
+- Report suspicious access, missing packages, or unusual changes to a Super Administrator or IT.
 
 ## Troubleshooting
 
-### "Cannot edit this user"
+### Cannot Find a Recipient
 
-- You cannot edit Super Admin accounts
-- You cannot edit your own role
-- You may not have permission (contact Super Admin)
+- Search by name, employee ID, email, and department.
+- Check for spelling variations.
+- Add or update the recipient record if you are sure the details are correct.
+- Ask HR, Facilities, or the recipient's department to confirm uncertain details.
 
-### "Cannot deactivate this user"
+### Employee ID Already Exists
 
-- You cannot deactivate Super Admin accounts
-- You cannot deactivate yourself
-- The user may already be inactive
+- Search for the existing recipient.
+- Update the existing record instead of creating a duplicate.
+- If there are two people with similar details, confirm with HR or your supervisor before changing records.
 
-### "Employee ID already exists"
+### CSV Import Failed
 
-- Each employee ID must be unique
-- Check if the recipient already exists
-- Edit the existing recipient instead of creating a new one
+- Read the validation message.
+- Check that required columns are present.
+- Remove duplicate employee IDs.
+- Save the file as CSV, not Excel format.
+- Try a smaller file if needed.
 
-### "CSV import failed"
+### User Cannot Log In
 
-- Check the validation report for specific errors
-- Ensure all required columns are present
-- Verify data format (especially emails)
-- Try a smaller file if it's very large
+- Check whether the account is active.
+- Reset the password if needed.
+- Ask the user to try again after any lockout period.
+- Escalate to a Super Administrator if several users cannot log in.
 
-### "Export not working"
+### Export Not Working
 
-- Check your browser's download settings
-- Ensure pop-ups are not blocked
-- Try a different browser
-- Contact your Super Admin if the issue persists
-
-## Getting Help
-
-For assistance:
-
-- **User account issues**: Contact your Super Admin
-- **Technical problems**: Contact IT support
-- **Feature requests**: Discuss with your Super Admin
-- **Training**: Refer to this guide or request additional training
+- Check the browser download area.
+- Try the export again with fewer filters or a shorter date range.
+- Ask IT or a Super Administrator if downloads are blocked.
 
 ## Quick Reference
 
-### Administrator Permissions
+### Administrator Can Do
 
-✅ Can Do:
-- Create, edit, deactivate Operator accounts
-- Manage all recipients
-- Import recipients via CSV
-- View and export all reports
-- Register and track packages (operator functions)
+- Register and update packages.
+- Create and manage Operator accounts and authorised Administrator accounts.
+- Manage recipients.
+- Import recipient CSV files.
+- View and export reports.
+- Help operators with everyday access and data issues.
 
-❌ Cannot Do:
-- Edit or deactivate Super Admin accounts
-- View detailed audit logs (Super Admin only)
-- Change system configuration
-- Access server or database directly
+### Administrator Cannot Usually Do
 
-### Keyboard Shortcuts
+- Change system-wide settings.
+- Manage Super Administrator accounts.
+- Directly access the server or database.
+- Change audit records.
 
-- **Ctrl+F**: Search on current page
-- **Tab**: Navigate between form fields
-- **Enter**: Submit forms
-- **Esc**: Close modals
+### Who to Contact
 
-### Status Workflow
-
-```
-Registered → Awaiting Pickup → Out for Delivery → Delivered
-                ↓                      ↓
-              Delivered              Returned
-```
+- **System setting or audit question**: Super Administrator.
+- **Technical outage**: IT support or Super Administrator.
+- **Recipient list source issue**: HR, Facilities, or department contact.
+- **Mailroom process decision**: Mailroom supervisor or operations manager.
 
 ---
 
-**Version**: 1.0  
-**Last Updated**: November 2025  
+**Version**: 1.1
+**Last Updated**: November 2025
 **For Support**: Contact your Super Administrator
