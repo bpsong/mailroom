@@ -40,6 +40,9 @@ data/
 # Uploads
 uploads/
 
+# Generated output
+output/
+
 # Logs
 logs/
 *.log

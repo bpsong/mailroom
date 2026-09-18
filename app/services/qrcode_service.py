@@ -2,6 +2,7 @@
 
 import qrcode
 from qrcode.constants import ERROR_CORRECT_H
+from qrcode.image.pil import PilImage
 from PIL import Image
 from io import BytesIO
 import base64
@@ -83,10 +84,10 @@ class QRCodeService:
         qr.make(fit=True)
         
         # Generate image and resize to exact dimensions
-        img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+        img = qr.make_image(fill_color="black", back_color="white", image_factory=PilImage).convert("RGB")
         img = img.resize(
             (self.TARGET_QR_PIXELS, self.TARGET_QR_PIXELS),
-            resample=Image.NEAREST
+            resample=Image.Resampling.NEAREST
         )
         
         # Save with DPI metadata for print accuracy

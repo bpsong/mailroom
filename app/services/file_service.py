@@ -13,6 +13,7 @@ try:
     import magic
     MAGIC_AVAILABLE = True
 except (ImportError, OSError):
+    magic = None  # type: ignore[no-redef]
     MAGIC_AVAILABLE = False
 
 from app.config import settings
@@ -163,7 +164,7 @@ class FileService:
         Returns:
             MIME type string
         """
-        if MAGIC_AVAILABLE:
+        if MAGIC_AVAILABLE and magic is not None:
             try:
                 # Try using python-magic if available
                 mime = magic.Magic(mime=True)
