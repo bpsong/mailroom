@@ -57,7 +57,7 @@ class FileService:
             max_file_size if max_file_size is not None else settings.max_upload_size
         )
         if allowed_mime_types is None:
-            allowed_mime_types = settings.allowed_image_types_list
+            allowed_mime_types = list(settings.allowed_image_types_list)
         self.allowed_mime_types = set(allowed_mime_types)
     
     async def save_upload(

@@ -153,7 +153,6 @@ async def register_package(
     photo: UploadFile | None = File(None),  # noqa: B008 - idiomatic FastAPI request parsing
     csrf_token: str = Form(...),
 ):
-
     """
     Register a new package with optional photo.
     

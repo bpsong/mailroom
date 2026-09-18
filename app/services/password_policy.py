@@ -119,8 +119,8 @@ def check_password_history(password: str, password_history: str | None) -> bool:
         return False
 
 
-def update_password_history(current_hash: str, 
-    password_history: str | None
+def update_password_history(
+    current_hash: str, password_history: str | None
 ) -> str:
     """
     Update password history with new hash.
