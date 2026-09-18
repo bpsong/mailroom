@@ -1,10 +1,10 @@
 """Tests for RBAC service and decorators."""
 
-from datetime import datetime
 from uuid import uuid4
 
 import pytest
 
+from app.clock import utc_now
 from app.models import User
 from app.services.rbac_service import rbac_service
 
@@ -22,8 +22,8 @@ def create_test_user(role: str) -> User:
         password_history=None,
         failed_login_count=0,
         locked_until=None,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=utc_now(),
+        updated_at=utc_now(),
     )
 
 

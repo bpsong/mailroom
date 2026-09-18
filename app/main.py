@@ -2,14 +2,25 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings
 from app.database.migrations import MigrationManager, run_initial_migration
 from app.database.write_queue import close_write_queue, get_write_queue
+from app.middleware import (
+    AuthenticationMiddleware,
+    CSRFMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
+from app.routes import admin, auth, dashboard, packages, recipients, user
+from app.templates import templates
 
 
 def configure_logging() -> None:
@@ -67,7 +78,7 @@ async def lifespan(app: FastAPI):
         expired_count = await auth_service.cleanup_expired_sessions()
         if expired_count > 0:
             logger.info(f"Cleaned up {expired_count} expired sessions on startup")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - non-critical startup cleanup, must not block boot
         logger.warning(f"Failed to cleanup expired sessions: {e}")
     
     yield
@@ -79,7 +90,7 @@ async def lifespan(app: FastAPI):
     try:
         await close_write_queue()
         logger.info("Write queue stopped")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - shutdown must be best-effort
         logger.error(f"Error stopping write queue: {e}")
 
 
@@ -94,13 +105,6 @@ app = FastAPI(
 )
 
 # Add middleware (order matters - last added is executed first)
-from app.middleware import (
-    AuthenticationMiddleware,
-    CSRFMiddleware,
-    RateLimitMiddleware,
-    SecurityHeadersMiddleware,
-)
-
 if settings.allowed_hosts_list:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 app.add_middleware(AuthenticationMiddleware)
@@ -112,17 +116,11 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Mount uploads directory for serving package photos
-from pathlib import Path
-
 uploads_dir = Path(settings.upload_dir)
 uploads_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
-# Import shared templates instance
 # Include routers
-from app.routes import admin, auth, dashboard, packages, recipients, user
-from app.templates import templates
-
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(packages.router)
@@ -164,11 +162,6 @@ async def health_check(request: Request):
 
 
 # Custom error handlers
-from fastapi import status
-from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException
-
-
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions with appropriate responses."""

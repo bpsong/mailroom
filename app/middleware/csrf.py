@@ -1,7 +1,8 @@
 """CSRF protection middleware."""
 
 import secrets
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from typing import cast
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -30,7 +31,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         "/openapi.json",
     )
     
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """
         Process request and validate CSRF token for state-changing requests.
         
@@ -147,7 +150,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if hasattr(request.state, "session") and hasattr(request.state.session, "csrf_token"):
             token = request.state.session.csrf_token
             request.state.csrf_token = token
-            return token
+            return cast(str, token)
         
         # Try to get from cookie
         csrf_token = request.cookies.get("csrf_token")

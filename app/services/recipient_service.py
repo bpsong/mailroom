@@ -1,9 +1,10 @@
 """Recipient management service for CRUD operations."""
 
 import logging
-from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
+from app.clock import utc_now
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
 from app.models import (
@@ -71,7 +72,7 @@ class RecipientService:
             RETURNING id, employee_id, name, email, department, phone, location,
                       is_active, created_at, updated_at
         """
-        timestamp = datetime.utcnow()
+        timestamp = utc_now()
         recipient_id = uuid4()
         
         write_queue = await get_write_queue()
@@ -316,7 +317,7 @@ class RecipientService:
         """
         # Build WHERE clause
         where_clauses = []
-        params = []
+        params: list[Any] = []
         
         if query:
             where_clauses.append(
@@ -380,7 +381,7 @@ class RecipientService:
         """
         # Build WHERE clause
         where_clauses = []
-        params = []
+        params: list[Any] = []
         
         if query:
             where_clauses.append(

@@ -1,5 +1,6 @@
 """Package management routes for all users."""
 
+import sqlite3
 from datetime import datetime
 from uuid import UUID
 
@@ -149,9 +150,10 @@ async def register_package(
     carrier: str = Form(...),
     recipient_id: str = Form(...),
     notes: str | None = Form(None),
-    photo: UploadFile | None = File(None),
+    photo: UploadFile | None = File(None),  # noqa: B008 - idiomatic FastAPI request parsing
     csrf_token: str = Form(...),
 ):
+
     """
     Register a new package with optional photo.
     
@@ -202,9 +204,9 @@ async def register_package(
         )
     
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error registering package: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error registering package: {str(e)}") from e
 
 
 @router.get("/{package_id}", response_class=HTMLResponse)
@@ -250,7 +252,7 @@ async def get_package_details(request: Request, package_id: str):
         )
     
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid package ID")
+        raise HTTPException(status_code=400, detail="Invalid package ID") from None
 
 
 @router.get("/{package_id}/detail-partial", response_class=HTMLResponse)
@@ -280,7 +282,7 @@ async def get_detail_partial(request: Request, package_id: str):
         )
 
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid package ID")
+        raise HTTPException(status_code=400, detail="Invalid package ID") from None
 
 
 @router.post("/{package_id}/status")
@@ -322,7 +324,7 @@ async def update_package_status(
             notes=notes,
         )
         
-        package = await package_service.update_status(package_uuid, status_update, user)
+        await package_service.update_status(package_uuid, status_update, user)
         package_detail = await package_service.get_package_detail(package_uuid)
 
         return templates.TemplateResponse(
@@ -339,7 +341,7 @@ async def update_package_status(
         try:
             package_uuid = UUID(package_id)
             package_detail = await package_service.get_package_detail(package_uuid)
-        except Exception:
+        except (ValueError, sqlite3.Error):
             package_detail = None
 
         return templates.TemplateResponse(
@@ -353,7 +355,7 @@ async def update_package_status(
             status_code=422,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating status: {str(e)}") from e
 
 
 @router.post("/{package_id}/photo")
@@ -361,7 +363,7 @@ async def update_package_status(
 async def add_package_photo(
     request: Request,
     package_id: str,
-    photo: UploadFile = File(...),
+    photo: UploadFile = File(...),  # noqa: B008 - idiomatic FastAPI request parsing
     csrf_token: str = Form(...),
 ):
     """
@@ -401,9 +403,9 @@ async def add_package_photo(
         )
     
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error adding photo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error adding photo: {str(e)}") from e
 
 
 @router.get("/{package_id}/qrcode/download")
@@ -421,7 +423,7 @@ async def download_qr_code(request: Request, package_id: str):
     Returns:
         PNG file download with proper Content-Disposition header
     """
-    user = get_current_user(request)
+    get_current_user(request)
     
     try:
         package_uuid = UUID(package_id)
@@ -444,13 +446,13 @@ async def download_qr_code(request: Request, package_id: str):
             }
         )
     
-    except HTTPException as exc:
+    except HTTPException:
         # Re-raise HTTP exceptions (e.g., 404) without wrapping
-        raise exc
+        raise
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid package ID")
+        raise HTTPException(status_code=400, detail="Invalid package ID") from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating QR code: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating QR code: {str(e)}") from e
 
 
 @router.get("/{package_id}/qrcode/print", response_class=HTMLResponse)
@@ -492,10 +494,10 @@ async def print_qr_code(request: Request, package_id: str):
             }
         )
     
-    except HTTPException as exc:
+    except HTTPException:
         # Re-raise expected HTTP exceptions (e.g., 404) without wrapping
-        raise exc
+        raise
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid package ID")
+        raise HTTPException(status_code=400, detail="Invalid package ID") from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating QR code: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating QR code: {str(e)}") from e

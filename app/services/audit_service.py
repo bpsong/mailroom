@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from app.clock import utc_now
 from app.config import settings
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
@@ -242,7 +243,7 @@ class AuditService:
         
         # Build WHERE clause
         where_clauses = []
-        params = []
+        params: list[Any] = []
         
         if user_id:
             where_clauses.append("ae.user_id = ?")
@@ -319,7 +320,7 @@ class AuditService:
         Returns:
             Number of records deleted
         """
-        cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+        cutoff_date = utc_now() - timedelta(days=retention_days)
         
         db = get_db()
         with db.get_read_connection() as conn:

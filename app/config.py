@@ -211,7 +211,7 @@ def load_settings() -> Settings:
         
         sys.exit(1)
     
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - config boundary: any load failure is fatal
         logger.error(f"Failed to load configuration: {e}")
         sys.exit(1)
 

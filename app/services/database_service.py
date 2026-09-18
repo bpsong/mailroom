@@ -2,7 +2,8 @@
 
 import asyncio
 import logging
-from typing import Any
+import sqlite3
+from typing import Any, cast
 
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
@@ -55,8 +56,8 @@ class DatabaseService:
                     result = conn.execute(query, params)
                 else:
                     result = conn.execute(query)
-                return result.fetchall()
-        except Exception as e:
+                return cast("list[tuple[Any, ...]]", result.fetchall())
+        except sqlite3.Error as e:
             logger.error(f"Error executing read query: {e}")
             raise
     
@@ -81,8 +82,8 @@ class DatabaseService:
                     result = conn.execute(query, params)
                 else:
                     result = conn.execute(query)
-                return result.fetchone()
-        except Exception as e:
+                return cast("tuple[Any, ...] | None", result.fetchone())
+        except sqlite3.Error as e:
             logger.error(f"Error executing read query: {e}")
             raise
     
@@ -205,7 +206,7 @@ class DatabaseService:
         try:
             result = await self.execute_read("SELECT 1")
             return len(result) > 0 and result[0][0] == 1
-        except Exception as e:
+        except sqlite3.Error as e:
             logger.error(f"Database connection check failed: {e}")
             return False
     
@@ -224,7 +225,7 @@ class DatabaseService:
                 f"SELECT COUNT(*) FROM {table_name}"
             )
             return result[0] if result else 0
-        except Exception as e:
+        except sqlite3.Error as e:
             logger.error(f"Error getting table count for {table_name}: {e}")
             return 0
     

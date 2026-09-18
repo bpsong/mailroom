@@ -1,11 +1,12 @@
 """Package management service for CRUD operations."""
 
 import logging
-from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi import UploadFile
 
+from app.clock import utc_now
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
 from app.models import (
@@ -82,7 +83,7 @@ class PackageService:
                       created_by, created_at, updated_at
         """
         package_id = uuid4()
-        timestamp = datetime.utcnow()
+        timestamp = utc_now()
         
         write_queue = await get_write_queue()
         result = await write_queue.execute(
@@ -235,7 +236,7 @@ class PackageService:
                 status_update.status,
                 exc,
             )
-            raise ValueError(f"Failed to update package status: {str(exc)}")
+            raise ValueError(f"Failed to update package status: {str(exc)}") from exc
         
         updated_package = await self.get_package_by_id(package_id)
         if not updated_package:
@@ -278,7 +279,7 @@ class PackageService:
         """
         # Build WHERE clause
         where_clauses = []
-        params = []
+        params: list[Any] = []
         date_column = "p.updated_at" if filters.date_field == "updated_at" else "p.created_at"
         
         if filters.query:
@@ -504,7 +505,7 @@ class PackageService:
                       uploaded_by, created_at
         """
         attachment_id = uuid4()
-        timestamp = datetime.utcnow()
+        timestamp = utc_now()
         
         write_queue = await get_write_queue()
         result = await write_queue.execute(
@@ -606,7 +607,7 @@ class PackageService:
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         event_id = uuid4()
-        timestamp = datetime.utcnow()
+        timestamp = utc_now()
         
         write_queue = await get_write_queue()
         await write_queue.execute(

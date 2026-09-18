@@ -71,7 +71,7 @@ class TestConcurrentPackageRegistration:
         """Feasible approximation: rapid multi-client registrations."""
         tracking_nos = [f"CONCURRENT-{i}-{uuid4().hex[:8]}" for i in range(3)]
 
-        for op, tracking in zip(multiple_operators["operators"], tracking_nos):
+        for op, tracking in zip(multiple_operators["operators"], tracking_nos, strict=True):
             client = TestClient(app)
             csrf = _login(client, op["username"], op["password"])
             response = client.post(

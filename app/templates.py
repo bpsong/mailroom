@@ -1,9 +1,10 @@
 """Shared Jinja2 templates configuration."""
 
-from datetime import datetime
+import sqlite3
 
 from fastapi.templating import Jinja2Templates
 
+from app.clock import utc_now
 from app.utils.template_helpers import csrf_input, csrf_token_value
 
 # Create shared templates instance
@@ -15,7 +16,7 @@ templates.env.globals["csrf_input"] = csrf_input
 
 # Footer globals
 # current_year is a callable so it is evaluated at render time, not once at startup.
-templates.env.globals["current_year"] = lambda: datetime.now().year
+templates.env.globals["current_year"] = lambda: utc_now().year
 
 
 def _get_company_name() -> str:
@@ -28,7 +29,7 @@ def _get_company_name() -> str:
                 "SELECT value FROM system_settings WHERE key = 'company_name'",
             ).fetchone()
             return result[0] if result else "Your Company"
-    except Exception:
+    except sqlite3.Error:
         return "Your Company"
 
 

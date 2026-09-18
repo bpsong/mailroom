@@ -41,6 +41,6 @@ async def get_dashboard(request: Request):
             "stats": stats,
             "top_recipients": top_recipients,
             "status_distribution": status_distribution,
-            "today": date.today().isoformat(),
+            "today": date.today().isoformat(),  # noqa: DTZ011 - calendar date has no tz concept
         },
     )

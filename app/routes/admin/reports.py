@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, StreamingResponse
 
+from app.clock import utc_now
 from app.decorators import get_current_user, require_role
 from app.models import PackageFilters, Pagination
 from app.services.package_service import package_service
@@ -127,7 +128,7 @@ async def export_packages_report(
     """Export packages report as CSV with filters."""
     from app.services.export_service import export_service
 
-    user = get_current_user(request)
+    get_current_user(request)
     date_from_dt = None
     date_to_dt = None
 
@@ -138,7 +139,7 @@ async def export_packages_report(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid date_from format. Use ISO format (YYYY-MM-DD)",
-            )
+            ) from None
 
     if date_to:
         try:
@@ -147,7 +148,7 @@ async def export_packages_report(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid date_to format. Use ISO format (YYYY-MM-DD)",
-            )
+            ) from None
 
     recipient_uuid = None
     created_by_uuid = None
@@ -159,7 +160,7 @@ async def export_packages_report(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid recipient_id format",
-            )
+            ) from None
 
     if created_by:
         try:
@@ -168,7 +169,7 @@ async def export_packages_report(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid created_by format",
-            )
+            ) from None
 
     try:
         csv_content = await export_service.export_packages_csv(
@@ -182,7 +183,7 @@ async def export_packages_report(
         )
 
         output = BytesIO(csv_content.encode("utf-8"))
-        filename = f"packages_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"packages_export_{utc_now().strftime('%Y%m%d_%H%M%S')}.csv"
 
         return StreamingResponse(
             output,
@@ -195,4 +196,4 @@ async def export_packages_report(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to export packages: {str(e)}",
-        )
+        ) from e

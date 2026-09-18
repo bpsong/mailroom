@@ -2,6 +2,7 @@
 
 import csv
 import io
+import sqlite3
 from collections.abc import Sequence
 from typing import Any
 
@@ -179,7 +180,7 @@ class CSVImportService:
             Tuple of (ImportResult, list of valid RecipientCreate objects)
         """
         result = ImportResult()
-        valid_recipients = []
+        valid_recipients: list[RecipientCreate] = []
         
         try:
             # Decode file content
@@ -223,7 +224,7 @@ class CSVImportService:
             result.add_error(0, "file", "File encoding error. Please use UTF-8 encoding")
         except csv.Error as e:
             result.add_error(0, "file", f"CSV parsing error: {str(e)}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - import must degrade to an error list, never crash
             result.add_error(0, "file", f"Unexpected error: {str(e)}")
         
         return result, valid_recipients
@@ -283,7 +284,7 @@ class CSVImportService:
                     await recipient_service.create_recipient(recipient_data)
                     result.created_count += 1
             
-            except Exception as e:
+            except (ValueError, sqlite3.Error) as e:
                 result.add_error(0, "import", f"Failed to import {recipient_data.employee_id}: {str(e)}")
         
         # Log import event

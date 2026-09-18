@@ -40,7 +40,7 @@ C:\Python313\python.exe -m pytest tests --cov=app --cov-report=html
 
 - The active suite covers unit, integration, E2E, RBAC, security, and concurrent-write behavior.
 - The SQLite migration is covered by the current tests.
-- A recent full run completed with `95 passed`.
+- A recent full run completed with `190 passed` (153 fast + 37 property).
 
 ## Coverage Areas
 

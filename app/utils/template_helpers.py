@@ -1,5 +1,6 @@
 """Template helper functions."""
 
+from typing import cast
 
 from fastapi import Request
 from jinja2 import pass_context
@@ -21,7 +22,7 @@ def get_csrf_token(request: Request) -> str:
     # Prefer token stored on request state (middleware)
     token = getattr(request.state, "csrf_token", None)
     if token:
-        return token
+        return cast(str, token)
     
     # Try to get from cookie
     csrf_token = request.cookies.get("csrf_token")

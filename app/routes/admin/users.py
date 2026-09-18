@@ -88,7 +88,7 @@ async def edit_user_page(request: Request, user_id: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
-        )
+        ) from None
 
     target_user = await user_service.get_user_by_id(target_user_id)
     if not target_user:
@@ -158,12 +158,12 @@ async def create_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create user: {str(e)}",
-        )
+        ) from e
 
 
 @router.api_route("/users/{user_id}/edit", methods=["POST", "PUT"])
@@ -190,7 +190,7 @@ async def edit_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
-        )
+        ) from None
 
     target_user = await user_service.get_user_by_id(target_user_id)
     if not target_user:
@@ -233,12 +233,12 @@ async def edit_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update user: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/users/{user_id}/deactivate")
@@ -263,7 +263,7 @@ async def deactivate_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
-        )
+        ) from None
 
     target_user = await user_service.get_user_by_id(target_user_id)
     if not target_user:
@@ -294,12 +294,12 @@ async def deactivate_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to deactivate user: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/users/{user_id}/password")
@@ -326,7 +326,7 @@ async def reset_user_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
-        )
+        ) from None
 
     target_user = await user_service.get_user_by_id(target_user_id)
     if not target_user:
@@ -356,9 +356,9 @@ async def reset_user_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reset password: {str(e)}",
-        )
+        ) from e

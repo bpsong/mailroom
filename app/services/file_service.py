@@ -1,44 +1,64 @@
 """File upload and storage service."""
 
 import uuid
-from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 from fastapi import UploadFile
 
+from app.clock import utc_now
+from app.config import settings
 from app.utils.sanitization import validate_file_content
 
-# Try to import python-magic, but fall back to manual detection if not available
+# Try to import python-magic, but fall back to manual detection if not available.
+# Annotated as Any up front so the fallback assignment type-checks.
+magic: Any
 try:
     import magic
-    MAGIC_AVAILABLE = True
-except (ImportError, OSError):
-    magic = None  # type: ignore[no-redef]
-    MAGIC_AVAILABLE = False
+except (ImportError, OSError):  # pragma: no cover - environment dependent
+    magic = None
 
-from app.config import settings
+MAGIC_AVAILABLE = magic is not None
 
 
 class FileService:
     """Service for handling file uploads and storage."""
-    
+
+    # Fallback defaults used when settings are unavailable (e.g. bare import
+    # in scripts). Normal operation always takes these from Settings so that
+    # MAX_UPLOAD_SIZE / ALLOWED_IMAGE_TYPES env vars take effect.
     ALLOWED_MIME_TYPES = {
         "image/jpeg",
         "image/png",
         "image/webp",
     }
-    
+
     MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB in bytes
-    
-    def __init__(self, upload_dir: str | None = None):
+
+    def __init__(
+        self,
+        upload_dir: str | None = None,
+        max_file_size: int | None = None,
+        allowed_mime_types: set[str] | list[str] | None = None,
+    ):
         """
         Initialize file service.
-        
+
         Args:
             upload_dir: Base directory for uploads (defaults to settings.upload_dir)
+            max_file_size: Maximum upload size in bytes
+                (defaults to settings.max_upload_size)
+            allowed_mime_types: Allowed MIME types
+                (defaults to settings.allowed_image_types_list)
         """
         self.upload_dir = Path(upload_dir or settings.upload_dir)
         self.upload_dir.mkdir(parents=True, exist_ok=True)
+        self.max_file_size = (
+            max_file_size if max_file_size is not None else settings.max_upload_size
+        )
+        if allowed_mime_types is None:
+            allowed_mime_types = settings.allowed_image_types_list
+        self.allowed_mime_types = set(allowed_mime_types)
     
     async def save_upload(
         self,
@@ -63,29 +83,29 @@ class FileService:
         file_size = len(content)
         
         # Validate file size
-        if file_size > self.MAX_FILE_SIZE:
+        if file_size > self.max_file_size:
             raise ValueError(
                 f"File size ({file_size} bytes) exceeds maximum allowed "
-                f"size ({self.MAX_FILE_SIZE} bytes)"
+                f"size ({self.max_file_size} bytes)"
             )
-        
+
         # Validate file type by content (not just extension)
-        mime_type = validate_file_content(content, list(self.ALLOWED_MIME_TYPES))
+        mime_type = validate_file_content(content, sorted(self.allowed_mime_types))
         if not mime_type:
             detected = self._detect_mime_type(content)
             raise ValueError(
                 f"File type '{detected}' is not allowed. "
-                f"Allowed types: {', '.join(self.ALLOWED_MIME_TYPES)}"
+                f"Allowed types: {', '.join(sorted(self.allowed_mime_types))}"
             )
         
         # Generate unique filename with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
         extension = self._get_extension_for_mime_type(mime_type)
         filename = f"{timestamp}_{unique_id}{extension}"
         
         # Organize by year/month directory structure
-        now = datetime.now()
+        now = utc_now()
         year_month_dir = self.upload_dir / category / str(now.year) / f"{now.month:02d}"
         year_month_dir.mkdir(parents=True, exist_ok=True)
         
@@ -102,28 +122,40 @@ class FileService:
     def validate_file(
         self,
         file: UploadFile,
-        allowed_types: list[str] | None = None,
+        allowed_types: list[str] | set[str] | None = None,
         max_size: int | None = None,
     ) -> None:
         """
-        Validate file without saving it.
-        
+        Header-level pre-check without reading the file body.
+
+        This cannot verify content (that happens in :meth:`save_upload`);
+        it only rejects requests whose declared size or content type already
+        violate the limits, so oversized bodies fail fast at the edge.
+
         Args:
             file: Uploaded file object
-            allowed_types: List of allowed MIME types (defaults to ALLOWED_MIME_TYPES)
-            max_size: Maximum file size in bytes (defaults to MAX_FILE_SIZE)
-            
+            allowed_types: Allowed MIME types (defaults to this service's allowlist)
+            max_size: Maximum file size in bytes (defaults to this service's limit)
+
         Raises:
-            ValueError: If validation fails
+            ValueError: If the declared headers violate the limits
         """
-        allowed = allowed_types or self.ALLOWED_MIME_TYPES
-        max_size = max_size or self.MAX_FILE_SIZE
-        
+        allowed = set(allowed_types) if allowed_types is not None else self.allowed_mime_types
+        limit = max_size if max_size is not None else self.max_file_size
+
         # Check file size from content-length header if available
-        if file.size and file.size > max_size:
+        if file.size and file.size > limit:
             raise ValueError(
                 f"File size ({file.size} bytes) exceeds maximum allowed "
-                f"size ({max_size} bytes)"
+                f"size ({limit} bytes)"
+            )
+
+        # Check declared content type (client-supplied: pre-check only,
+        # content is re-validated by magic bytes in save_upload).
+        if file.content_type and file.content_type not in allowed:
+            raise ValueError(
+                f"Content type '{file.content_type}' is not allowed. "
+                f"Allowed types: {', '.join(sorted(allowed))}"
             )
     
     def get_file_path(self, relative_path: str) -> Path:
@@ -168,8 +200,8 @@ class FileService:
             try:
                 # Try using python-magic if available
                 mime = magic.Magic(mime=True)
-                return mime.from_buffer(content)
-            except Exception:
+                return cast(str, mime.from_buffer(content))
+            except Exception:  # noqa: BLE001 - libmagic failures must fall through to manual detection
                 pass  # Fall through to manual detection
         
         # Fallback to simple detection based on magic bytes

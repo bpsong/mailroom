@@ -7,9 +7,9 @@ import hashlib
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
+from app.clock import utc_now
 from app.config import settings
 from app.database.connection import create_connection
 
@@ -53,7 +53,7 @@ class WriteQueue:
         self.worker_task: asyncio.Task | None = None
         self.is_running = False
         self.transaction_count = 0
-        self.last_checkpoint = datetime.now()
+        self.last_checkpoint = utc_now()
         self.result_timeout_seconds = float(
             getattr(settings, "write_queue_result_timeout", 30.0)
         )
@@ -230,7 +230,7 @@ class WriteQueue:
         try:
             if not future.done() and not future.cancelled():
                 future.set_result(value)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - future mechanics vary; worker must stay alive
             logger.warning("Failed setting write queue result future: %s", exc)
 
     def _resolve_future_error(self, future: asyncio.Future, exc: Exception) -> None:
@@ -238,7 +238,7 @@ class WriteQueue:
         try:
             if not future.done() and not future.cancelled():
                 future.set_exception(exc)
-        except Exception as set_exc:
+        except Exception as set_exc:  # noqa: BLE001 - future mechanics vary; worker must stay alive
             logger.warning("Failed setting write queue exception future: %s", set_exc)
 
     async def _worker(self) -> None:
@@ -298,7 +298,7 @@ class WriteQueue:
                         if operation.callback:
                             operation.callback(raw_result)
 
-                    except Exception as exc:
+                    except Exception as exc:  # noqa: BLE001 - worker must survive bad operations; error goes to future
                         logger.error(
                             "Error executing write operation op=%s query=%s params=%s error=%s",
                             op_fingerprint,
@@ -308,7 +308,7 @@ class WriteQueue:
                         )
                         try:
                             conn.rollback()
-                        except Exception as rollback_error:
+                        except Exception as rollback_error:  # noqa: BLE001 - rollback is best-effort inside error path
                             logger.warning(
                                 "Rollback skipped/failed op=%s reason=%s",
                                 op_fingerprint,
@@ -336,7 +336,7 @@ class WriteQueue:
 
     async def _check_checkpoint(self, conn) -> None:
         """Checkpoint the SQLite WAL periodically."""
-        now = datetime.now()
+        now = utc_now()
         time_since_checkpoint = (now - self.last_checkpoint).total_seconds()
 
         if self.transaction_count >= 1000 or time_since_checkpoint >= self.checkpoint_interval:
@@ -345,7 +345,7 @@ class WriteQueue:
                 self.transaction_count = 0
                 self.last_checkpoint = now
                 logger.debug("Database checkpoint completed")
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - checkpoint failure must not kill the worker
                 logger.error("Error during checkpoint: %s", exc)
 
 

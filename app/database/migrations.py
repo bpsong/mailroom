@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import secrets
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -141,7 +142,7 @@ class MigrationManager:
                 WHERE department IS NULL OR TRIM(department) = ''
                 """
             )
-        except Exception as exc:
+        except sqlite3.Error as exc:
             logger.error("Failed to enforce recipient department requirement: %s", exc)
         finally:
             conn.close()
@@ -164,7 +165,7 @@ class MigrationManager:
                     (name,),
                 )
             logger.info("Seeded %d default carriers", len(default_carriers))
-        except Exception as exc:
+        except sqlite3.Error as exc:
             logger.error("Failed to seed default carriers: %s", exc)
         finally:
             conn.close()

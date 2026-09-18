@@ -1,6 +1,7 @@
 """User management service for CRUD operations."""
 
 import json
+from typing import Any
 from uuid import UUID
 
 from app.database.connection import get_db
@@ -485,7 +486,7 @@ class UserService:
         """
         # Build WHERE clause
         where_clauses = []
-        params = []
+        params: list[Any] = []
         
         if query:
             where_clauses.append("(username LIKE ? OR full_name LIKE ?)")

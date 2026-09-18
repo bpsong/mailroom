@@ -2,7 +2,7 @@
 
 import time
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -113,7 +113,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/uploads/",
     )
     
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """
         Process request and enforce rate limits.
         

@@ -30,7 +30,7 @@ def _convert_timestamp(raw: bytes) -> datetime:
     try:
         return datetime.fromisoformat(value)
     except ValueError:
-        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")  # noqa: DTZ007 - legacy naive-UTC storage format
 
 
 sqlite3.register_adapter(datetime, _adapt_datetime)

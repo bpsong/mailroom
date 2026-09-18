@@ -95,7 +95,7 @@ async def terminate_session(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid session ID",
-        )
+        ) from None
     
     # Terminate the session
     success = await auth_service.terminate_session_by_id(session_uuid, user.id)
@@ -318,9 +318,9 @@ async def change_own_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to change password: {str(e)}",
-        )
+        ) from e

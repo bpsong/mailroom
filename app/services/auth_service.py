@@ -1,19 +1,22 @@
-"""Authentication service for password hashing and validation."""
+"""Authentication orchestration: login flow, lockout, and audit events.
+
+Password hashing/policy lives in :mod:`app.services.password_policy` and
+session persistence in :mod:`app.services.session_store`. This module keeps
+the historic :class:`AuthService` API so routes, middleware, and tests are
+unaffected: methods below delegate to those focused modules.
+"""
 
 import json
 import logging
-import re
-import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
-
+from app.clock import utc_now
 from app.config import settings
 from app.database.write_queue import get_write_queue
-from app.models import Session, SessionCreate, User
+from app.models import Session, User
+from app.services import password_policy, session_store
 
 logger = logging.getLogger(__name__)
 
@@ -29,148 +32,72 @@ class AuthenticationError(Exception):
 
 
 class AuthService:
-    """Service for authentication operations including password hashing and session management."""
-    
-    def __init__(self):
-        """Initialize the authentication service with Argon2 hasher."""
-        self.hasher = PasswordHasher(
-            time_cost=settings.argon2_time_cost,
-            memory_cost=settings.argon2_memory_cost,
-            parallelism=settings.argon2_parallelism,
-        )
-    
+    """Facade over password policy and session storage plus login orchestration."""
+
+    # -- Password policy delegates (see app.services.password_policy) --
+
     def hash_password(self, password: str) -> str:
-        """
-        Hash a password using Argon2id.
-        
-        Args:
-            password: Plain text password to hash
-            
-        Returns:
-            Hashed password string
-        """
-        return self.hasher.hash(password)
-    
+        """Hash a password using Argon2id."""
+        return password_policy.hash_password(password)
+
     def verify_password(self, password: str, password_hash: str) -> bool:
-        """
-        Verify a password against its hash.
-        
-        Args:
-            password: Plain text password to verify
-            password_hash: Hashed password to verify against
-            
-        Returns:
-            True if password matches, False otherwise
-        """
-        try:
-            self.hasher.verify(password_hash, password)
-            return True
-        except VerifyMismatchError:
-            return False
-    
+        """Verify a password against its hash; corrupt hashes verify as False."""
+        return password_policy.verify_password(password, password_hash)
+
     def validate_password_strength(self, password: str) -> tuple[bool, str | None]:
-        """
-        Validate password meets strength requirements.
-        
-        Requirements:
-        - At least 12 characters
-        - At least one uppercase letter
-        - At least one lowercase letter
-        - At least one digit
-        - At least one special character
-        
-        Args:
-            password: Password to validate
-            
-        Returns:
-            Tuple of (is_valid, error_message)
-        """
-        if len(password) < settings.password_min_length:
-            return False, f"Password must be at least {settings.password_min_length} characters long"
-        
-        if not re.search(r"[A-Z]", password):
-            return False, "Password must contain at least one uppercase letter"
-        
-        if not re.search(r"[a-z]", password):
-            return False, "Password must contain at least one lowercase letter"
-        
-        if not re.search(r"\d", password):
-            return False, "Password must contain at least one digit"
-        
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-            return False, "Password must contain at least one special character"
-        
-        return True, None
-    
+        """Validate password meets strength requirements."""
+        return password_policy.validate_password_strength(password)
+
     def check_password_history(self, password: str, password_history: str | None) -> bool:
-        """
-        Check if password was used in recent history.
-        
-        Args:
-            password: Plain text password to check
-            password_history: JSON string of previous password hashes
-            
-        Returns:
-            True if password is in history (should be rejected), False otherwise
-        """
-        if not password_history:
-            return False
-        
-        try:
-            history = json.loads(password_history)
-            if not isinstance(history, list):
-                return False
-            
-            # Check against last N passwords
-            for old_hash in history[-settings.password_history_count:]:
-                if self.verify_password(password, old_hash):
-                    return True
-            
-            return False
-        except (json.JSONDecodeError, Exception):
-            return False
-    
-    def update_password_history(
-        self, 
-        current_hash: str, 
-        password_history: str | None
-    ) -> str:
-        """
-        Update password history with new hash.
-        
-        Args:
-            current_hash: New password hash to add
-            password_history: Existing password history JSON string
-            
-        Returns:
-            Updated password history JSON string
-        """
-        try:
-            if password_history:
-                history = json.loads(password_history)
-                if not isinstance(history, list):
-                    history = []
-            else:
-                history = []
-        except json.JSONDecodeError:
-            history = []
-        
-        # Add current hash to history
-        history.append(current_hash)
-        
-        # Keep only the last N+1 passwords (current + history)
-        history = history[-(settings.password_history_count + 1):]
-        
-        return json.dumps(history)
-    
+        """Check if password was used in recent history."""
+        return password_policy.check_password_history(password, password_history)
+
+    def update_password_history(self, current_hash: str, password_history: str | None) -> str:
+        """Update password history with new hash."""
+        return password_policy.update_password_history(current_hash, password_history)
+
+    # -- Session store delegates (see app.services.session_store) --
+
     def generate_session_token(self) -> str:
-        """
-        Generate a secure random session token.
-        
-        Returns:
-            Secure random token string
-        """
-        return secrets.token_urlsafe(32)
+        """Generate a secure random session token."""
+        return session_store.generate_session_token()
+
+    async def create_session(
+        self,
+        user_id: UUID,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> Session:
+        """Create a new session for a user."""
+        return await session_store.create_session(user_id, ip_address, user_agent)
+
+    async def validate_session(self, token: str) -> tuple[Session, User] | None:
+        """Validate a session token and return session and user if valid."""
+        return await session_store.validate_session(token)
+
+    async def renew_session(self, token: str) -> bool:
+        """Renew a session by extending its expiration time."""
+        return await session_store.renew_session(token)
+
+    async def terminate_session(self, token: str) -> bool:
+        """Terminate a session by deleting it from the database."""
+        return await session_store.terminate_session(token)
+
+    async def terminate_user_sessions(self, user_id: UUID) -> bool:
+        """Terminate all sessions for a user."""
+        return await session_store.terminate_user_sessions(user_id)
+
+    async def cleanup_expired_sessions(self) -> int:
+        """Delete expired sessions; returns the number deleted."""
+        return await session_store.cleanup_expired_sessions()
+
+    async def get_user_sessions(self, user_id: UUID) -> list[Session]:
+        """Get all active sessions for a user."""
+        return await session_store.get_user_sessions(user_id)
+
+    async def terminate_session_by_id(self, session_id: UUID, user_id: UUID) -> bool:
+        """Terminate a specific session by ID (only if it belongs to the user)."""
+        return await session_store.terminate_session_by_id(session_id, user_id)
 
     async def authenticate_user(
         self,
@@ -281,380 +208,6 @@ class AuthService:
 
         await self.reset_failed_login(username)
         return user
-
-    async def create_session(
-        self,
-        user_id: UUID,
-        ip_address: str | None = None,
-        user_agent: str | None = None,
-    ) -> Session:
-        """
-        Create a new session for a user.
-        
-        Enforces maximum concurrent sessions per user (default: 3).
-        If limit is exceeded, oldest sessions are terminated.
-        
-        Args:
-            user_id: ID of the user
-            ip_address: IP address of the client
-            user_agent: User agent string of the client
-            
-        Returns:
-            Created session object
-        """
-        from app.database.connection import get_db
-        
-        # Check current active session count
-        db = get_db()
-        with db.get_read_connection() as conn:
-            result = conn.execute(
-                """
-                SELECT id, created_at
-                FROM sessions
-                WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP
-                ORDER BY created_at ASC
-                """,
-                [str(user_id)],
-            ).fetchall()
-        
-        # Enforce max concurrent sessions (configurable, default 3)
-        max_sessions = getattr(settings, 'max_concurrent_sessions', 3)
-        logger.debug(
-            "Preparing to create session for user_id=%s active_sessions=%s max_sessions=%s",
-            user_id,
-            len(result),
-            max_sessions,
-        )
-        
-        if len(result) >= max_sessions:
-            # Delete oldest sessions to make room
-            sessions_to_delete = len(result) - max_sessions + 1
-            oldest_session_ids = [row[0] for row in result[:sessions_to_delete]]
-            
-            write_queue = await get_write_queue()
-            logger.debug(
-                "Session cap exceeded for user_id=%s; deleting %s oldest sessions; queue_depth_before_delete=%s",
-                user_id,
-                len(oldest_session_ids),
-                write_queue.queue.qsize(),
-            )
-            for session_id in oldest_session_ids:
-                await write_queue.execute(
-                    "DELETE FROM sessions WHERE id = ?",
-                    [session_id],
-                )
-        
-        # Generate new session
-        token = self.generate_session_token()
-        expires_at = datetime.now() + timedelta(seconds=settings.session_timeout)
-        logger.debug(
-            "Generated session token for user_id=%s token_prefix=%s expires_at=%s",
-            user_id,
-            token[:8],
-            expires_at,
-        )
-        
-        session_data = SessionCreate(
-            user_id=user_id,
-            token=token,
-            expires_at=expires_at,
-            ip_address=ip_address,
-            user_agent=user_agent,
-        )
-        
-        # Insert session into database
-        query = """
-            INSERT INTO sessions (user_id, token, expires_at, ip_address, user_agent)
-            VALUES (?, ?, ?, ?, ?)
-            RETURNING id, user_id, token, expires_at, last_activity, ip_address, user_agent, created_at
-        """
-        
-        write_queue = await get_write_queue()
-        logger.debug(
-            "Enqueuing session insert for user_id=%s token_prefix=%s queue_depth_before_insert=%s",
-            user_id,
-            token[:8],
-            write_queue.queue.qsize(),
-        )
-        result = await write_queue.execute(
-            query,
-            [
-                str(session_data.user_id),
-                session_data.token,
-                session_data.expires_at,
-                session_data.ip_address,
-                session_data.user_agent,
-            ],
-            return_result=True,
-        )
-
-        row = result[0]
-        logger.debug(
-            "Session insert completed for user_id=%s session_id=%s token_prefix=%s queue_depth_after_insert=%s",
-            user_id,
-            row[0],
-            token[:8],
-            write_queue.queue.qsize(),
-        )
-        # Verify session is immediately visible to read connections
-        try:
-            with db.get_read_connection() as conn:
-                visibility = conn.execute(
-                    "SELECT 1 FROM sessions WHERE token = ?",
-                    [token],
-                ).fetchone()
-                logger.debug(
-                    "Post-insert visibility for session token_prefix=%s exists=%s",
-                    token[:8],
-                    bool(visibility),
-                )
-        except Exception as exc:
-            logger.warning(
-                "Session visibility check failed for token_prefix=%s: %s",
-                token[:8],
-                exc,
-            )
-        
-        return Session(
-            id=row[0],
-            user_id=row[1],
-            token=row[2],
-            expires_at=row[3],
-            last_activity=row[4],
-            ip_address=row[5],
-            user_agent=row[6],
-            created_at=row[7],
-        )
-    
-    async def validate_session(self, token: str) -> tuple[Session, User] | None:
-        """
-        Validate a session token and return session and user if valid.
-        
-        Args:
-            token: Session token to validate
-            
-        Returns:
-            Tuple of (Session, User) if valid, None otherwise
-        """
-        from app.database.connection import get_db
-        
-        db = get_db()
-        with db.get_read_connection() as conn:
-            # Get session with user data
-            result = conn.execute(
-                """
-                SELECT 
-                    s.id, s.user_id, s.token, s.expires_at, s.last_activity,
-                    s.ip_address, s.user_agent, s.created_at,
-                    u.id, u.username, u.password_hash, u.full_name, u.role,
-                    u.is_active, u.must_change_password, u.password_history,
-                    u.failed_login_count, u.locked_until, u.created_at, u.updated_at
-                FROM sessions s
-                JOIN users u ON s.user_id = u.id
-                WHERE s.token = ? AND s.expires_at > CURRENT_TIMESTAMP
-                """,
-                [token],
-            ).fetchone()
-            
-            if not result:
-                logger.debug("Session token not found/expired token_prefix=%s", token[:8])
-                return None
-            
-            # Parse session
-            session = Session(
-                id=result[0],
-                user_id=result[1],
-                token=result[2],
-                expires_at=result[3],
-                last_activity=result[4],
-                ip_address=result[5],
-                user_agent=result[6],
-                created_at=result[7],
-            )
-            
-            # Parse user
-            user = User(
-                id=result[8],
-                username=result[9],
-                password_hash=result[10],
-                full_name=result[11],
-                role=result[12],
-                is_active=result[13],
-                must_change_password=result[14],
-                password_history=result[15],
-                failed_login_count=result[16],
-                locked_until=result[17],
-                created_at=result[18],
-                updated_at=result[19],
-            )
-            
-            # Check if user is active
-            if not user.is_active:
-                return None
-            
-            logger.debug(
-                "Validated session token token_prefix=%s for user '%s'",
-                token[:8],
-                user.username,
-            )
-            return session, user
-    
-    async def renew_session(self, token: str) -> bool:
-        """
-        Renew a session by extending its expiration time.
-        
-        Args:
-            token: Session token to renew
-            
-        Returns:
-            True if renewed successfully, False otherwise
-        """
-        new_expires_at = datetime.now() + timedelta(seconds=settings.session_timeout)
-        
-        query = """
-            UPDATE sessions
-            SET expires_at = ?, last_activity = CURRENT_TIMESTAMP
-            WHERE token = ? AND expires_at > CURRENT_TIMESTAMP
-        """
-        
-        try:
-            write_queue = await get_write_queue()
-            await write_queue.execute(query, [new_expires_at, token])
-            return True
-        except Exception:
-            return False
-    
-    async def terminate_session(self, token: str) -> bool:
-        """
-        Terminate a session by deleting it from the database.
-        
-        Args:
-            token: Session token to terminate
-            
-        Returns:
-            True if terminated successfully, False otherwise
-        """
-        query = "DELETE FROM sessions WHERE token = ?"
-        
-        try:
-            write_queue = await get_write_queue()
-            await write_queue.execute(query, [token])
-            return True
-        except Exception:
-            return False
-    
-    async def terminate_user_sessions(self, user_id: UUID) -> bool:
-        """
-        Terminate all sessions for a user.
-        
-        Args:
-            user_id: ID of the user
-            
-        Returns:
-            True if terminated successfully, False otherwise
-        """
-        query = "DELETE FROM sessions WHERE user_id = ?"
-        
-        try:
-            write_queue = await get_write_queue()
-            await write_queue.execute(query, [str(user_id)])
-            return True
-        except Exception:
-            return False
-    
-    async def cleanup_expired_sessions(self) -> int:
-        """
-        Clean up all expired sessions from the database.
-        
-        This should be called on application startup and periodically
-        to remove stale session data.
-        
-        Returns:
-            Number of sessions deleted
-        """
-        from app.database.connection import get_db
-
-        query = "DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP"
-        
-        try:
-            db = get_db()
-            with db.get_read_connection() as conn:
-                # First count how many will be deleted
-                count_result = conn.execute(
-                    "SELECT COUNT(*) FROM sessions WHERE expires_at < CURRENT_TIMESTAMP"
-                ).fetchone()
-                count = count_result[0] if count_result else 0
-            
-            if count > 0:
-                write_queue = await get_write_queue()
-                await write_queue.execute(query, [])
-                logger.info(f"Cleaned up {count} expired sessions")
-            
-            return count
-        except Exception:
-            return False
-    
-    async def get_user_sessions(self, user_id: UUID) -> list[Session]:
-        """
-        Get all active sessions for a user.
-        
-        Args:
-            user_id: ID of the user
-            
-        Returns:
-            List of active sessions
-        """
-        from app.database.connection import get_db
-        
-        db = get_db()
-        with db.get_read_connection() as conn:
-            results = conn.execute(
-                """
-                SELECT id, user_id, token, created_at, expires_at, last_activity,
-                       ip_address, user_agent
-                FROM sessions
-                WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP
-                ORDER BY last_activity DESC
-                """,
-                [str(user_id)],
-            ).fetchall()
-        
-        sessions = []
-        for row in results:
-            sessions.append(
-                Session(
-                    id=row[0],
-                    user_id=row[1],
-                    token=row[2],
-                    created_at=row[3],
-                    expires_at=row[4],
-                    last_activity=row[5],
-                    ip_address=row[6],
-                    user_agent=row[7],
-                )
-            )
-        
-        return sessions
-    
-    async def terminate_session_by_id(self, session_id: UUID, user_id: UUID) -> bool:
-        """
-        Terminate a specific session by ID (only if it belongs to the user).
-        
-        Args:
-            session_id: ID of the session to terminate
-            user_id: ID of the user (for ownership verification)
-            
-        Returns:
-            True if terminated successfully, False otherwise
-        """
-        query = "DELETE FROM sessions WHERE id = ? AND user_id = ?"
-        
-        try:
-            write_queue = await get_write_queue()
-            await write_queue.execute(query, [str(session_id), str(user_id)])
-            return True
-        except Exception:
-            return False
     
     async def check_account_lockout(self, username: str) -> tuple[bool, datetime | None]:
         """
@@ -685,7 +238,7 @@ class AuthService:
             locked_until, failed_count = result
             
             # Check if account is currently locked
-            if locked_until and locked_until > datetime.now():
+            if locked_until and locked_until > utc_now():
                 return True, locked_until
             
             return False, None
@@ -715,7 +268,7 @@ class AuthService:
         # Lock account if threshold exceeded
         write_queue = await get_write_queue()
         if failed_count >= settings.max_failed_logins:
-            locked_until = datetime.now() + timedelta(
+            locked_until = utc_now() + timedelta(
                 seconds=settings.account_lockout_duration
             )
             query = """

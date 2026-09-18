@@ -1,10 +1,11 @@
 """System settings service for managing system-wide configuration."""
 
 import logging
-from datetime import datetime
+import sqlite3
 from urllib.parse import urlsplit
 from uuid import UUID
 
+from app.clock import utc_now
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
 from app.services.audit_service import audit_service
@@ -27,7 +28,7 @@ class SystemSettingsService:
                 result = conn.execute(
                     "SELECT value FROM system_settings WHERE key = 'qr_base_url'",
                 ).fetchone()
-            except Exception as exc:
+            except sqlite3.Error as exc:
                 # Table may not exist in freshly initialized test databases; fall back
                 logger.debug("System settings table unavailable when reading qr_base_url: %s", exc)
                 return None
@@ -74,7 +75,7 @@ class SystemSettingsService:
         write_queue = await get_write_queue()
         await write_queue.execute(
             query,
-            [url, str(actor_id), datetime.utcnow()],
+            [url, str(actor_id), utc_now()],
         )
         
         # Log to audit trail
@@ -104,7 +105,7 @@ class SystemSettingsService:
                 result = conn.execute(
                     "SELECT value FROM system_settings WHERE key = 'company_name'",
                 ).fetchone()
-            except Exception as exc:
+            except sqlite3.Error as exc:
                 logger.debug("System settings table unavailable when reading company_name: %s", exc)
                 return "Your Company"
 

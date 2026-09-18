@@ -91,7 +91,7 @@ async def search_recipients(
     Returns:
         HTML with matching recipients or JSON based on Accept header
     """
-    user = get_current_user(request)
+    get_current_user(request)
     
     # Search recipients (active only for autocomplete)
     recipients = await recipient_service.search_recipients(

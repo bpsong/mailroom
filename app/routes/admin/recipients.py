@@ -118,12 +118,12 @@ async def create_recipient(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create recipient: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/recipients/{recipient_id}/edit", response_class=HTMLResponse)
@@ -138,7 +138,7 @@ async def edit_recipient_page(request: Request, recipient_id: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid recipient ID format",
-        )
+        ) from None
 
     recipient = await recipient_service.get_recipient_by_id(recipient_uuid)
     if not recipient:
@@ -184,7 +184,7 @@ async def edit_recipient(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid recipient ID format",
-        )
+        ) from None
 
     recipient_data = RecipientUpdate(
         name=name,
@@ -207,12 +207,12 @@ async def edit_recipient(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update recipient: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/recipients/{recipient_id}/deactivate")
@@ -237,7 +237,7 @@ async def deactivate_recipient(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid recipient ID format",
-        )
+        ) from None
 
     try:
         await recipient_service.deactivate_recipient(recipient_uuid)
@@ -249,12 +249,12 @@ async def deactivate_recipient(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to deactivate recipient: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/recipients/import", response_class=HTMLResponse)
@@ -276,7 +276,7 @@ async def import_recipients_page(request: Request):
 @require_role("admin")
 async def validate_recipients_csv(
     request: Request,
-    file: UploadFile = File(...),
+    file: UploadFile = File(...),  # noqa: B008 - idiomatic FastAPI request parsing
     csrf_token: str = Form(...),
 ):
     """Validate CSV file in dry-run mode."""
@@ -310,14 +310,14 @@ async def validate_recipients_csv(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to validate CSV: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/recipients/import/confirm")
 @require_role("admin")
 async def import_recipients_csv(
     request: Request,
-    file: UploadFile = File(...),
+    file: UploadFile = File(...),  # noqa: B008 - idiomatic FastAPI request parsing
     csrf_token: str = Form(...),
 ):
     """Import recipients from a validated CSV file."""
@@ -365,4 +365,4 @@ async def import_recipients_csv(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to import CSV: {str(e)}",
-        )
+        ) from e

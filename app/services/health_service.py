@@ -2,11 +2,13 @@
 
 import logging
 import shutil
+import sqlite3
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from app.clock import utc_now
 from app.config import settings
 from app.services.database_service import get_database_service
 
@@ -53,7 +55,7 @@ class HealthService:
                     "connected": False
                 }
         
-        except Exception as e:
+        except sqlite3.Error as e:
             logger.error(f"Database health check error: {e}")
             return {
                 "status": "unhealthy",
@@ -102,7 +104,7 @@ class HealthService:
                 }
             }
         
-        except Exception as e:
+        except (OSError, ZeroDivisionError) as e:
             logger.error(f"Disk space check error: {e}")
             return {
                 "status": "error",
@@ -128,12 +130,12 @@ class HealthService:
             
             return {
                 "status": "healthy",
-                "started_at": datetime.fromtimestamp(_app_start_time).isoformat(),
+                "started_at": datetime.fromtimestamp(_app_start_time, tz=UTC).isoformat(),
                 "uptime_seconds": int(uptime_seconds),
                 "uptime_formatted": f"{days}d {hours}h {minutes}m {seconds}s"
             }
         
-        except Exception as e:
+        except (OSError, OverflowError, ValueError) as e:
             logger.error(f"Uptime check error: {e}")
             return {
                 "status": "error",
@@ -167,7 +169,7 @@ class HealthService:
         
         return {
             "status": overall_status,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "version": "1.0.0",
             "checks": {
                 "database": database_health,

@@ -3,6 +3,7 @@
 import csv
 from datetime import datetime
 from io import StringIO
+from typing import Any
 from uuid import UUID
 
 from app.database.connection import get_db
@@ -50,7 +51,7 @@ class ExportService:
         """
         # Build WHERE clause
         where_clauses = []
-        params = []
+        params: list[Any] = []
         
         if query:
             where_clauses.append(

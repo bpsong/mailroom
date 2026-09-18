@@ -1,13 +1,14 @@
 """Authentication middleware for validating sessions."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.clock import utc_now
 from app.config import settings
 from app.services.auth_service import auth_service
 
@@ -34,7 +35,9 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         "/favicon.ico",
     )
     
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """
         Process request and validate authentication.
         
@@ -100,7 +103,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             if getattr(expires_at, "tzinfo", None) is not None:
                 now = datetime.now(UTC).astimezone(expires_at.tzinfo)
             else:
-                now = datetime.now()
+                now = utc_now()
 
             remaining = expires_at - now
             if remaining <= renew_threshold:
@@ -111,7 +114,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     renew_threshold,
                 )
                 await auth_service.renew_session(session_token)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - renewal is best-effort; must never break requests
             # Avoid failing authenticated requests because of non-critical
             # session renewal calculation/refresh issues.
             logger.warning(
