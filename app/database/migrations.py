@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import secrets
 from dataclasses import dataclass
@@ -87,6 +88,8 @@ class MigrationManager:
                 )
 
             password_hash = self.ph.hash(temporary_password)
+            # Seed password history so rotation policy applies from day one.
+            password_history = json.dumps([password_hash])
             conn.execute(
                 """
                 INSERT INTO users (
@@ -95,10 +98,11 @@ class MigrationManager:
                     full_name,
                     role,
                     is_active,
-                    must_change_password
-                ) VALUES (?, ?, ?, 'super_admin', 1, 1)
+                    must_change_password,
+                    password_history
+                ) VALUES (?, ?, ?, 'super_admin', 1, 1, ?)
                 """,
-                (username, password_hash, full_name),
+                (username, password_hash, full_name, password_history),
             )
 
             logger.info("Super admin user '%s' created successfully", username)

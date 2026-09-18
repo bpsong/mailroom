@@ -345,13 +345,20 @@ class UserService:
             raise ValueError(
                 f"Password was used recently. Please choose a different password."
             )
-        
+
+        # Reject rotation to the identical password even when history is
+        # empty/unseeded (e.g. bootstrapped or legacy rows with NULL history).
+        if auth_service.verify_password(new_password, user.password_hash):
+            raise ValueError(
+                f"Password was used recently. Please choose a different password."
+            )
+
         # Hash new password
         new_hash = auth_service.hash_password(new_password)
-        
+
         # Update password history
         new_history = auth_service.update_password_history(new_hash, user.password_history)
-        
+
         # Update password in database
         query = """
             UPDATE users
@@ -419,13 +426,20 @@ class UserService:
             raise ValueError(
                 f"Password was used recently. Please choose a different password."
             )
-        
+
+        # Reject rotation to the identical password even when history is
+        # empty/unseeded (e.g. bootstrapped or legacy rows with NULL history).
+        if auth_service.verify_password(new_password, user.password_hash):
+            raise ValueError(
+                f"Password was used recently. Please choose a different password."
+            )
+
         # Hash new password
         new_hash = auth_service.hash_password(new_password)
-        
+
         # Update password history
         new_history = auth_service.update_password_history(new_hash, user.password_history)
-        
+
         # Update password in database
         query = """
             UPDATE users

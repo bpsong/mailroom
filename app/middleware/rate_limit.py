@@ -133,9 +133,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         # Get rate limit for this route
         limit = self.ROUTE_LIMITS.get(request.url.path, self.DEFAULT_LIMIT)
-        
+
+        # Use a method-aware bucket so safe page views (GET /auth/login for
+        # CSRF priming) do not consume the POST login-attempt budget.
+        # Otherwise 5 realistic browser logins (GET+POST each) exhaust the
+        # 10/min bucket and mask account-lockout behavior with 429s.
+        bucket = f"{request.method}:{request.url.path}"
+
         # Check rate limit
-        if not rate_limiter.is_allowed(ip, request.url.path, limit):
+        if not rate_limiter.is_allowed(ip, bucket, limit):
             return self._rate_limit_exceeded_response(limit)
         
         # Continue to next handler
