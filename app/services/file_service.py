@@ -1,13 +1,12 @@
 """File upload and storage service."""
 
-import os
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from fastapi import UploadFile
 
-from app.utils.sanitization import validate_file_content, sanitize_filename
+from app.utils.sanitization import validate_file_content
 
 # Try to import python-magic, but fall back to manual detection if not available
 try:
