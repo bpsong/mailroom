@@ -5,8 +5,6 @@ from typing import Callable
 
 from fastapi import HTTPException, Request, status
 
-from app.services.rbac_service import rbac_service
-
 
 def require_auth(func: Callable) -> Callable:
     """
@@ -92,52 +90,6 @@ def require_role(*allowed_roles: str) -> Callable:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required role: {', '.join(allowed_roles)}",
             )
-        
-        return wrapper
-    
-    return decorator
-
-
-def require_permission(permission: str) -> Callable:
-    """
-    Decorator to require a specific permission for a route.
-    
-    This provides more granular control than role-based access.
-    
-    Args:
-        permission: Permission name required
-        
-    Returns:
-        Decorator function
-    """
-    def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            # Get request from kwargs
-            request = kwargs.get("request")
-            if not request:
-                # Try to find request in args
-                for arg in args:
-                    if isinstance(arg, Request):
-                        request = arg
-                        break
-            
-            if not request or not hasattr(request.state, "user"):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication required",
-                )
-            
-            user = request.state.user
-            
-            # Check if user has the required permission
-            if not rbac_service.has_permission(user, permission):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Access denied. Required permission: {permission}",
-                )
-            
-            return await func(*args, **kwargs)
         
         return wrapper
     

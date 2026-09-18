@@ -167,7 +167,7 @@ Success behavior:
 Renders package detail page with timeline, attachments, and QR preview.
 
 ### `POST /packages/{package_id}/status`
-Updates package status and returns HTML partial/template (`packages/status_updated.html`).
+Updates package status and returns HTML partial (`packages/detail_status_partial.html`).
 
 Form fields:
 - `status` (required)

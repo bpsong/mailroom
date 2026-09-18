@@ -4,7 +4,7 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Request, Response, Form, HTTPException, status
+from fastapi import APIRouter, Request, Form, HTTPException, status
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 
 from app.templates import templates

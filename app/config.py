@@ -227,11 +227,6 @@ def clear_settings_cache() -> None:
     get_settings.cache_clear()
 
 
-def get_settings_dependency() -> Settings:
-    """FastAPI dependency provider for application settings."""
-    return get_settings()
-
-
 class _SettingsProxy:
     """Backward-compatible proxy to cached immutable settings."""
 
