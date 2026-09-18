@@ -1,6 +1,5 @@
 """Application configuration management."""
 
-import os
 import sys
 import logging
 from functools import lru_cache

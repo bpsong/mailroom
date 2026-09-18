@@ -2,14 +2,11 @@
 
 import csv
 import io
-import json
 from typing import List, Dict, Any, Optional, Sequence
-from uuid import UUID
 
 from app.models import RecipientCreate, User
 from app.services.recipient_service import recipient_service
 from app.services.audit_service import audit_service
-from app.database.write_queue import get_write_queue
 from app.utils.validation import is_valid_email
 
 
