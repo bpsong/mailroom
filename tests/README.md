@@ -29,10 +29,13 @@ C:\Python313\python.exe -m pytest -v
 
 ### Run subsets
 
+Coverage is measured on every run (see `fail_under` in `pyproject.toml`),
+so add `--no-cov` for fast subset runs. Full runs enforce the gate.
+
 ```powershell
-C:\Python313\python.exe -m pytest tests\unit -v
-C:\Python313\python.exe -m pytest tests\integration -v
-C:\Python313\python.exe -m pytest tests\e2e -v
+C:\Python313\python.exe -m pytest tests\unit -v --no-cov
+C:\Python313\python.exe -m pytest tests\integration -v --no-cov
+C:\Python313\python.exe -m pytest tests\e2e -v --no-cov
 C:\Python313\python.exe -m pytest tests --cov=app --cov-report=html
 ```
 
