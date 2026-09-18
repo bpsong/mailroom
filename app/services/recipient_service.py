@@ -1,21 +1,18 @@
 """Recipient management service for CRUD operations."""
 
-import json
 import logging
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
 
+from app.database.connection import get_db
+from app.database.write_queue import get_write_queue
 from app.models import (
     Recipient,
     RecipientCreate,
-    RecipientUpdate,
     RecipientPublic,
     RecipientSearchResult,
-    User,
+    RecipientUpdate,
 )
-from app.database.connection import get_db
-from app.database.write_queue import get_write_queue
 from app.utils.validation import is_valid_email
 
 logger = logging.getLogger(__name__)
@@ -110,7 +107,7 @@ class RecipientService:
         
         return recipient
     
-    async def get_recipient_by_id(self, recipient_id: UUID) -> Optional[Recipient]:
+    async def get_recipient_by_id(self, recipient_id: UUID) -> Recipient | None:
         """
         Get a recipient by ID.
         
@@ -148,7 +145,7 @@ class RecipientService:
                 updated_at=result[9],
             )
     
-    async def get_recipient_by_employee_id(self, employee_id: str) -> Optional[Recipient]:
+    async def get_recipient_by_employee_id(self, employee_id: str) -> Recipient | None:
         """
         Get a recipient by employee ID.
         
@@ -302,10 +299,10 @@ class RecipientService:
     
     async def search_recipients(
         self,
-        query: Optional[str] = None,
+        query: str | None = None,
         active_only: bool = True,
         limit: int = 10,
-    ) -> List[RecipientSearchResult]:
+    ) -> list[RecipientSearchResult]:
         """
         Search recipients for autocomplete (< 200ms response time).
         
@@ -362,12 +359,12 @@ class RecipientService:
     
     async def list_recipients(
         self,
-        query: Optional[str] = None,
-        department: Optional[str] = None,
-        is_active: Optional[bool] = None,
+        query: str | None = None,
+        department: str | None = None,
+        is_active: bool | None = None,
         limit: int = 25,
         offset: int = 0,
-    ) -> tuple[List[RecipientPublic], int]:
+    ) -> tuple[list[RecipientPublic], int]:
         """
         List and filter recipients with pagination.
         
@@ -442,7 +439,7 @@ class RecipientService:
         
         return recipients, total_count
     
-    async def _employee_id_exists(self, employee_id: str, exclude_id: Optional[UUID] = None) -> bool:
+    async def _employee_id_exists(self, employee_id: str, exclude_id: UUID | None = None) -> bool:
         """
         Check if an employee_id already exists.
         
@@ -467,7 +464,7 @@ class RecipientService:
                 ).fetchone()
             return (result[0] if result else 0) > 0
     
-    async def _email_exists(self, email: str, exclude_id: Optional[UUID] = None) -> bool:
+    async def _email_exists(self, email: str, exclude_id: UUID | None = None) -> bool:
         """
         Check if an email already exists.
         

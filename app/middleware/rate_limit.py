@@ -2,7 +2,7 @@
 
 import time
 from collections import defaultdict
-from typing import Callable, Dict, Tuple
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -18,7 +18,7 @@ class RateLimiter:
     def __init__(self):
         """Initialize rate limiter with empty storage."""
         # Storage: {(ip, endpoint): [(timestamp, count), ...]}
-        self._requests: Dict[Tuple[str, str], list] = defaultdict(list)
+        self._requests: dict[tuple[str, str], list] = defaultdict(list)
         self._cleanup_interval = 60  # Cleanup old entries every 60 seconds
         self._last_cleanup = time.time()
     

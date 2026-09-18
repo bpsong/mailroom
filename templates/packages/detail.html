@@ -15,19 +15,7 @@
         <div class="card-body">
             <div class="flex justify-between items-start">
                 <h2 class="card-title text-2xl">📦 {{ package.tracking_no }}</h2>
-                <span id="package-status-badge">
-                    {% if package.status == 'registered' %}
-                    <span class="badge badge-neutral badge-lg">Registered</span>
-                    {% elif package.status == 'awaiting_pickup' %}
-                    <span class="badge badge-warning badge-lg">Awaiting Pickup</span>
-                    {% elif package.status == 'out_for_delivery' %}
-                    <span class="badge badge-info badge-lg">Out for Delivery</span>
-                    {% elif package.status == 'delivered' %}
-                    <span class="badge badge-success badge-lg">Delivered</span>
-                    {% elif package.status == 'returned' %}
-                    <span class="badge badge-error badge-lg">Returned</span>
-                    {% endif %}
-                </span>
+                {% include "packages/_status_badge.html" %}
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -61,17 +49,8 @@
             </div>
             {% endif %}
 
-            <!-- Update Status Button -->
-            {% if package.status not in ['delivered', 'returned'] %}
-            <div class="card-actions justify-end mt-4">
-                <button 
-                    class="btn btn-primary"
-                    onclick="status_modal.showModal()"
-                >
-                    Update Status
-                </button>
-            </div>
-            {% endif %}
+            <!-- Update Status Button (OOB-swapped on HTMX status updates) -->
+            {% include "packages/_update_action.html" %}
         </div>
     </div>
 

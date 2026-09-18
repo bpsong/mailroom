@@ -1,7 +1,5 @@
 """Role-Based Access Control (RBAC) service for permission management."""
 
-from typing import Optional
-from uuid import UUID
 
 from app.models import User
 

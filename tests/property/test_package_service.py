@@ -9,19 +9,17 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime, timedelta
+from unittest.mock import patch
 from uuid import uuid4
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from unittest.mock import patch
 
 from app.database.connection import DatabaseConnection
 from app.database.schema import SCHEMA_SQL
 from app.database.write_queue import WriteQueue
 from app.models.package import PackageFilters, Pagination
 from app.services.package_service import PackageService
-
 
 # ---------------------------------------------------------------------------
 # Helpers

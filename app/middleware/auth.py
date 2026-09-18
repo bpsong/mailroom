@@ -1,15 +1,15 @@
 """Authentication middleware for validating sessions."""
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Callable
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Request, Response
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.services.auth_service import auth_service
 from app.config import settings
+from app.services.auth_service import auth_service
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             # Handle both timezone-aware and naive datetimes to avoid runtime
             # errors when subtracting mixed datetime types.
             if getattr(expires_at, "tzinfo", None) is not None:
-                now = datetime.now(timezone.utc).astimezone(expires_at.tzinfo)
+                now = datetime.now(UTC).astimezone(expires_at.tzinfo)
             else:
                 now = datetime.now()
 

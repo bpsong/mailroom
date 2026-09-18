@@ -5,14 +5,13 @@ Properties tested: 8, 10, 11, 12
 """
 
 import asyncio
+import os
 import sqlite3
 import tempfile
-import os
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from hypothesis import given, settings, assume
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from app.database.connection import DatabaseConnection
@@ -20,7 +19,6 @@ from app.database.schema import SCHEMA_SQL
 from app.database.write_queue import WriteQueue
 from app.models.carrier import CarrierCreate, CarrierUpdate
 from app.services.carrier_service import CarrierService
-
 
 # ---------------------------------------------------------------------------
 # Helpers

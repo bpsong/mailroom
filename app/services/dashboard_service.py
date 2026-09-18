@@ -1,12 +1,10 @@
 """Dashboard service for summary statistics and reporting."""
 
-from datetime import datetime, date
-from typing import Dict, List, Optional
 import logging
+
 from pydantic import BaseModel
 
 from app.database.connection import get_db
-
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ class RecipientStats(BaseModel):
     
     recipient_id: str
     recipient_name: str
-    department: Optional[str]
+    department: str | None
     package_count: int
 
 
@@ -99,7 +97,7 @@ class DashboardService:
         self,
         limit: int = 5,
         period: str = "month"
-    ) -> List[RecipientStats]:
+    ) -> list[RecipientStats]:
         """
         Get top recipients by package count for current period.
         
@@ -143,7 +141,7 @@ class DashboardService:
             for row in result
         ]
     
-    async def get_status_distribution(self) -> List[StatusDistribution]:
+    async def get_status_distribution(self) -> list[StatusDistribution]:
         """
         Get package count by status.
         
@@ -169,7 +167,7 @@ class DashboardService:
             for row in result
         ]
     
-    async def get_department_list(self) -> List[str]:
+    async def get_department_list(self) -> list[str]:
         """
         Get list of unique departments from recipients.
         

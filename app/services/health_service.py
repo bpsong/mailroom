@@ -5,7 +5,7 @@ import shutil
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 from app.config import settings
 from app.services.database_service import get_database_service
@@ -30,7 +30,7 @@ class HealthService:
         """Initialize the health service."""
         self.db_service = get_database_service()
     
-    async def check_database(self) -> Dict[str, Any]:
+    async def check_database(self) -> dict[str, Any]:
         """
         Check database connection health.
         
@@ -61,7 +61,7 @@ class HealthService:
                 "connected": False
             }
     
-    def check_disk_space(self) -> Dict[str, Any]:
+    def check_disk_space(self) -> dict[str, Any]:
         """
         Check available disk space for critical directories.
         
@@ -109,7 +109,7 @@ class HealthService:
                 "message": f"Failed to check disk space: {str(e)}"
             }
     
-    def get_uptime(self) -> Dict[str, Any]:
+    def get_uptime(self) -> dict[str, Any]:
         """
         Get application uptime information.
         
@@ -140,7 +140,7 @@ class HealthService:
                 "message": f"Failed to get uptime: {str(e)}"
             }
     
-    async def get_full_health_status(self) -> Dict[str, Any]:
+    async def get_full_health_status(self) -> dict[str, Any]:
         """
         Get comprehensive health status of all system components.
         

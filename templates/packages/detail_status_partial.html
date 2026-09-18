@@ -1,4 +1,6 @@
 <div id="package-detail-partial">
+    {% include "packages/_status_badge.html" %}
+    {% include "packages/_update_action.html" %}
     {% if error %}
     <div role="alert" class="alert alert-error mb-4">
         <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">

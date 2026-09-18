@@ -1,6 +1,5 @@
 """Admin recipient management routes."""
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile, status
@@ -14,7 +13,6 @@ from app.services.recipient_service import recipient_service
 from app.templates import templates
 from app.utils.query_params import normalize_optional_bool_param
 
-
 router = APIRouter()
 
 
@@ -22,9 +20,9 @@ router = APIRouter()
 @require_role("admin")
 async def list_recipients_page(
     request: Request,
-    query: Optional[str] = Query(None),
-    department: Optional[str] = Query(None),
-    is_active: Optional[str] = Query(None),
+    query: str | None = Query(None),
+    department: str | None = Query(None),
+    is_active: str | None = Query(None),
     limit: int = Query(25, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -88,8 +86,8 @@ async def create_recipient(
     name: str = Form(..., min_length=1, max_length=100),
     email: str = Form(...),
     department: str = Form(..., max_length=100),
-    phone: Optional[str] = Form(None, max_length=20),
-    location: Optional[str] = Form(None, max_length=100),
+    phone: str | None = Form(None, max_length=20),
+    location: str | None = Form(None, max_length=100),
     csrf_token: str = Form(...),
 ):
     """Create a new recipient."""
@@ -164,11 +162,11 @@ async def edit_recipient_page(request: Request, recipient_id: str):
 async def edit_recipient(
     request: Request,
     recipient_id: str,
-    name: Optional[str] = Form(None, min_length=1, max_length=100),
-    email: Optional[str] = Form(None),
+    name: str | None = Form(None, min_length=1, max_length=100),
+    email: str | None = Form(None),
     department: str = Form(..., max_length=100),
-    phone: Optional[str] = Form(None, max_length=20),
-    location: Optional[str] = Form(None, max_length=100),
+    phone: str | None = Form(None, max_length=20),
+    location: str | None = Form(None, max_length=100),
     csrf_token: str = Form(...),
 ):
     """Edit an existing recipient."""

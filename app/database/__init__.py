@@ -1,9 +1,9 @@
 """Database package for SQLite connection and schema management."""
 
 from app.database.connection import DatabaseConnection, get_db
+from app.database.migrations import MigrationManager, run_initial_migration
 from app.database.schema import init_database
 from app.database.write_queue import WriteQueue, get_write_queue
-from app.database.migrations import MigrationManager, run_initial_migration
 
 __all__ = [
     "DatabaseConnection",

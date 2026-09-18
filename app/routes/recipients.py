@@ -1,12 +1,11 @@
 """Recipient routes for searching and autocomplete."""
 
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
 
-from app.templates import templates
-from app.decorators import require_auth, get_current_user
+from app.decorators import get_current_user, require_auth
 from app.services.recipient_service import recipient_service
-
+from app.templates import templates
 
 router = APIRouter(prefix="/recipients", tags=["recipients"])
 

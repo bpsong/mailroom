@@ -1,15 +1,13 @@
 """User management service for CRUD operations."""
 
 import json
-from datetime import datetime
-from typing import Optional, List, Dict, Any
 from uuid import UUID
 
-from app.models import User, UserCreate, UserPublic
-from app.services.auth_service import auth_service
-from app.services.audit_service import audit_service
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
+from app.models import User, UserCreate, UserPublic
+from app.services.audit_service import audit_service
+from app.services.auth_service import auth_service
 
 
 class UserService:
@@ -98,7 +96,7 @@ class UserService:
         
         return user
     
-    async def get_user_by_id(self, user_id: UUID) -> Optional[User]:
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
         """
         Get a user by ID.
         
@@ -139,7 +137,7 @@ class UserService:
                 updated_at=result[11],
             )
     
-    async def get_user_by_username(self, username: str) -> Optional[User]:
+    async def get_user_by_username(self, username: str) -> User | None:
         """
         Get a user by username.
         
@@ -183,9 +181,9 @@ class UserService:
     async def update_user(
         self,
         user_id: UUID,
-        full_name: Optional[str] = None,
-        role: Optional[str] = None,
-        actor: Optional[User] = None,
+        full_name: str | None = None,
+        role: str | None = None,
+        actor: User | None = None,
     ) -> User:
         """
         Update user information.
@@ -316,7 +314,7 @@ class UserService:
         user_id: UUID,
         new_password: str,
         force_change: bool = True,
-        actor: Optional[User] = None,
+        actor: User | None = None,
     ) -> None:
         """
         Reset a user's password (admin action).
@@ -343,14 +341,14 @@ class UserService:
         # Check password history
         if auth_service.check_password_history(new_password, user.password_history):
             raise ValueError(
-                f"Password was used recently. Please choose a different password."
+                "Password was used recently. Please choose a different password."
             )
 
         # Reject rotation to the identical password even when history is
         # empty/unseeded (e.g. bootstrapped or legacy rows with NULL history).
         if auth_service.verify_password(new_password, user.password_hash):
             raise ValueError(
-                f"Password was used recently. Please choose a different password."
+                "Password was used recently. Please choose a different password."
             )
 
         # Hash new password
@@ -424,14 +422,14 @@ class UserService:
         # Check password history
         if auth_service.check_password_history(new_password, user.password_history):
             raise ValueError(
-                f"Password was used recently. Please choose a different password."
+                "Password was used recently. Please choose a different password."
             )
 
         # Reject rotation to the identical password even when history is
         # empty/unseeded (e.g. bootstrapped or legacy rows with NULL history).
         if auth_service.verify_password(new_password, user.password_hash):
             raise ValueError(
-                f"Password was used recently. Please choose a different password."
+                "Password was used recently. Please choose a different password."
             )
 
         # Hash new password
@@ -466,12 +464,12 @@ class UserService:
     
     async def search_users(
         self,
-        query: Optional[str] = None,
-        role: Optional[str] = None,
-        is_active: Optional[bool] = None,
+        query: str | None = None,
+        role: str | None = None,
+        is_active: bool | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> tuple[List[UserPublic], int]:
+    ) -> tuple[list[UserPublic], int]:
         """
         Search and filter users.
         

@@ -1,8 +1,8 @@
 """Package data models and schemas."""
 
 from datetime import datetime
-from typing import Optional, List
 from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
@@ -14,7 +14,7 @@ class Package(BaseModel):
     carrier: str
     recipient_id: UUID
     status: str
-    notes: Optional[str] = None
+    notes: str | None = None
     created_by: UUID
     created_at: datetime
     updated_at: datetime
@@ -29,23 +29,23 @@ class PackageCreate(BaseModel):
     tracking_no: str = Field(..., min_length=1, max_length=100)
     carrier: str = Field(..., min_length=1, max_length=100)
     recipient_id: UUID
-    notes: Optional[str] = Field(None, max_length=500)
+    notes: str | None = Field(None, max_length=500)
 
 
 class PackageUpdate(BaseModel):
     """Schema for updating a package."""
     
-    tracking_no: Optional[str] = Field(None, min_length=1, max_length=100)
-    carrier: Optional[str] = Field(None, min_length=1, max_length=100)
-    recipient_id: Optional[UUID] = None
-    notes: Optional[str] = Field(None, max_length=500)
+    tracking_no: str | None = Field(None, min_length=1, max_length=100)
+    carrier: str | None = Field(None, min_length=1, max_length=100)
+    recipient_id: UUID | None = None
+    notes: str | None = Field(None, max_length=500)
 
 
 class PackageStatusUpdate(BaseModel):
     """Schema for updating package status."""
     
     status: str = Field(..., pattern="^(awaiting_pickup|out_for_delivery|delivered|returned)$")
-    notes: Optional[str] = Field(None, max_length=500)
+    notes: str | None = Field(None, max_length=500)
 
 
 class PackageEvent(BaseModel):
@@ -53,9 +53,9 @@ class PackageEvent(BaseModel):
     
     id: UUID
     package_id: UUID
-    old_status: Optional[str] = None
+    old_status: str | None = None
     new_status: str
-    notes: Optional[str] = None
+    notes: str | None = None
     actor_id: UUID
     created_at: datetime
     
@@ -67,9 +67,9 @@ class PackageEventCreate(BaseModel):
     """Schema for creating a package event."""
     
     package_id: UUID
-    old_status: Optional[str] = None
+    old_status: str | None = None
     new_status: str
-    notes: Optional[str] = Field(None, max_length=500)
+    notes: str | None = Field(None, max_length=500)
     actor_id: UUID
 
 
@@ -81,9 +81,9 @@ class PackagePublic(BaseModel):
     carrier: str
     recipient_id: UUID
     recipient_name: str
-    recipient_department: Optional[str] = None
+    recipient_department: str | None = None
     status: str
-    notes: Optional[str] = None
+    notes: str | None = None
     created_by: UUID
     created_by_name: str
     created_at: datetime
@@ -99,27 +99,27 @@ class PackageDetail(BaseModel):
     recipient_id: UUID
     recipient_name: str
     recipient_email: str
-    recipient_department: Optional[str] = None
+    recipient_department: str | None = None
     status: str
-    notes: Optional[str] = None
+    notes: str | None = None
     created_by: UUID
     created_by_name: str
     created_at: datetime
     updated_at: datetime
-    timeline: List[PackageEvent] = []
+    timeline: list[PackageEvent] = []
 
 
 class PackageFilters(BaseModel):
     """Filters for package search."""
     
-    query: Optional[str] = None  # Search in tracking_no, recipient name
-    status: Optional[str] = None
-    department: Optional[str] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    query: str | None = None  # Search in tracking_no, recipient name
+    status: str | None = None
+    department: str | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
     date_field: str = "created_at"
-    recipient_id: Optional[UUID] = None
-    created_by: Optional[UUID] = None
+    recipient_id: UUID | None = None
+    created_by: UUID | None = None
 
 
 class Pagination(BaseModel):

@@ -1,6 +1,5 @@
 """Admin user management routes."""
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request, status
@@ -14,7 +13,6 @@ from app.services.user_service import user_service
 from app.templates import templates
 from app.utils.query_params import normalize_optional_bool_param
 
-
 router = APIRouter()
 
 
@@ -22,9 +20,9 @@ router = APIRouter()
 @require_role("admin")
 async def list_users_page(
     request: Request,
-    query: Optional[str] = Query(None),
-    role: Optional[str] = Query(None),
-    is_active: Optional[str] = Query(None),
+    query: str | None = Query(None),
+    role: str | None = Query(None),
+    is_active: str | None = Query(None),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -173,8 +171,8 @@ async def create_user(
 async def edit_user(
     request: Request,
     user_id: str,
-    full_name: Optional[str] = Form(None, min_length=1, max_length=100),
-    role: Optional[str] = Form(None, pattern="^(super_admin|admin|operator)$"),
+    full_name: str | None = Form(None, min_length=1, max_length=100),
+    role: str | None = Form(None, pattern="^(super_admin|admin|operator)$"),
     csrf_token: str = Form(...),
 ):
     """Edit an existing user."""

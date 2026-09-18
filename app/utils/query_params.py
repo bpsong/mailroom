@@ -1,19 +1,17 @@
 """Helpers for parsing and normalizing query parameters."""
 
-from typing import Optional, Tuple, Union
 
 from fastapi import HTTPException, status
-
 
 TRUE_VALUES = {"true", "1", "yes", "on"}
 FALSE_VALUES = {"false", "0", "no", "off"}
 
 
 def normalize_optional_bool_param(
-    value: Optional[Union[str, bool]],
+    value: str | bool | None,
     *,
     param_name: str = "value",
-) -> Tuple[Optional[bool], Optional[str]]:
+) -> tuple[bool | None, str | None]:
     """
     Convert optional boolean-like query parameter strings to bools.
     

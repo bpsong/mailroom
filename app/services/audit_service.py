@@ -3,14 +3,14 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional, Dict, Any, List
-from uuid import UUID
 from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
+from typing import Any
+from uuid import UUID
 
 from app.config import settings
-from app.database.write_queue import get_write_queue
 from app.database.connection import get_db
+from app.database.write_queue import get_write_queue
 
 
 class AuditService:
@@ -58,10 +58,10 @@ class AuditService:
     async def log_auth_event(
         self,
         event_type: str,
-        user_id: Optional[UUID] = None,
-        username: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        user_id: UUID | None = None,
+        username: str | None = None,
+        ip_address: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """
         Log an authentication event to both database and file.
@@ -111,9 +111,9 @@ class AuditService:
         self,
         action: str,
         actor_id: UUID,
-        target_user_id: Optional[UUID] = None,
-        target_username: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        target_user_id: UUID | None = None,
+        target_username: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """
         Log user management actions (create, edit, deactivate, password reset).
@@ -146,7 +146,7 @@ class AuditService:
         records_created: int,
         records_updated: int,
         errors: int = 0,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """
         Log recipient CSV import operations.
@@ -184,10 +184,10 @@ class AuditService:
     async def log_package_event(
         self,
         package_id: UUID,
-        old_status: Optional[str],
+        old_status: str | None,
         new_status: str,
         actor_id: UUID,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> None:
         """
         Log package status change events.
@@ -215,14 +215,14 @@ class AuditService:
     
     async def get_auth_events(
         self,
-        user_id: Optional[UUID] = None,
-        event_type: Optional[str] = None,
-        username: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        user_id: UUID | None = None,
+        event_type: str | None = None,
+        username: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         """
         Retrieve authentication events with filtering and pagination.
         

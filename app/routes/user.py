@@ -2,13 +2,13 @@
 
 import logging
 
-from fastapi import APIRouter, Request, Form, HTTPException, status
+from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.templates import templates
-from app.decorators import require_auth, get_current_user
+from app.decorators import get_current_user, require_auth
 from app.middleware.csrf import validate_csrf_token
 from app.services.user_service import user_service
+from app.templates import templates
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +85,9 @@ async def terminate_session(
         )
     
     # Get session to verify ownership
-    from app.services.auth_service import auth_service
     from uuid import UUID
+
+    from app.services.auth_service import auth_service
     
     try:
         session_uuid = UUID(session_id)

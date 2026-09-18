@@ -1,7 +1,7 @@
 """CSRF protection middleware."""
 
 import secrets
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -230,7 +230,7 @@ def generate_csrf_token() -> str:
     return secrets.token_urlsafe(32)
 
 
-def validate_csrf_token(request: Request, form_token: Optional[str] = None) -> bool:
+def validate_csrf_token(request: Request, form_token: str | None = None) -> bool:
     """
     Validate CSRF token from form data.
     
@@ -242,7 +242,7 @@ def validate_csrf_token(request: Request, form_token: Optional[str] = None) -> b
         True if token is valid, False otherwise
     """
     if not form_token:
-        setattr(request.state, "csrf_form_validated", False)
+        request.state.csrf_form_validated = False
         return False
     
     expected_token = getattr(request.state, "csrf_token", None)
@@ -250,11 +250,11 @@ def validate_csrf_token(request: Request, form_token: Optional[str] = None) -> b
         expected_token = request.cookies.get("csrf_token")
     
     if not expected_token:
-        setattr(request.state, "csrf_form_validated", False)
+        request.state.csrf_form_validated = False
         return False
     
     is_valid = secrets.compare_digest(expected_token, form_token)
-    setattr(request.state, "csrf_form_validated", is_valid)
+    request.state.csrf_form_validated = is_valid
     if is_valid:
-        setattr(request.state, "csrf_requires_form_validation", False)
+        request.state.csrf_requires_form_validation = False
     return is_valid

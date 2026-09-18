@@ -6,7 +6,6 @@ Property 16: Character counter not attached to inputs with data-counter="false"
 Validates: Requirements 19.1, 19.2, 19.3
 """
 
-import re
 
 from hypothesis import given, settings
 from hypothesis import strategies as st

@@ -1,7 +1,6 @@
 """Admin reporting routes."""
 from datetime import datetime
 from io import BytesIO
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -11,7 +10,6 @@ from app.decorators import get_current_user, require_role
 from app.models import PackageFilters, Pagination
 from app.services.package_service import package_service
 from app.templates import templates
-
 
 router = APIRouter()
 
@@ -47,13 +45,13 @@ async def reports_page(request: Request):
 @require_role("admin")
 async def preview_packages_report(
     request: Request,
-    query: Optional[str] = Query(None),
-    package_status: Optional[str] = Query(None, alias="status"),
-    department: Optional[str] = Query(None),
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
-    recipient_id: Optional[str] = Query(None),
-    created_by: Optional[str] = Query(None),
+    query: str | None = Query(None),
+    package_status: str | None = Query(None, alias="status"),
+    department: str | None = Query(None),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
+    recipient_id: str | None = Query(None),
+    created_by: str | None = Query(None),
 ):
     """Preview packages that match the report filters."""
     user = get_current_user(request)
@@ -118,13 +116,13 @@ async def preview_packages_report(
 @require_role("admin")
 async def export_packages_report(
     request: Request,
-    query: Optional[str] = Query(None),
-    package_status: Optional[str] = Query(None, alias="status"),
-    department: Optional[str] = Query(None),
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
-    recipient_id: Optional[str] = Query(None),
-    created_by: Optional[str] = Query(None),
+    query: str | None = Query(None),
+    package_status: str | None = Query(None, alias="status"),
+    department: str | None = Query(None),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
+    recipient_id: str | None = Query(None),
+    created_by: str | None = Query(None),
 ):
     """Export packages report as CSV with filters."""
     from app.services.export_service import export_service

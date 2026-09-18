@@ -2,11 +2,12 @@
 
 import csv
 import io
-from typing import List, Dict, Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from app.models import RecipientCreate, User
-from app.services.recipient_service import recipient_service
 from app.services.audit_service import audit_service
+from app.services.recipient_service import recipient_service
 from app.utils.validation import is_valid_email
 
 
@@ -18,7 +19,7 @@ class ImportValidationError:
         self.field = field
         self.message = message
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "row": self.row_number,
             "field": self.field,
@@ -34,8 +35,8 @@ class ImportResult:
         self.created_count = 0
         self.updated_count = 0
         self.error_count = 0
-        self.errors: List[ImportValidationError] = []
-        self.warnings: List[str] = []
+        self.errors: list[ImportValidationError] = []
+        self.warnings: list[str] = []
     
     def add_error(self, row_number: int, field: str, message: str):
         """Add a validation error."""
@@ -46,7 +47,7 @@ class ImportResult:
         """Add a warning message."""
         self.warnings.append(message)
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "total_rows": self.total_rows,
             "created_count": self.created_count,
@@ -64,7 +65,7 @@ class CSVImportService:
     OPTIONAL_HEADERS = ["phone", "location"]
     MAX_ROWS = 1000
     
-    def _validate_headers(self, headers: Sequence[str]) -> tuple[bool, Optional[str]]:
+    def _validate_headers(self, headers: Sequence[str]) -> tuple[bool, str | None]:
         """
         Validate CSV headers.
         
@@ -87,10 +88,10 @@ class CSVImportService:
     
     def _validate_row(
         self,
-        row: Dict[str, str],
+        row: dict[str, str],
         row_number: int,
         result: ImportResult,
-    ) -> Optional[RecipientCreate]:
+    ) -> RecipientCreate | None:
         """
         Validate a single CSV row.
         
@@ -167,7 +168,7 @@ class CSVImportService:
     async def parse_and_validate_csv(
         self,
         file_content: bytes,
-    ) -> tuple[ImportResult, List[RecipientCreate]]:
+    ) -> tuple[ImportResult, list[RecipientCreate]]:
         """
         Parse and validate CSV file (dry-run mode).
         
@@ -229,7 +230,7 @@ class CSVImportService:
     
     async def import_recipients(
         self,
-        recipients: List[RecipientCreate],
+        recipients: list[RecipientCreate],
         actor: User,
         filename: str = "import.csv",
     ) -> ImportResult:

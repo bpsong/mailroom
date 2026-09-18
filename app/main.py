@@ -9,7 +9,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings
 from app.database.migrations import MigrationManager, run_initial_migration
-from app.database.write_queue import get_write_queue, close_write_queue
+from app.database.write_queue import close_write_queue, get_write_queue
 
 
 def configure_logging() -> None:
@@ -100,6 +100,7 @@ from app.middleware import (
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
 )
+
 if settings.allowed_hosts_list:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 app.add_middleware(AuthenticationMiddleware)
@@ -112,15 +113,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Mount uploads directory for serving package photos
 from pathlib import Path
+
 uploads_dir = Path(settings.upload_dir)
 uploads_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 # Import shared templates instance
+# Include routers
+from app.routes import admin, auth, dashboard, packages, recipients, user
 from app.templates import templates
 
-# Include routers
-from app.routes import auth, admin, packages, recipients, dashboard, user
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(packages.router)
@@ -163,7 +165,7 @@ async def health_check(request: Request):
 
 # Custom error handlers
 from fastapi import status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 

@@ -1,8 +1,8 @@
 """User data models and schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
@@ -16,9 +16,9 @@ class User(BaseModel):
     role: str  # 'super_admin', 'admin', 'operator'
     is_active: bool = True
     must_change_password: bool = False
-    password_history: Optional[str] = None  # JSON array of previous hashes
+    password_history: str | None = None  # JSON array of previous hashes
     failed_login_count: int = 0
-    locked_until: Optional[datetime] = None
+    locked_until: datetime | None = None
     created_at: datetime
     updated_at: datetime
     

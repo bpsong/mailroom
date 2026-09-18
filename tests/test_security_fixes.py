@@ -1,14 +1,14 @@
 """Tests for security fixes."""
 
-import pytest
-from uuid import uuid4
 from typing import cast
+
+import pytest
+from fastapi import Request
 from pydantic import ValidationError
 
-from app.services.auth_service import auth_service
+from app.middleware.csrf import generate_csrf_token, validate_csrf_token
 from app.models.recipient import RecipientCreate
-from app.middleware.csrf import validate_csrf_token, generate_csrf_token
-from fastapi import Request
+from app.services.auth_service import auth_service
 
 # Configure pytest to use anyio for async tests
 pytestmark = pytest.mark.anyio

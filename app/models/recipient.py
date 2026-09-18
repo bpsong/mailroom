@@ -1,9 +1,9 @@
 """Recipient data models and schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, Field, EmailStr
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class Recipient(BaseModel):
@@ -14,8 +14,8 @@ class Recipient(BaseModel):
     name: str
     email: str
     department: str
-    phone: Optional[str] = None
-    location: Optional[str] = None
+    phone: str | None = None
+    location: str | None = None
     is_active: bool = True
     created_at: datetime
     updated_at: datetime
@@ -31,18 +31,18 @@ class RecipientCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
     department: str = Field(..., min_length=1, max_length=100, pattern=r".*\S.*")  # Must contain non-whitespace
-    phone: Optional[str] = Field(None, max_length=20)
-    location: Optional[str] = Field(None, max_length=100)
+    phone: str | None = Field(None, max_length=20)
+    location: str | None = Field(None, max_length=100)
 
 
 class RecipientUpdate(BaseModel):
     """Schema for updating a recipient."""
     
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    email: Optional[EmailStr] = None
-    department: Optional[str] = Field(None, max_length=100)
-    phone: Optional[str] = Field(None, max_length=20)
-    location: Optional[str] = Field(None, max_length=100)
+    name: str | None = Field(None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    department: str | None = Field(None, max_length=100)
+    phone: str | None = Field(None, max_length=20)
+    location: str | None = Field(None, max_length=100)
 
 
 class RecipientPublic(BaseModel):
@@ -53,8 +53,8 @@ class RecipientPublic(BaseModel):
     name: str
     email: str
     department: str
-    phone: Optional[str] = None
-    location: Optional[str] = None
+    phone: str | None = None
+    location: str | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime

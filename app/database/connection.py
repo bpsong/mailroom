@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import sqlite3
 import threading
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Generator
 
 from app.config import get_settings
-
 
 SQLITE_TIMEOUT_SECONDS = 30.0
 SQLITE_DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES

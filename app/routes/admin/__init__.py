@@ -10,7 +10,6 @@ from .reports import router as reports_router
 from .settings import router as settings_router
 from .users import router as users_router
 
-
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 

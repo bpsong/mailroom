@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+
 from fastapi import UploadFile
 
 from app.utils.sanitization import validate_file_content
@@ -30,7 +30,7 @@ class FileService:
     
     MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB in bytes
     
-    def __init__(self, upload_dir: Optional[str] = None):
+    def __init__(self, upload_dir: str | None = None):
         """
         Initialize file service.
         
@@ -102,8 +102,8 @@ class FileService:
     def validate_file(
         self,
         file: UploadFile,
-        allowed_types: Optional[list[str]] = None,
-        max_size: Optional[int] = None,
+        allowed_types: list[str] | None = None,
+        max_size: int | None = None,
     ) -> None:
         """
         Validate file without saving it.

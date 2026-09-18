@@ -1,7 +1,7 @@
 """Authentication and authorization decorators."""
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
 
 from fastapi import HTTPException, Request, status
 

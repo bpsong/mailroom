@@ -1,13 +1,14 @@
 """Unit tests for AuthService."""
 
-import pytest
 import json
-from datetime import datetime, timedelta
-from uuid import uuid4
+from datetime import datetime
 from types import SimpleNamespace
+from uuid import uuid4
 
-from app.services.auth_service import auth_service, AuthenticationError
+import pytest
+
 from app.config import settings
+from app.services.auth_service import AuthenticationError, auth_service
 
 
 class TestPasswordHashing:

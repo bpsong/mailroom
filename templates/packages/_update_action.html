@@ -1,0 +1,12 @@
+<div id="package-update-action" hx-swap-oob="true">
+    {% if package.status not in ['delivered', 'returned'] %}
+    <div class="card-actions justify-end mt-4">
+        <button
+            class="btn btn-primary"
+            onclick="status_modal.showModal()"
+        >
+            Update Status
+        </button>
+    </div>
+    {% endif %}
+</div>

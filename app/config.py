@@ -1,12 +1,12 @@
 """Application configuration management."""
 
-import sys
 import logging
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import field_validator, ValidationError
+from pydantic import ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ def load_settings() -> Settings:
         settings = Settings()  # type: ignore[call-arg]
         
         # Log configuration status
-        logger.info(f"Configuration loaded successfully")
+        logger.info("Configuration loaded successfully")
         logger.info(f"Environment: {settings.app_env}")
         logger.info(f"Database: {settings.database_path}")
         logger.info(f"Upload directory: {settings.upload_dir}")

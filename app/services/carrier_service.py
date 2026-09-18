@@ -1,12 +1,10 @@
 """Carrier management service for CRUD operations."""
 
 import logging
-from typing import Optional, List
 
-from app.models.carrier import Carrier, CarrierCreate, CarrierUpdate
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
-
+from app.models.carrier import Carrier, CarrierCreate, CarrierUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +24,7 @@ def _validate_carrier_name(raw_name: str) -> str:
 class CarrierService:
     """Service for carrier management operations."""
 
-    async def get_active_carriers(self) -> List[Carrier]:
+    async def get_active_carriers(self) -> list[Carrier]:
         """Return all carriers where is_active = 1, ordered by name."""
         db = get_db()
         with db.get_read_connection() as conn:
@@ -50,7 +48,7 @@ class CarrierService:
             for row in result
         ]
 
-    async def get_all_carriers(self) -> List[Carrier]:
+    async def get_all_carriers(self) -> list[Carrier]:
         """Return all carriers, ordered by name."""
         db = get_db()
         with db.get_read_connection() as conn:
@@ -73,7 +71,7 @@ class CarrierService:
             for row in result
         ]
 
-    async def get_carrier_by_id(self, carrier_id: int) -> Optional[Carrier]:
+    async def get_carrier_by_id(self, carrier_id: int) -> Carrier | None:
         """Return a carrier by id, or None if not found."""
         db = get_db()
         with db.get_read_connection() as conn:

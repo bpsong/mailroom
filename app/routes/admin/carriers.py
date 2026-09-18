@@ -3,11 +3,10 @@
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
-from app.decorators import get_current_user, require_role
+from app.decorators import require_role
 from app.middleware.csrf import validate_csrf_token
 from app.models.carrier import CarrierCreate, CarrierUpdate
 from app.services.carrier_service import carrier_service
-
 
 router = APIRouter(prefix="/carriers")
 

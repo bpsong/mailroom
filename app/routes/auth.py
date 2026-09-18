@@ -2,15 +2,14 @@
 
 import json
 import logging
-from typing import Optional
 
-from fastapi import APIRouter, Request, Form, HTTPException, status
-from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
+from fastapi import APIRouter, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from app.templates import templates
-from app.services.auth_service import auth_service, AuthenticationError
-from app.middleware.csrf import validate_csrf_token
 from app.config import settings
+from app.middleware.csrf import validate_csrf_token
+from app.services.auth_service import AuthenticationError, auth_service
+from app.templates import templates
 from app.utils.request_security import get_client_ip, safe_redirect_path
 
 logger = logging.getLogger(__name__)
@@ -19,13 +18,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-def get_user_agent(request: Request) -> Optional[str]:
+def get_user_agent(request: Request) -> str | None:
     """Extract user agent from request."""
     return request.headers.get("User-Agent")
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, next: Optional[str] = None):
+async def login_page(request: Request, next: str | None = None):
     """
     Display login page.
     
@@ -65,7 +64,7 @@ async def login(
     username: str = Form(...),
     password: str = Form(...),
     csrf_token: str = Form(...),
-    next: Optional[str] = Form(None),
+    next: str | None = Form(None),
 ):
     """
     Authenticate user and create session.

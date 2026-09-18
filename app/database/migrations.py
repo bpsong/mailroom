@@ -7,7 +7,6 @@ import logging
 import secrets
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from argon2 import PasswordHasher
 
@@ -24,7 +23,7 @@ class BootstrapResult:
 
     created: bool
     username: str
-    password: Optional[str] = None
+    password: str | None = None
     generated_password: bool = False
 
 
@@ -68,7 +67,7 @@ class MigrationManager:
     def bootstrap_super_admin(
         self,
         username: str = "admin",
-        password: Optional[str] = None,
+        password: str | None = None,
         full_name: str = "System Administrator",
     ) -> BootstrapResult:
         """Create the initial super admin if the users table is empty."""
@@ -174,9 +173,9 @@ class MigrationManager:
 def run_initial_migration(
     create_super_admin: bool = False,
     super_admin_username: str = "admin",
-    super_admin_password: Optional[str] = None,
+    super_admin_password: str | None = None,
     super_admin_full_name: str = "System Administrator",
-) -> Optional[BootstrapResult]:
+) -> BootstrapResult | None:
     """Initialize the database and optionally seed the first super admin."""
     manager = MigrationManager(settings.database_path)
     manager.run_migrations()

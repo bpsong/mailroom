@@ -2,8 +2,7 @@
 
 import asyncio
 import logging
-from typing import Any, Optional
-from datetime import datetime
+from typing import Any
 
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
@@ -25,7 +24,7 @@ class DatabaseService:
     def __init__(self):
         """Initialize the database service."""
         self.db = get_db()
-        self._write_queue: Optional[Any] = None
+        self._write_queue: Any | None = None
         self._retry_attempts = 3
         self._base_delay = 0.1  # 100ms base delay
     
@@ -65,7 +64,7 @@ class DatabaseService:
         self,
         query: str,
         params: tuple | dict | None = None
-    ) -> Optional[tuple]:
+    ) -> tuple | None:
         """
         Execute a read query and return a single result.
         

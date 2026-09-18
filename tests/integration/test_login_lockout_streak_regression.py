@@ -23,9 +23,9 @@ This file locks in the regression and adds benchmark guards.
 import time
 import uuid
 
+from app.database.connection import create_connection
 from app.middleware.rate_limit import rate_limiter
 from app.services.auth_service import auth_service
-from app.database.connection import create_connection
 
 
 def _reset_rate_limiter():

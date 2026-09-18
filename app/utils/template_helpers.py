@@ -1,6 +1,5 @@
 """Template helper functions."""
 
-from typing import Optional
 
 from fastapi import Request
 from jinja2 import pass_context
@@ -52,7 +51,7 @@ def add_csrf_to_context(request: Request, context: dict) -> dict:
 
 
 @pass_context
-def csrf_token_value(context, request: Optional[Request] = None) -> str:
+def csrf_token_value(context, request: Request | None = None) -> str:
     """
     Jinja helper: return CSRF token for current request.
     """
@@ -63,7 +62,7 @@ def csrf_token_value(context, request: Optional[Request] = None) -> str:
 
 
 @pass_context
-def csrf_input(context, request: Optional[Request] = None) -> Markup:
+def csrf_input(context, request: Request | None = None) -> Markup:
     """
     Jinja helper: render hidden CSRF input element.
     """

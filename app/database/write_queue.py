@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Any
 
 from app.config import settings
 from app.database.connection import create_connection
@@ -23,10 +24,10 @@ class WriteOperation:
 
     query: str
     params: QueryParams
-    connection_callable: Optional[Callable[[Any], Any]] = None
-    callback: Optional[Callable[[Any], None]] = None
-    error_callback: Optional[Callable[[Exception], None]] = None
-    completion_future: Optional[asyncio.Future] = None
+    connection_callable: Callable[[Any], Any] | None = None
+    callback: Callable[[Any], None] | None = None
+    error_callback: Callable[[Exception], None] | None = None
+    completion_future: asyncio.Future | None = None
     expects_result: bool = False
     expired: bool = False
     execution_started: bool = False
@@ -49,7 +50,7 @@ class WriteQueue:
         self.checkpoint_interval = checkpoint_interval
         self.queue: asyncio.Queue[WriteOperation] = asyncio.Queue()
         self._loop: asyncio.AbstractEventLoop | None = None
-        self.worker_task: Optional[asyncio.Task] = None
+        self.worker_task: asyncio.Task | None = None
         self.is_running = False
         self.transaction_count = 0
         self.last_checkpoint = datetime.now()
@@ -126,7 +127,7 @@ class WriteQueue:
             if return_result:
                 return completion_value
             return None
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             operation.mark_expired()
             if not completion_future.done():
                 completion_future.cancel()
@@ -174,7 +175,7 @@ class WriteQueue:
             if return_result:
                 return completion_value
             return None
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             queue_operation.mark_expired()
             if not completion_future.done():
                 completion_future.cancel()
@@ -251,7 +252,7 @@ class WriteQueue:
                     normalized_query = " ".join(operation.query.split())
                     params_repr = repr(operation.params)
                     op_fingerprint = hashlib.sha256(
-                        f"{normalized_query}|{params_repr}".encode("utf-8")
+                        f"{normalized_query}|{params_repr}".encode()
                     ).hexdigest()[:12]
 
                     try:
@@ -325,7 +326,7 @@ class WriteQueue:
 
                     await self._check_checkpoint(conn)
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await self._check_checkpoint(conn)
                     continue
 

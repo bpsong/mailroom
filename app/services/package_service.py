@@ -1,33 +1,28 @@
 """Package management service for CRUD operations."""
 
-from datetime import datetime
 import logging
-from typing import Optional, List, Tuple
+from datetime import datetime
 from uuid import UUID, uuid4
 
 from fastapi import UploadFile
 
-from app.models import (
-    Package,
-    PackageCreate,
-    PackageUpdate,
-    PackageStatusUpdate,
-    PackageEvent,
-    PackageEventCreate,
-    PackagePublic,
-    PackageDetail,
-    PackageFilters,
-    Pagination,
-    Attachment,
-    AttachmentCreate,
-    User,
-)
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
-from app.services.recipient_service import recipient_service
-from app.services.file_service import file_service
+from app.models import (
+    Attachment,
+    Package,
+    PackageCreate,
+    PackageDetail,
+    PackageEvent,
+    PackageFilters,
+    PackagePublic,
+    PackageStatusUpdate,
+    Pagination,
+    User,
+)
 from app.services.audit_service import audit_service
-
+from app.services.file_service import file_service
+from app.services.recipient_service import recipient_service
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +133,7 @@ class PackageService:
         
         return package
     
-    async def get_package_by_id(self, package_id: UUID) -> Optional[Package]:
+    async def get_package_by_id(self, package_id: UUID) -> Package | None:
         """
         Get a package by ID.
         
@@ -270,7 +265,7 @@ class PackageService:
         self,
         filters: PackageFilters,
         pagination: Pagination,
-    ) -> Tuple[List[PackagePublic], int]:
+    ) -> tuple[list[PackagePublic], int]:
         """
         Search packages with filters and pagination (< 200ms response time).
         
@@ -371,7 +366,7 @@ class PackageService:
         
         return packages, total_count
     
-    async def get_package_detail(self, package_id: UUID) -> Optional[PackageDetail]:
+    async def get_package_detail(self, package_id: UUID) -> PackageDetail | None:
         """
         Get detailed package information with timeline.
         
@@ -423,7 +418,7 @@ class PackageService:
                 timeline=timeline,
             )
     
-    async def get_package_timeline(self, package_id: UUID) -> List[PackageEvent]:
+    async def get_package_timeline(self, package_id: UUID) -> list[PackageEvent]:
         """
         Get status history timeline for a package.
         
@@ -541,7 +536,7 @@ class PackageService:
         
         return attachment
     
-    async def get_package_attachments(self, package_id: UUID) -> List[Attachment]:
+    async def get_package_attachments(self, package_id: UUID) -> list[Attachment]:
         """
         Get all attachments for a package.
         
@@ -583,9 +578,9 @@ class PackageService:
     async def _create_package_event(
         self,
         package_id: UUID,
-        old_status: Optional[str],
+        old_status: str | None,
         new_status: str,
-        notes: Optional[str],
+        notes: str | None,
         actor_id: UUID,
     ) -> None:
         """

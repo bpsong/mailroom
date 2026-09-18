@@ -1,9 +1,8 @@
 """Export service for generating CSV reports."""
 
 import csv
-from io import StringIO
-from typing import Optional
 from datetime import datetime
+from io import StringIO
 from uuid import UUID
 
 from app.database.connection import get_db
@@ -26,13 +25,13 @@ class ExportService:
     
     async def export_packages_csv(
         self,
-        query: Optional[str] = None,
-        status: Optional[str] = None,
-        department: Optional[str] = None,
-        date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None,
-        recipient_id: Optional[UUID] = None,
-        created_by: Optional[UUID] = None,
+        query: str | None = None,
+        status: str | None = None,
+        department: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        recipient_id: UUID | None = None,
+        created_by: UUID | None = None,
     ) -> str:
         """
         Generate CSV export of packages with filters.

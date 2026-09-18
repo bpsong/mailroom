@@ -1,6 +1,7 @@
 """End-to-end tests for operator workflow (real form + CSRF flow)."""
 
 from uuid import uuid4
+
 import pytest
 
 from app.database.connection import create_connection

@@ -5,7 +5,6 @@ Property 2: Footer copyright format
 Validates: Requirements 3.1, 3.4
 """
 
-import re
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -28,8 +27,8 @@ def _make_jinja_env(current_year: int, company_name: str) -> Environment:
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=True,
     )
-    env.globals["current_year"] = current_year
-    env.globals["company_name"] = company_name
+    env.globals["current_year"] = lambda: current_year
+    env.globals["company_name"] = lambda: company_name
     env.globals["csrf_token_value"] = lambda request=None: "test-csrf-token"
     env.globals["csrf_input"] = lambda request=None: ""
     env.globals["url_for"] = lambda name, **kwargs: f"/static/{kwargs.get('path', '')}"

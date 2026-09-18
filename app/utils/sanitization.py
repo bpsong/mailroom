@@ -1,7 +1,6 @@
 """Input sanitization utilities."""
 
 import re
-from typing import Optional
 
 
 def sanitize_filename(filename: str) -> str:
@@ -127,7 +126,7 @@ def validate_file_type(filename: str, allowed_types: list[str]) -> bool:
     return mime_type in allowed_types if mime_type else False
 
 
-def validate_file_content(content: bytes, allowed_types: list[str]) -> Optional[str]:
+def validate_file_content(content: bytes, allowed_types: list[str]) -> str | None:
     """
     Validate file content by checking magic bytes.
     

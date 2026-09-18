@@ -1,12 +1,13 @@
 """QR code generation service for package tracking."""
 
+import base64
+from io import BytesIO
+from uuid import UUID
+
 import qrcode
+from PIL import Image
 from qrcode.constants import ERROR_CORRECT_H
 from qrcode.image.pil import PilImage
-from PIL import Image
-from io import BytesIO
-import base64
-from uuid import UUID
 
 from app.config import settings
 from app.services.system_settings_service import system_settings_service

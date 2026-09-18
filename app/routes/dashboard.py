@@ -1,13 +1,13 @@
 """Dashboard routes for all users."""
 
 from datetime import date
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from app.templates import templates
-from app.decorators import require_auth, get_current_user
+from app.decorators import get_current_user, require_auth
 from app.services.dashboard_service import dashboard_service
-
+from app.templates import templates
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 

@@ -1,24 +1,24 @@
 """Package management routes for all users."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Form, File, UploadFile, HTTPException, Query, status as http_status
+
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import status as http_status
 from fastapi.responses import HTMLResponse, Response
 
-from app.templates import templates
-from app.decorators import require_auth, get_current_user
+from app.decorators import get_current_user, require_auth
 from app.middleware.csrf import validate_csrf_token
 from app.models import (
     PackageCreate,
-    PackageStatusUpdate,
     PackageFilters,
+    PackageStatusUpdate,
     Pagination,
 )
+from app.services.carrier_service import carrier_service
 from app.services.package_service import package_service
 from app.services.qrcode_service import qrcode_service
-from app.services.carrier_service import carrier_service
-
+from app.templates import templates
 
 router = APIRouter(prefix="/packages", tags=["packages"])
 
@@ -27,11 +27,11 @@ router = APIRouter(prefix="/packages", tags=["packages"])
 @require_auth
 async def list_packages(
     request: Request,
-    query: Optional[str] = Query(None),
-    package_status: Optional[str] = Query(None, alias="status"),
-    department: Optional[str] = Query(None),
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
+    query: str | None = Query(None),
+    package_status: str | None = Query(None, alias="status"),
+    department: str | None = Query(None),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
     date_field: str = Query("created_at"),
     page: int = Query(1, ge=1),
     limit: int = Query(25, ge=1, le=100),
@@ -148,8 +148,8 @@ async def register_package(
     tracking_no: str = Form(...),
     carrier: str = Form(...),
     recipient_id: str = Form(...),
-    notes: Optional[str] = Form(None),
-    photo: Optional[UploadFile] = File(None),
+    notes: str | None = Form(None),
+    photo: UploadFile | None = File(None),
     csrf_token: str = Form(...),
 ):
     """
@@ -289,7 +289,7 @@ async def update_package_status(
     request: Request,
     package_id: str,
     new_status: str = Form(..., alias="status"),
-    notes: Optional[str] = Form(None),
+    notes: str | None = Form(None),
     csrf_token: str = Form(...),
 ):
     """

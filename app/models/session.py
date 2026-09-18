@@ -1,8 +1,8 @@
 """Session data models."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -14,8 +14,8 @@ class Session(BaseModel):
     token: str
     expires_at: datetime
     last_activity: datetime
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    ip_address: str | None = None
+    user_agent: str | None = None
     created_at: datetime
     
     class Config:
@@ -28,5 +28,5 @@ class SessionCreate(BaseModel):
     user_id: UUID
     token: str
     expires_at: datetime
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    ip_address: str | None = None
+    user_agent: str | None = None

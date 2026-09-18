@@ -1,12 +1,11 @@
 """Authentication service for password hashing and validation."""
 
 import json
+import logging
 import re
 import secrets
-import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional
 from uuid import UUID
 
 from argon2 import PasswordHasher
@@ -14,7 +13,7 @@ from argon2.exceptions import VerifyMismatchError
 
 from app.config import settings
 from app.database.write_queue import get_write_queue
-from app.models import User, Session, SessionCreate, AuthEvent, AuthEventCreate
+from app.models import Session, SessionCreate, User
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class AuthenticationError(Exception):
     status_code: int
     detail: str
     reason: str
-    locked_until: Optional[datetime] = None
+    locked_until: datetime | None = None
 
 
 class AuthService:
@@ -69,7 +68,7 @@ class AuthService:
         except VerifyMismatchError:
             return False
     
-    def validate_password_strength(self, password: str) -> tuple[bool, Optional[str]]:
+    def validate_password_strength(self, password: str) -> tuple[bool, str | None]:
         """
         Validate password meets strength requirements.
         
@@ -103,7 +102,7 @@ class AuthService:
         
         return True, None
     
-    def check_password_history(self, password: str, password_history: Optional[str]) -> bool:
+    def check_password_history(self, password: str, password_history: str | None) -> bool:
         """
         Check if password was used in recent history.
         
@@ -134,7 +133,7 @@ class AuthService:
     def update_password_history(
         self, 
         current_hash: str, 
-        password_history: Optional[str]
+        password_history: str | None
     ) -> str:
         """
         Update password history with new hash.
@@ -177,7 +176,7 @@ class AuthService:
         self,
         username: str,
         password: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> User:
         """
         Authenticate a user by username and password.
@@ -286,8 +285,8 @@ class AuthService:
     async def create_session(
         self,
         user_id: UUID,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> Session:
         """
         Create a new session for a user.
@@ -427,7 +426,7 @@ class AuthService:
             created_at=row[7],
         )
     
-    async def validate_session(self, token: str) -> Optional[tuple[Session, User]]:
+    async def validate_session(self, token: str) -> tuple[Session, User] | None:
         """
         Validate a session token and return session and user if valid.
         
@@ -657,7 +656,7 @@ class AuthService:
         except Exception:
             return False
     
-    async def check_account_lockout(self, username: str) -> tuple[bool, Optional[datetime]]:
+    async def check_account_lockout(self, username: str) -> tuple[bool, datetime | None]:
         """
         Check if an account is locked due to failed login attempts.
         
@@ -751,10 +750,10 @@ class AuthService:
     async def log_auth_event(
         self,
         event_type: str,
-        user_id: Optional[UUID] = None,
-        username: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        details: Optional[str] = None,
+        user_id: UUID | None = None,
+        username: str | None = None,
+        ip_address: str | None = None,
+        details: str | None = None,
     ) -> None:
         """
         Log an authentication event to the audit log.

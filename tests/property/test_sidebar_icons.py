@@ -9,7 +9,7 @@ import re
 import unicodedata
 from pathlib import Path
 from types import SimpleNamespace
-import pytest
+
 from bs4 import BeautifulSoup
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -55,7 +55,7 @@ def _make_jinja_env() -> Environment:
     )
     # Inject the globals that base.html expects
     env.globals["current_year"] = lambda: 2026
-    env.globals["company_name"] = "Test Company"
+    env.globals["company_name"] = lambda: "Test Company"
     env.globals["csrf_token_value"] = lambda request=None: "test-csrf-token"
     env.globals["csrf_input"] = lambda request=None: ""
     # Stub FastAPI's url_for so the <head> CSS link renders without error

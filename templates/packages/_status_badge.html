@@ -1,0 +1,13 @@
+<span id="package-status-badge" hx-swap-oob="true">
+    {% if package.status == 'registered' %}
+    <span class="badge badge-neutral badge-lg">Registered</span>
+    {% elif package.status == 'awaiting_pickup' %}
+    <span class="badge badge-warning badge-lg">Awaiting Pickup</span>
+    {% elif package.status == 'out_for_delivery' %}
+    <span class="badge badge-info badge-lg">Out for Delivery</span>
+    {% elif package.status == 'delivered' %}
+    <span class="badge badge-success badge-lg">Delivered</span>
+    {% elif package.status == 'returned' %}
+    <span class="badge badge-error badge-lg">Returned</span>
+    {% endif %}
+</span>

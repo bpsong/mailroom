@@ -7,10 +7,9 @@ import pytest
 from pydantic import ValidationError
 
 from app.database.connection import create_connection
+from app.database.migrations import MigrationManager
 from app.models.carrier import CarrierCreate, CarrierUpdate
 from app.services.carrier_service import CarrierService
-from app.database.migrations import MigrationManager
-
 
 # ---------------------------------------------------------------------------
 # Helpers

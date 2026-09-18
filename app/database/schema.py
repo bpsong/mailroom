@@ -6,7 +6,6 @@ from pathlib import Path
 
 from app.database.connection import create_connection
 
-
 UUID_DEFAULT_SQL = (
     "("
     "lower(hex(randomblob(4))) || '-' || "

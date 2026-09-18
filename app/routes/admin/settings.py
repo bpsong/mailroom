@@ -1,7 +1,6 @@
 """Admin settings and audit log routes."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request, status
@@ -12,7 +11,6 @@ from app.middleware.csrf import validate_csrf_token
 from app.routes.auth import get_client_ip
 from app.templates import templates
 
-
 router = APIRouter()
 
 
@@ -20,8 +18,8 @@ router = APIRouter()
 @require_role("super_admin")
 async def show_settings(request: Request):
     """Display system settings page."""
-    from app.services.system_settings_service import system_settings_service
     from app.services.carrier_service import carrier_service
+    from app.services.system_settings_service import system_settings_service
 
     user = get_current_user(request)
     qr_base_url = await system_settings_service.get_qr_base_url()
@@ -99,11 +97,11 @@ async def update_qr_base_url(
 @require_role("super_admin")
 async def view_audit_logs(
     request: Request,
-    user_id: Optional[str] = Query(None),
-    event_type: Optional[str] = Query(None),
-    username: Optional[str] = Query(None),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
+    user_id: str | None = Query(None),
+    event_type: str | None = Query(None),
+    username: str | None = Query(None),
+    start_date: str | None = Query(None),
+    end_date: str | None = Query(None),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):

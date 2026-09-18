@@ -1,10 +1,9 @@
 """System settings service for managing system-wide configuration."""
 
 import logging
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from app.database.connection import get_db
 from app.database.write_queue import get_write_queue
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 class SystemSettingsService:
     """Service for managing system-wide settings."""
     
-    async def get_qr_base_url(self) -> Optional[str]:
+    async def get_qr_base_url(self) -> str | None:
         """
         Get configured QR code base URL.
         
@@ -39,8 +38,8 @@ class SystemSettingsService:
         self,
         url: str,
         actor_id: UUID,
-        actor_username: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        actor_username: str | None = None,
+        ip_address: str | None = None,
     ) -> None:
         """
         Set QR code base URL (Super Admin only).

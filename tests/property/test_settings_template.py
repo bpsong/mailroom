@@ -16,7 +16,6 @@ from jinja2 import Environment, FileSystemLoader
 
 from app.models.carrier import Carrier
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -29,8 +28,8 @@ def _make_jinja_env() -> Environment:
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=True,
     )
-    env.globals["current_year"] = 2026
-    env.globals["company_name"] = "Test Company"
+    env.globals["current_year"] = lambda: 2026
+    env.globals["company_name"] = lambda: "Test Company"
     env.globals["csrf_token_value"] = lambda request=None: "test-csrf-token"
     env.globals["csrf_input"] = lambda request=None: (
         '<input type="hidden" name="csrf_token" value="test-csrf-token">'

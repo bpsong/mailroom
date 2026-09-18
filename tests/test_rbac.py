@@ -1,11 +1,12 @@
 """Tests for RBAC service and decorators."""
 
-import pytest
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
-from app.services.rbac_service import rbac_service
+import pytest
+
 from app.models import User
+from app.services.rbac_service import rbac_service
 
 
 def create_test_user(role: str) -> User:
